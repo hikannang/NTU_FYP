@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Navigation App</title>
+    <style>
+      .compass {
+        position: relative;
+        width: 320px;
+        height: 320px;
+        border-radius: 50%;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        margin: auto;
+      }
+
+      .arrow {
+        position: absolute;
+        width: 100px; /* Adjust the width and height as needed */
+        height: 100px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: url(https://purepng.com/public/uploads/large/upload-icon-in-red-color-gxm.png)
+          center no-repeat;
+        background-size: contain;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <p id="bearing"></p>
+      <p id="alpha"></p>
+      <p id="direction"></p>
+      <p id="distanceFromTarget"></p>
+    </div>
+    <div class="compass">
+      <div class="arrow"></div>
+    </div>
+    <div>
+      <button onclick="littleIndie()">little India MRT</button>
+      <button class="start-btn">Start compass</button>
+    </div>
+    <script>
+      var current = { latitude: null, longitude: null };
+      var target = { latitude: 0, longitude: 0 };
+      var lastAlpha = 0;
+      var direction = 0;
+      const isIOS =
+        navigator.userAgent.match(/(iPod|iPhone|iPad)/) &&
+        navigator.userAgent.match(/AppleWebKit/);
+      const startBtn = document.querySelector(".start-btn");
+      const geolocationOptions = { enableHighAccuracy: true };
+
+      // function to initialize geolocation and device oroentation. runs automatically
+      function init() {
+        startBtn.addEventListener("click", startCompass);
+        navigator.geolocation.watchPosition(setCurrentPosition,null,geolocationOptions);
+        if (!isIOS) {
+          window.addEventListener("deviceorientationabsolute", runCalculation);
+        }
+
+        // Start the UI updates
+        updateUI();
+      }
+
+      // on clicking the start compass button, request permission to use device orientation.
+      // only IOS devices need to click the button
+      function startCompass() {
+        if (isIOS) {
+          DeviceOrientationEvent.requestPermission()
+            .then((response) => {
+              if (response === "granted") {
+                window.addEventListener("deviceorientation", runCalculation);
+              } else {
+                alert("has to be allowed!");
+              }
+            })
+            .catch(() => alert("not supported"));
+        }
+      }
+
+      // takes values retrieved from th geolocation API and stores them in the current object
+      // for use in calculating compass direction and distance
+      function setCurrentPosition(position) {
+        current.latitude = position.coords.latitude;
+        current.longitude = position.coords.longitude;
+      }
+
+      // runs the calculation for getting the direction which the arrow needs to point
+      function runCalculation(event) {
+        var alpha = Math.abs(360 - event.webkitCompassHeading) || event.alpha;
+        document.getElementById("alpha").innerHTML =
+          "alpha: " + alpha.toFixed(4);
+
+        if (alpha == null || Math.abs(alpha - lastAlpha) > 1) {
+          var lat1 = current.latitude * (Math.PI / 180);
+          var lon1 = current.longitude * (Math.PI / 180);
+          var lat2 = target.latitude * (Math.PI / 180);
+          var lon2 = target.longitude * (Math.PI / 180);
+
+          // calculate compass direction
+          var y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+          var x =
+            Math.cos(lat1) * Math.sin(lat2) -
+            Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+          var bearing = Math.atan2(y, x) * (180 / Math.PI);
+          document.getElementById("bearing").innerHTML =
+            "bearing: " + bearing.toFixed(4);
+
+          direction = (alpha + bearing + 360) % 360;
+          direction = direction.toFixed(0);
+          document.getElementById("direction").innerHTML =
+            "direction: " + direction;
+          lastAlpha = alpha;
+
+          var R = 6371; // Radius of the earth in km
+          var dLat = lat2 - lat1; // below
+          var dLon = lon2 - lon1;
+          var a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+          var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          var distance = R * c; // Distance in km
+          distance = distance * 1000; // Convert to meters
+          document.getElementById("distanceFromTarget").innerHTML =
+            "distance: " + distance.toFixed(4) + "m";
+        }
+      }
+
+      // starts updating the UI.
+      function updateUI() {
+        // Update arrow rotation
+        const arrow = document.querySelector(".arrow");
+        arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
+        requestAnimationFrame(updateUI);
+      }
+
+      littleIndie = () => {
+        target.latitude = 1.306725;
+        target.longitude = 103.849175;
+      };
+      init();
+    </script>
+  </body>
+</html>
