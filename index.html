@@ -38,7 +38,8 @@
       <div class="arrow"></div>
     </div>
     <div>
-      <button onclick="littleIndie()">little India MRT</button>
+      <button onclick="test1()">Pioneer MRT</button>
+      <button onclick="test2()">WKW</button>
       <button class="start-btn">Start compass</button>
     </div>
     <script>
@@ -136,9 +137,14 @@
         requestAnimationFrame(updateUI);
       }
 
-      littleIndie = () => {
-        target.latitude = 1.306725;
-        target.longitude = 103.849175;
+      test1 = () => {
+        target.latitude = 1.3360914;
+        target.longitude = 103.6894131;
+      };
+
+      test2 = () => {
+        target.latitude = 1.3429888;
+        target.longitude = 103.6798118;
       };
       init();
     </script>
