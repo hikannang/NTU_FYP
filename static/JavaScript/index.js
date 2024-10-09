@@ -706,22 +706,6 @@ document.getElementsByClassName("closeI")[0].onclick = function () {
     modalI.style.display = "none";
 };
 
-function toggleLModal(){
-    //Get the modal
-    modalL = document.getElementById("modalL");
-    modalL.style.zIndex = "6000";
-    modalL.style.display="block";
-}
-
-function closeModalL(){
-    modalL = document.getElementById("modalL");
-    modalL.style.display='none';
-}
-
-document.getElementsByClassName("closeL")[0].onclick = function () {
-    modalL.style.display = "none";
-};
-
 function toggleHTModal(){
     //Get the modal
     modalHT = document.getElementById("modalHT");
