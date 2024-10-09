@@ -23,6 +23,28 @@
 </head>
 
 <body>
+    <!-- modalL -->
+    <div id="modalL" class="modal">
+        <!-- Modal content -->
+        <div class ="common-modal-content black-modal-content" onclick="closeModalL()">
+            <span class="closeL common-close-btn">
+                <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
+            </span>
+            <img src="./static/images/instructionPage/introduction.png" alt="LModal">
+        </div>
+    </div>
+    
+    <!-- modalI -->
+    <div id="modalI" class="modal">
+        <!-- Modal content -->
+        <div class ="common-modal-content black-modal-content" onclick="closeModalI()">
+            <span class="closeI common-close-btn">
+                <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
+            </span>
+            <img src="./static/images/instructionPage/instruction.png" alt="IModal">
+        </div>
+    </div>
+    
     <div id="compassDiv">
         <!-- Compass -->
         <div class="compass">
@@ -35,7 +57,51 @@
             </div>
         </div>
     </div>
+
+    <!-- modalMap -->
+    <div id="modalMap" class="modal">
+        <!-- Modal content -->
+        <div class ="common-modal-content black-modal-content">
+            <span class="closeM common-close-btn">
+                <img src="./static/images/icons/redCross.png" alt="Close Button" class="common-close-img">
+            </span>
+            <img src="./static/images/Minimap/map.png" alt="Big Image">
+        </div>
+    </div>
     
+    <!-- modalE -->
+    <div id="modalE" class="modal">
+        <!-- Modal content -->
+        <div class ="common-modal-content black-modal-content" onclick="closeModalE()">
+            <span class="closeE common-close-btn">
+                <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
+            </span>
+            <img src="./static/images/warningPages/locationFrame.png" alt="EModal">
+        </div>
+    </div>
+
+    <!-- modalO -->
+    <div id="modalO" class="modal">
+        <!-- Modal content -->
+        <div class ="common-modal-content black-modal-content" onclick="closeModalO()">
+            <span class="closeO common-close-btn">
+                <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
+            </span>
+            <img src="./static/images/warningPages/outsideFrame.png" alt="OModal">
+        </div>
+    </div>
+
+
+    <!-- modalHT -->
+    <div id="modalHT" class="modal">
+        <!-- Modal content -->
+        <div class ="common-modal-content black-modal-content" onclick="closeModalHT()">
+            <span class="closeHT common-close-btn">
+                <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
+            </span>
+            <img src="./static/images/warningPages/highTrafficFrame.png" alt="HTModal">
+        </div>
+    </div>
 
     <div id="moreOptionsDiv" class="moreOptionsDiv">
         <div class="moreOptions" onclick="toggleCircles()">
@@ -46,6 +112,9 @@
                 </div>
                 <div class="circle cyclingPath" onclick="selectGreen()">
                     <img src="./static/images/picture_Buttons/cyclingPath_edited.png" alt="Cycling Path" style="width: 90%; height: 100%; transform: translateX(-5%);">
+                </div>
+                <div class="circle yellowBoxSitting" onclick="selectOrange()">
+                    <img src="./static/images/picture_Buttons/yellowBox_Sitting.png" alt="Yellow Box Sitting" style="width: 80%; height: 100%; transform: translateX(-10%);">
                 </div>
             </div>
         </div>
