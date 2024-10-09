@@ -41,7 +41,7 @@ function selectRed(){
         // Turning Red On
         document.getElementById('redOff').id = 'red';
         var content = document.getElementById('red');
-        content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/scene.glb" scale="2 2 2" gps-projected-entity-place="latitude: 1.342917; longitude: 103.6811364" animation-mixer/>'
+        content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/location.glb" scale="2 2 2" gps-projected-entity-place="latitude: 1.342917; longitude: 103.6811364" animation-mixer/>'
     }
 
     if(document.getElementById('green')){
@@ -112,7 +112,7 @@ function selectGreen(){
         // Turning Green On
         document.getElementById('greenOff').id = 'green';
         var content = document.getElementById('green')
-        content.innerHTML = '<a-image id="green" src="./static/3dModels/GLB/scene.glb" look-at="[gps-projected-camera]" scale="2 2 2" gps-projected-entity-place="latitude: 1.4015849; longitude: 103.7492535"></a-image>';
+        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/scene.glb" scale="2 2 2" gps-projected-entity-place="latitude: 1.4015849; longitude: 103.7492535" animation-mixer/>'
     }
 
     if(document.getElementById('red')){
@@ -156,7 +156,7 @@ function showGreen(){
         // Turning Green On
         document.getElementById('greenOff').id = 'green';
         var content = document.getElementById('green')
-        content.innerHTML = '<a-image id="green" src="./static/3dModels/GLB/scene.glb" look-at="[gps-projected-camera]" scale="2 2 2" gps-projected-entity-place="latitude: 1.4015849; longitude: 103.7492535"></a-image>';
+        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/scene.glb" scale="2 2 2" gps-projected-entity-place="latitude: 1.4015849; longitude: 103.7492535" animation-mixer/>'
     }
 }
 
