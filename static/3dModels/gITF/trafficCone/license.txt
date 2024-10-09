@@ -1,8 +1,0 @@
-Model Information:
-* title:	Traffic_ Cone
-* source:	https://sketchfab.com/3d-models/traffic--cone-abbc833196bd4c33b7e0f2bf0982b4df
-* author:	vic_r (https://sketchfab.com/vic_r)
-
-Model License:
-* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
-* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works
