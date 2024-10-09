@@ -573,11 +573,11 @@ function runCalculation(event) {
         switch (colour) {
             case 'red':
                 if (distance > 1000000){
-                    hideRed();
-                    toggleEModal();
+                    showRed();
+                    // toggleEModal();
                 } else if (distance > 3000){
-                    hideRed();
-                    toggleOModal();
+                    showRed();
+                    // toggleOModal();
                 }else if (distance <= 3000){
                     isViewed = false;
                     showRed();
@@ -597,11 +597,11 @@ function runCalculation(event) {
                 break;
             case 'green':
                 if (distance > 1000000){
-                    hideGreen();
-                    toggleEModal();
+                    showGreen();
+                    // toggleEModal();
                 } else if (distance > 3000){
-                    hideGreen();
-                    toggleOModal();
+                    showGreen();
+                    // toggleOModal();
                 }else if (distance <= 3000){
                     showGreen();
                     isViewed = false;
