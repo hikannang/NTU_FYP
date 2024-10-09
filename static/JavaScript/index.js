@@ -691,21 +691,6 @@ document.getElementsByClassName("closeO")[0].onclick = function () {
     modalO.style.display = "none";
 };
 
-function toggleIModal(){
-    //Get the modal
-    modalI = document.getElementById("modalI");
-    modalI.style.display="block";
-}
-
-function closeModalI(){
-    modalI = document.getElementById("modalI");
-    modalI.style.display='none';
-}
-
-document.getElementsByClassName("closeI")[0].onclick = function () {
-    modalI.style.display = "none";
-};
-
 function toggleLModal(){
     //Get the modal
     modalL = document.getElementById("modalL");
