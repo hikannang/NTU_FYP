@@ -27,17 +27,11 @@ function hideLoadingScreen() {
     // Clear the timeout if it hasn't been triggered yet
     clearTimeout(loadingTimeout);  
 }
-
+// Prof Teh's office
 function selectRed(){
-    //Bicycle Crossing, 
-    // Expo, closer to road: 1.3335879, 103.9570899
-    // Office: 1.308356, 103.849796
-    // Healthy Living Zone
     startCompass()
-    target.latitude = 1.3331957;
-    target.longitude = 103.9567760;
-    // target.latitude = 1.308356;
-    // target.longitude = 103.849796;
+    target.latitude = 1.342917;
+    target.longitude = 103.6811364;
 
     showLoadingScreen();
 
@@ -47,8 +41,7 @@ function selectRed(){
         // Turning Red On
         document.getElementById('redOff').id = 'red';
         var content = document.getElementById('red');
-        content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/fireExtinguisher/fire_extinguisher.glb" scale="2 2 2" gps-projected-entity-place="latitude: 1.3331957; longitude: 103.9567760" animation-mixer/>'
-        // content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/fireExtinguisher/fire_extinguisher.glb" scale="2 2 2" gps-projected-entity-place="latitude: 1.308356; longitude: 103.849796" animation-mixer/>'
+        content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/scene.glb" scale="2 2 2" gps-projected-entity-place="latitude: 1.342917; longitude: 103.6811364" animation-mixer/>'
     }
 
     if(document.getElementById('green')){
@@ -92,8 +85,7 @@ function showRed(){
         // Turning Red On
         document.getElementById('redOff').id = 'red';
         var content = document.getElementById('red')
-        content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/fireExtinguisher/fire_extinguisher.glb" scale="2 2 2" gps-projected-entity-place="latitude: 1.3331957; longitude: 103.9567760" animation-mixer/>'
-        // content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/fireExtinguisher/fire_extinguisher.glb" scale="2 2 2" gps-projected-entity-place="latitude: 1.308356; longitude: 103.849796" animation-mixer/>'
+        content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/scene.glb" scale="2 2 2" gps-projected-entity-place="latitude: 1.342917; longitude: 103.6811364" animation-mixer/>'
     }
 }
 
@@ -105,15 +97,11 @@ function hideRed(){
         content.innerHTML = '<a-entity id="redOff"></a-entity>'
     }
 }
-
+// Block 659
 function selectGreen(){
-    // Expo, middle, aiming at esclators: 1.3336073, 103.9567472
     startCompass()
-    target.latitude = 1.3335021;
-    target.longitude = 103.9568984;
-    // target.latitude = 1.308356;
-    // target.longitude = 103.849796; 
-
+    target.latitude = 1.4020963;
+    target.longitude = 103.7488891;
 
     showLoadingScreen();
 
@@ -123,7 +111,7 @@ function selectGreen(){
         // Turning Green On
         document.getElementById('greenOff').id = 'green';
         var content = document.getElementById('green')
-        content.innerHTML = '<a-image id="green" src="./static/images/2D_Assets_low_res/signageGB.png" look-at="[gps-projected-camera]" scale="10 10 10" gps-projected-entity-place="latitude: 1.3335021; longitude: 103.9568984"></a-image>';
+        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/scene.glb" scale="2 2 2" gps-projected-entity-place="latitude: 1.4020963; longitude: 103.6811364" animation-mixer/>'
     }
 
     if(document.getElementById('red')){
@@ -691,19 +679,20 @@ document.getElementsByClassName("closeO")[0].onclick = function () {
     modalO.style.display = "none";
 };
 
-function toggleIModal(){
+function toggleLModal(){
     //Get the modal
-    modalI = document.getElementById("modalI");
-    modalI.style.display="block";
+    modalL = document.getElementById("modalL");
+    modalL.style.zIndex = "6000";
+    modalL.style.display="block";
 }
 
-function closeModalI(){
-    modalI = document.getElementById("modalI");
-    modalI.style.display='none';
+function closeModalL(){
+    modalL = document.getElementById("modalL");
+    modalL.style.display='none';
 }
 
-document.getElementsByClassName("closeI")[0].onclick = function () {
-    modalI.style.display = "none";
+document.getElementsByClassName("closeL")[0].onclick = function () {
+    modalL.style.display = "none";
 };
 
 function toggleHTModal(){

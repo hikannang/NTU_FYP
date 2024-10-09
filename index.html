@@ -23,15 +23,14 @@
 </head>
 
 <body>
-    
-    <!-- modalI -->
-    <div id="modalI" class="modal">
+    <!-- modalL -->
+    <div id="modalL" class="modal">
         <!-- Modal content -->
-        <div class ="common-modal-content black-modal-content" onclick="closeModalI()">
-            <span class="closeI common-close-btn">
+        <div class ="common-modal-content black-modal-content" onclick="closeModalL()">
+            <span class="closeL common-close-btn">
                 <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
             </span>
-            <img src="./static/images/instructionPage/instruction.png" alt="IModal">
+            <img src="./static/images/instructionPage/introduction.png" alt="LModal">
         </div>
     </div>
     
@@ -103,9 +102,9 @@
                 <div class="circle cyclingPath" onclick="selectGreen()">
                     <img src="./static/images/picture_Buttons/cyclingPath_edited.png" alt="Cycling Path" style="width: 90%; height: 100%; transform: translateX(-5%);">
                 </div>
-                <div class="circle yellowBoxSitting" onclick="selectOrange()">
+                <!-- <div class="circle yellowBoxSitting" onclick="selectOrange()">
                     <img src="./static/images/picture_Buttons/yellowBox_Sitting.png" alt="Yellow Box Sitting" style="width: 80%; height: 100%; transform: translateX(-10%);">
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
@@ -347,6 +346,23 @@
             <img id="pigGif" src="./static/videos/pigGIF.gif">
         </a-assets>
     </div>
+
+    <!-- Modal Toggling Script -->
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            function toggleLModal() {
+                // Get the modal
+                var modalL = document.getElementById("modalL");
+                if (modalL) {
+                    modalL.style.zIndex = "6000";
+                    modalL.style.display = "block";
+                }
+            }
+
+            // Call your toggle functions here
+            toggleLModal();
+        });
+    </script>
 
     <script src="static/JavaScript/index.js"></script>
 </body>
