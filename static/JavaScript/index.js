@@ -585,13 +585,13 @@ function runCalculation(event) {
                     break;
                 }
             case 'red2':
-                if (distance < 15){ 
+                if (distance < 5){ 
                     hideRed();
                     if(isViewed == false){
                         toggleModalRed15();
                         isViewed = true;
                     }
-                } else if (distance >= 15){
+                } else if (distance >= 5){
                     showRed();
                 }
                 break;
@@ -609,13 +609,13 @@ function runCalculation(event) {
                 }
                 break;
             case 'green2':
-                if (distance < 15){ 
+                if (distance < 5){ 
                     hideGreen();
                     if(isViewed == false){
                         toggleModalGreen15();
                         isViewed = true; 
                     }
-                } else if (distance >= 15){
+                } else if (distance >= 5){
                     showGreen();
                 }
                 break;
