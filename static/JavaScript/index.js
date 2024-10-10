@@ -170,13 +170,9 @@ function hideGreen(){
 }
 
 function selectOrange(){
-    // Closer to hall 1: 1.3334947, 103.9569044
-    //Bicycle Park (Reimagine Active Mobility Zone)
-    startCompass()
-    target.latitude = 1.3334947;
-    target.longitude = 103.9569044;
-    // target.latitude = 1.308356;
-    // target.longitude = 103.849796;
+    // WKW 1.3420532,103.679973
+    target.latitude = 1.3420532;
+    target.longitude = 103.679973;
     
 
     showLoadingScreen();
@@ -187,8 +183,7 @@ function selectOrange(){
         // Turning Orange On
         document.getElementById('orangeOff').id = 'orange';
         var content = document.getElementById('orange');
-        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/trafficCone/traffic_cone_game_ready.glb" scale="0.1 0.1 0.1" gps-projected-entity-place="latitude: 1.3334947; longitude: 103.9569044" animation-mixer/>'
-        // content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/trafficCone/traffic_cone_game_ready.glb" scale="0.1 0.1 0.1" gps-projected-entity-place="latitude: 1.3334253; longitude: 103.849796" animation-mixer/>'
+        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"10 10 10" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
     }
     
 
@@ -234,8 +229,7 @@ function showOrange(){
         // Turning Orange On
         document.getElementById('orangeOff').id = 'orange';
         var content = document.getElementById('orange')
-        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/trafficCone/traffic_cone_game_ready.glb" scale="0.1 0.1 0.1" gps-projected-entity-place="latitude: 1.3334947; longitude: 103.9569044" animation-mixer/>'
-        // content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/trafficCone/traffic_cone_game_ready.glb" scale="0.1 0.1 0.1" gps-projected-entity-place="latitude: 1.308356; longitude: 103.849796" animation-mixer/>'
+        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"10 10 10" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
     }
 }
 
