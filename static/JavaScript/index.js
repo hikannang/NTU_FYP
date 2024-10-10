@@ -559,7 +559,7 @@ function runCalculation(event) {
         distanceElement.innerHTML = '';
     }else{
     // Display the actual distance
-        distanceElement.innerHTML = Math.floor(distance) + "m to destination!";
+        distanceElement.innerHTML = Math.floor(distance) + "m to destination";
     }
         
 
