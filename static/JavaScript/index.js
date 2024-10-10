@@ -615,11 +615,11 @@ function runCalculation(event) {
                 break;
             case 'orange':
                 if (distance > 1000000){
-                    hideOrange();
-                    toggleEModal();
+                    showOrange();
+                    // toggleEModal();
                 } else if (distance > 3000){
-                    hideOrange();
-                    toggleOModal();
+                    showOrange();
+                    // toggleOModal();
                 }else if (distance <= 3000){
                     showOrange();
                     colour = 'orange2';
@@ -627,13 +627,13 @@ function runCalculation(event) {
                 }
                 break;
             case 'orange2':
-                if (distance < 15){ 
+                if (distance < 5){ 
                     hideOrange();
                     if(isViewed == false){
                        toggleModalOrange15(); 
                         isViewed = true;
                     }
-                }else if (distance >= 15){
+                }else if (distance >= 5){
                     showOrange();
                 }
                 break;
