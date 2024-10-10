@@ -183,7 +183,7 @@ function selectOrange(){
         // Turning Orange On
         document.getElementById('orangeOff').id = 'orange';
         var content = document.getElementById('orange');
-        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"10 10 10" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
+        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"100 100 100" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
     }
     
 
@@ -229,7 +229,7 @@ function showOrange(){
         // Turning Orange On
         document.getElementById('orangeOff').id = 'orange';
         var content = document.getElementById('orange')
-        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"10 10 10" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
+        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"100 100 100" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
     }
 }
 
