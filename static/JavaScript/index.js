@@ -41,7 +41,7 @@ function selectRed(){
         // Turning Red On
         document.getElementById('redOff').id = 'red';
         var content = document.getElementById('red');
-        content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/location3.glb" gps-projected-entity-place="latitude: 1.342917; longitude: 103.6811364" animation-mixer/>'
+        content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.342917; longitude: 103.6811364" animation-mixer/>'
     }
 
     if(document.getElementById('green')){
@@ -85,7 +85,7 @@ function showRed(){
         // Turning Red On
         document.getElementById('redOff').id = 'red';
         var content = document.getElementById('red')
-        content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/location3.glb" gps-projected-entity-place="latitude: 1.342917; longitude: 103.6811364" animation-mixer/>'
+        content.innerHTML = '<a-entity id="red" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.342917; longitude: 103.6811364" animation-mixer/>'
     }
 }
 
@@ -112,7 +112,7 @@ function selectGreen(){
         // Turning Green On
         document.getElementById('greenOff').id = 'green';
         var content = document.getElementById('green')
-        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" gps-projected-entity-place="latitude: 1.4015849; longitude: 103.7492535" animation-mixer/>'
+        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.4015849; longitude: 103.7492535" animation-mixer/>'
     }
 
     if(document.getElementById('red')){
@@ -156,7 +156,7 @@ function showGreen(){
         // Turning Green On
         document.getElementById('greenOff').id = 'green';
         var content = document.getElementById('green')
-        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" gps-projected-entity-place="latitude: 1.4015849; longitude: 103.7492535" animation-mixer/>'
+        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.4015849; longitude: 103.7492535" animation-mixer/>'
     }
 }
 
@@ -183,7 +183,7 @@ function selectOrange(){
         // Turning Orange On
         document.getElementById('orangeOff').id = 'orange';
         var content = document.getElementById('orange');
-        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"5 5 5" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
+        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
     }
     
 
@@ -229,7 +229,7 @@ function showOrange(){
         // Turning Orange On
         document.getElementById('orangeOff').id = 'orange';
         var content = document.getElementById('orange')
-        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"5 5 5" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
+        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
     }
 }
 
