@@ -555,7 +555,7 @@ function runCalculation(event) {
     var distanceElement = document.getElementById("distanceFromTarget");
     if (distance > 20000) {
         distanceElement.innerHTML = 'Please Select Destination!';
-    } else if (distance <= 15){
+    } else if (distance <= 1){
         distanceElement.innerHTML = '';
     }else{
     // Display the actual distance
