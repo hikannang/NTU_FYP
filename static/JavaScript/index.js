@@ -179,14 +179,13 @@ function selectOrange(){
 
     colour = 'orange';
 
-    if (document.getElementById('orangeOff')) {
-        // Turning Orange On
+    if (document.getElementById('orangeOff')){ 
+        // Turning Green On
         document.getElementById('orangeOff').id = 'orange';
-        var content = document.getElementById('orange');
+        var content = document.getElementById('orange')
         content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"1 1 1" gps-projected-entity-place="latitude: 1.4004190096899463; longitude: 103.75022329006437" animation-mixer/>'
     }
     
-
     if(document.getElementById('red')){
         // Turning Red Off
         document.getElementById('red').id = 'redOff';
@@ -225,7 +224,7 @@ function selectOrange(){
 }
 
 function showOrange(){
-    if (document.getElementById('orangeOff')){
+    if (document.getElementById('orangeOff')){ 
         // Turning Orange On
         document.getElementById('orangeOff').id = 'orange';
         var content = document.getElementById('orange')
@@ -622,8 +621,8 @@ function runCalculation(event) {
                     // toggleOModal();
                 }else if (distance <= 3000){
                     showOrange();
-                    colour = 'orange2';
                     isViewed = false;
+                    colour = 'orange2';
                 }
                 break;
             case 'orange2':
