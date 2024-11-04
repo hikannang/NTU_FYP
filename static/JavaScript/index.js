@@ -97,12 +97,11 @@ function hideRed(){
         content.innerHTML = '<a-entity id="redOff"></a-entity>'
     }
 }
-// Lift at Blk 671A 1.4018452197902285, 103.74827779680675
-
+// Lift at Blk 671A 1.4019454518648213, 103.74820642757388
 function selectGreen(){
     startCompass()
-    target.latitude = 1.4018452197902285;
-    target.longitude = 103.74827779680675;
+    target.latitude = 1.4019454518648213;
+    target.longitude = 103.74820642757388;
 
 
     showLoadingScreen();
@@ -113,7 +112,7 @@ function selectGreen(){
         // Turning Green On
         document.getElementById('greenOff').id = 'green';
         var content = document.getElementById('green')
-        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.4018452197902285; longitude: 103.74827779680675" animation-mixer/>'
+        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.4019454518648213; longitude: 103.74820642757388" animation-mixer/>'
     }
 
     if(document.getElementById('red')){
@@ -157,7 +156,7 @@ function showGreen(){
         // Turning Green On
         document.getElementById('greenOff').id = 'green';
         var content = document.getElementById('green')
-        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.4018452197902285; longitude: 103.74827779680675" animation-mixer/>'
+        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.4019454518648213; longitude: 103.74820642757388" animation-mixer/>'
     }
 }
 
@@ -171,9 +170,9 @@ function hideGreen(){
 }
 
 function selectOrange(){
-    // Blk 656 1.40051473033787, 103.75035123729965
-    target.latitude = 1.40051473033787;
-    target.longitude = 103.75035123729965;
+    // Blk 656 1.4004190096899463, 103.75022329006437
+    target.latitude = 1.4004190096899463;
+    target.longitude = 103.75022329006437;
     
 
     showLoadingScreen();
@@ -184,7 +183,7 @@ function selectOrange(){
         // Turning Orange On
         document.getElementById('orangeOff').id = 'orange';
         var content = document.getElementById('orange');
-        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.40051473033787; longitude: 103.75035123729965 animation-mixer/>'
+        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"1 1 1" gps-projected-entity-place="latitude: 1.4004190096899463; longitude: 103.75022329006437" animation-mixer/>'
     }
     
 
@@ -230,7 +229,7 @@ function showOrange(){
         // Turning Orange On
         document.getElementById('orangeOff').id = 'orange';
         var content = document.getElementById('orange')
-        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.40051473033787; longitude: 103.75035123729965 animation-mixer/>'
+        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"1 1 1" gps-projected-entity-place="latitude: 1.4004190096899463; longitude: 103.75022329006437" animation-mixer/>'
     }
 }
 
@@ -605,7 +604,7 @@ function runCalculation(event) {
                 break;
             case 'green2':
                 if (distance < 10){ 
-                    hideGreen();
+                    showGreen();
                     if(isViewed == false){
                         toggleModalGreen15();
                         isViewed = true; 
@@ -629,7 +628,7 @@ function runCalculation(event) {
                 break;
             case 'orange2':
                 if (distance < 10){ 
-                    hideOrange();
+                    showOrange();
                     if(isViewed == false){
                        toggleModalOrange15(); 
                         isViewed = true;
