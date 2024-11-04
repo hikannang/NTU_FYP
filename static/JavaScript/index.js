@@ -97,11 +97,12 @@ function hideRed(){
         content.innerHTML = '<a-entity id="redOff"></a-entity>'
     }
 }
-// Block 659 1.4015849,103.7492535
+// Lift at Blk 671A 1.4018452197902285, 103.74827779680675
+
 function selectGreen(){
     startCompass()
-    target.latitude = 1.4015849;
-    target.longitude = 103.7492535;
+    target.latitude = 1.4018452197902285;
+    target.longitude = 103.74827779680675;
 
 
     showLoadingScreen();
@@ -112,7 +113,7 @@ function selectGreen(){
         // Turning Green On
         document.getElementById('greenOff').id = 'green';
         var content = document.getElementById('green')
-        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.4015849; longitude: 103.7492535" animation-mixer/>'
+        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.4018452197902285; longitude: 103.74827779680675" animation-mixer/>'
     }
 
     if(document.getElementById('red')){
@@ -156,7 +157,7 @@ function showGreen(){
         // Turning Green On
         document.getElementById('greenOff').id = 'green';
         var content = document.getElementById('green')
-        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.4015849; longitude: 103.7492535" animation-mixer/>'
+        content.innerHTML = '<a-entity id="green" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.4018452197902285; longitude: 103.74827779680675" animation-mixer/>'
     }
 }
 
@@ -170,9 +171,9 @@ function hideGreen(){
 }
 
 function selectOrange(){
-    // WKW 1.3420532,103.679973
-    target.latitude = 1.3420532;
-    target.longitude = 103.679973;
+    // Blk 656 1.40051473033787, 103.75035123729965
+    target.latitude = 1.40051473033787;
+    target.longitude = 103.75035123729965;
     
 
     showLoadingScreen();
@@ -183,7 +184,7 @@ function selectOrange(){
         // Turning Orange On
         document.getElementById('orangeOff').id = 'orange';
         var content = document.getElementById('orange');
-        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
+        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.40051473033787; longitude: 103.75035123729965 animation-mixer/>'
     }
     
 
@@ -229,7 +230,7 @@ function showOrange(){
         // Turning Orange On
         document.getElementById('orangeOff').id = 'orange';
         var content = document.getElementById('orange')
-        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.3420532; longitude: 103.679973" animation-mixer/>'
+        content.innerHTML = '<a-entity id="orange" gltf-model="./static/3dModels/GLB/location3.glb" scale:"3 3 3" gps-projected-entity-place="latitude: 1.40051473033787; longitude: 103.75035123729965 animation-mixer/>'
     }
 }
 
@@ -603,13 +604,13 @@ function runCalculation(event) {
                 }
                 break;
             case 'green2':
-                if (distance < 5){ 
+                if (distance < 10){ 
                     hideGreen();
                     if(isViewed == false){
                         toggleModalGreen15();
                         isViewed = true; 
                     }
-                } else if (distance >= 5){
+                } else if (distance >= 10){
                     showGreen();
                 }
                 break;
@@ -627,13 +628,13 @@ function runCalculation(event) {
                 }
                 break;
             case 'orange2':
-                if (distance < 5){ 
+                if (distance < 10){ 
                     hideOrange();
                     if(isViewed == false){
                        toggleModalOrange15(); 
                         isViewed = true;
                     }
-                }else if (distance >= 5){
+                }else if (distance >= 10){
                     showOrange();
                 }
                 break;
