@@ -1,59 +1,36 @@
-import { auth } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import { doc, setDoc } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
 // Sign-up functionality
 const signupForm = document.getElementById('signup-form');
 if (signupForm) {
-  signupForm.addEventListener('submit', (e) => {
+  signupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const email = document.getElementById('signup-email').value;
     const password = document.getElementById('signup-password').value;
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        const user = userCredential.user;
-        alert('Signup successful! Welcome, ' + user.email);
-        signupForm.reset();
-      })
-      .catch((error) => {
-        alert('Error: ' + error.message);
+    try {
+      // Create user in Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      console.log("User created in Firebase Authentication:", user);
+
+      // Store user data in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        role: "user", // Default role is "user"
+        createdAt: new Date()
       });
-  });
-}
 
-// Login functionality
-const loginForm = document.getElementById('login-form');
-if (loginForm) {
-  loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        const user = userCredential.user;
-        alert('Login successful! Welcome back, ' + user.email);
-        loginForm.reset();
-      })
-      .catch((error) => {
-        alert('Error: ' + error.message);
-      });
-  });
-}
-
-// Logout functionality
-const logoutButton = document.getElementById('logout-button');
-if (logoutButton) {
-  logoutButton.addEventListener('click', () => {
-    signOut(auth)
-      .then(() => {
-        alert('Logged out successfully!');
-        window.location.href = "/index.html"; // Redirect to login page
-      })
-      .catch((error) => {
-        alert('Error: ' + error.message);
-      });
+      console.log("User data stored in Firestore:", user.uid);
+      alert('Signup successful! Welcome, ' + user.email);
+      signupForm.reset();
+    } catch (error) {
+      console.error("Error during signup:", error);
+      alert('Error: ' + error.message);
+    }
   });
 }
