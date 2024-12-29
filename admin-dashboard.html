@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="./static/CSS/admin.css">
+</head>
+<body>
+  <header>
+    <h1>Admin Dashboard</h1>
+    <button id="logout-button">Logout</button>
+  </header>
+
+  <main>
+    <section id="user-management">
+      <h2>User Management</h2>
+      <div id="user-list">
+        <!-- User list will be dynamically populated here -->
+      </div>
+    </section>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
+  <script src="./static/Javascript/firebase-config.js" type="module"></script>
+  <script src="./static/Javascript/admin.js" type="module"></script>
+</body>
+</html>
