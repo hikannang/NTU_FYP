@@ -11,27 +11,30 @@
   <div id="signup-container">
     <h1>Create an Account</h1>
     <form id="signup-form">
-      <!-- Step 1: Name -->
+      <!-- Back Arrow -->
+      <button type="button" id="back-arrow" style="display: none;">← Back</button>
+
+      <!-- Step 1: Email and Password -->
       <div class="step active" id="step-1">
-        <h2>Step 1: Your Name</h2>
-        <input type="text" id="first-name" placeholder="First Name" required>
-        <input type="text" id="last-name" placeholder="Last Name" required>
+        <h2>Step 1: Account Details</h2>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <input type="password" id="confirm-password" placeholder="Confirm Password" required>
         <button type="button" id="next-1">Next</button>
       </div>
 
-      <!-- Step 2: Email and Phone -->
+      <!-- Step 2: Personal Information -->
       <div class="step" id="step-2">
-        <h2>Step 2: Contact Information</h2>
-        <input type="email" id="email" placeholder="Email" required>
-        <input type="tel" id="phone" placeholder="Phone Number (8 digits)" required>
+        <h2>Step 2: Personal Information</h2>
+        <input type="text" id="first-name" placeholder="First Name" required>
+        <input type="text" id="last-name" placeholder="Last Name" required>
         <button type="button" id="next-2">Next</button>
       </div>
 
-      <!-- Step 3: License Information -->
+      <!-- Step 3: Contact Information -->
       <div class="step" id="step-3">
-        <h2>Step 3: License Information</h2>
-        <input type="text" id="license-number" placeholder="License Number" required>
-        <input type="date" id="license-issue-date" placeholder="Date of License Issue" required>
+        <h2>Step 3: Contact Information</h2>
+        <input type="tel" id="phone" placeholder="Phone Number (8 digits)" required>
         <button type="button" id="next-3">Next</button>
       </div>
 
@@ -42,9 +45,17 @@
         <button type="button" id="next-4">Next</button>
       </div>
 
-      <!-- Step 5: Card Information -->
+      <!-- Step 5: License Information -->
       <div class="step" id="step-5">
-        <h2>Step 5: Payment Information</h2>
+        <h2>Step 5: License Information</h2>
+        <input type="text" id="license-number" placeholder="License Number" required>
+        <input type="date" id="license-issue-date" placeholder="Date of License Issue" required>
+        <button type="button" id="next-5">Next</button>
+      </div>
+
+      <!-- Step 6: Payment Information -->
+      <div class="step" id="step-6">
+        <h2>Step 6: Payment Information</h2>
         <input type="text" id="card-number" placeholder="Card Number (16 digits)" required>
         <button type="submit">Sign Up</button>
       </div>
@@ -58,10 +69,10 @@
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
   <script src="./static/Javascript/firebase-config.js" type="module"></script>
   <script src="./static/Javascript/auth.js" type="module"></script>
-  <script src="./static/Javascript/user.js" type="module"></script>
   <script>
-    // Multi-step form logic with validation
+    // Multi-step form logic with back arrow
     const steps = document.querySelectorAll('.step');
+    const backArrow = document.getElementById('back-arrow');
     let currentStep = 0;
 
     function showStep(stepIndex) {
@@ -71,52 +82,34 @@
           step.classList.add('active');
         }
       });
+
+      // Show or hide the back arrow
+      backArrow.style.display = stepIndex > 0 ? 'inline-block' : 'none';
     }
 
     function validateStep(stepIndex) {
       if (stepIndex === 0) {
-        const firstName = document.getElementById('first-name').value.trim();
-        const lastName = document.getElementById('last-name').value.trim();
-        if (!firstName || !lastName) {
-          alert('Please fill in both First Name and Last Name.');
-          return false;
-        }
-      } else if (stepIndex === 1) {
         const email = document.getElementById('email').value.trim();
-        const phone = document.getElementById('phone').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const confirmPassword = document.getElementById('confirm-password').value.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
           alert('Please enter a valid email address.');
           return false;
         }
-        if (!/^\d{8}$/.test(phone)) {
-          alert('Phone number must be exactly 8 digits.');
+        if (!password || !confirmPassword) {
+          alert('Please fill in both password fields.');
           return false;
         }
-      } else if (stepIndex === 2) {
-        const licenseIssueDate = new Date(document.getElementById('license-issue-date').value);
-        const oneYearAgo = new Date();
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        if (licenseIssueDate > oneYearAgo) {
-          alert('License issue date must be more than 1 year ago.');
-          return false;
-        }
-      } else if (stepIndex === 3) {
-        const address = document.getElementById('address').value.trim();
-        if (!address) {
-          alert('Please fill in your address.');
-          return false;
-        }
-      } else if (stepIndex === 4) {
-        const cardNumber = document.getElementById('card-number').value.trim();
-        if (!/^\d{16}$/.test(cardNumber)) {
-          alert('Card number must be exactly 16 digits.');
+        if (password !== confirmPassword) {
+          alert('Passwords do not match.');
           return false;
         }
       }
       return true;
     }
 
+    // Next buttons
     document.getElementById('next-1').addEventListener('click', () => {
       if (validateStep(0)) {
         currentStep++;
@@ -125,22 +118,29 @@
     });
 
     document.getElementById('next-2').addEventListener('click', () => {
-      if (validateStep(1)) {
-        currentStep++;
-        showStep(currentStep);
-      }
+      currentStep++;
+      showStep(currentStep);
     });
 
     document.getElementById('next-3').addEventListener('click', () => {
-      if (validateStep(2)) {
-        currentStep++;
-        showStep(currentStep);
-      }
+      currentStep++;
+      showStep(currentStep);
     });
 
     document.getElementById('next-4').addEventListener('click', () => {
-      if (validateStep(3)) {
-        currentStep++;
+      currentStep++;
+      showStep(currentStep);
+    });
+
+    document.getElementById('next-5').addEventListener('click', () => {
+      currentStep++;
+      showStep(currentStep);
+    });
+
+    // Back arrow
+    backArrow.addEventListener('click', () => {
+      if (currentStep > 0) {
+        currentStep--;
         showStep(currentStep);
       }
     });
@@ -149,10 +149,8 @@
     const signupForm = document.getElementById('signup-form');
     signupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (validateStep(4)) {
-        alert('Form submitted successfully!');
-        // Firebase signup logic is handled in auth.js
-      }
+      alert('Redirecting to login page...');
+      window.location.href = "/index.html"; // Redirect to login page regardless of errors
     });
   </script>
 </body>
