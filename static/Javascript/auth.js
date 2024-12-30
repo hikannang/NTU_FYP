@@ -1,8 +1,14 @@
 import { auth, db } from "./firebase-config.js";
-import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
-import { doc, setDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut 
+} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import { doc, setDoc, getDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
-// Signup functionality
+//
+// SIGNUP FUNCTIONALITY
+//
 const signupForm = document.getElementById('signup-form');
 if (signupForm) {
   signupForm.addEventListener('submit', async (e) => {
@@ -70,6 +76,77 @@ if (signupForm) {
       } else {
         alert("Signup failed: " + error.message);
       }
+    }
+  });
+}
+
+//
+// LOGIN FUNCTIONALITY
+//
+const loginForm = document.getElementById('login-form');
+if (loginForm) {
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); // Prevent the form from refreshing the page
+
+    // Get email and password from the form
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+
+    try {
+      // Sign in the user with Firebase Authentication
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      console.log("User signed in:", user);
+
+      // Fetch the user's role from Firestore
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        console.log("User data from Firestore:", userData);
+
+        // Check the user's role and redirect accordingly
+        if (userData.role === "admin") {
+          window.location.href = "/admin-dashboard.html"; // Redirect to admin dashboard
+        } else {
+          window.location.href = "/user-dashboard.html"; // Redirect to user dashboard
+        }
+      } else {
+        console.error("No user document found in Firestore!");
+        alert("Error: User data not found. Please contact support.");
+      }
+    } catch (error) {
+      console.error("Error during login:", error);
+
+      // Handle specific Firebase Authentication errors
+      if (error.code === "auth/wrong-password" || error.code === "auth/user-not-found" || error.code === "auth/invalid-login-credentials") {
+        alert("The current Email and Password combination does not match any of our records, please try again.");
+      } else if (error.code === "auth/invalid-email") {
+        alert("The email address is not valid. Please check and try again.");
+      } else if (error.code === "auth/network-request-failed") {
+        alert("Network error: Please check your internet connection and try again.");
+      } else {
+        alert("Login failed: " + error.message); // Default error message for other cases
+      }
+    }
+  });
+}
+
+//
+// LOGOUT FUNCTIONALITY
+//
+const logoutButton = document.getElementById('logout-button');
+if (logoutButton) {
+  logoutButton.addEventListener('click', async () => {
+    try {
+      await signOut(auth);
+      alert("You have been logged out.");
+      window.location.href = "/index.html"; // Redirect to login page
+    } catch (error) {
+      console.error("Error during logout:", error);
+      alert("Logout failed: " + error.message);
     }
   });
 }
