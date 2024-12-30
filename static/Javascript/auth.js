@@ -2,41 +2,13 @@ import { auth, db } from "./firebase-config.js";
 import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 import { doc, setDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
-// Sign-up functionality
+// Signup functionality
 const signupForm = document.getElementById('signup-form');
-const backArrow = document.getElementById('back-arrow');
-const steps = document.querySelectorAll('.step');
-let currentStep = 0;
-
-// Function to show the current step
-function showStep(stepIndex) {
-  steps.forEach((step, index) => {
-    step.classList.remove('active');
-    if (index === stepIndex) {
-      step.classList.add('active');
-    }
-  });
-
-  // Show or hide the back arrow
-  backArrow.style.display = stepIndex > 0 ? 'inline-block' : 'none';
-}
-
-// Back arrow functionality
-if (backArrow) {
-  backArrow.addEventListener('click', () => {
-    if (currentStep > 0) {
-      currentStep--;
-      showStep(currentStep);
-    }
-  });
-}
-
-// Handle form submission
 if (signupForm) {
   signupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent the form from refreshing the page
 
-    // Collect all the data from the multi-step form
+    // Collect all the data from the form
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value.trim();
     const confirmPassword = document.getElementById('confirm-password').value.trim();
@@ -51,7 +23,6 @@ if (signupForm) {
     // Validate password and confirm password
     if (password !== confirmPassword) {
       alert("Passwords do not match. Please try again.");
-      window.location.href = "/index.html"; // Redirect to login page regardless of errors
       return;
     }
 
@@ -60,7 +31,6 @@ if (signupForm) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Log user data for debugging
       console.log("User created in Firebase Authentication:", user);
 
       // Store user data in Firestore
@@ -81,14 +51,25 @@ if (signupForm) {
 
       await setDoc(doc(db, "users", user.uid), userData);
 
-      alert('Signup successful! Welcome, ' + firstName + ' ' + lastName);
-      signupForm.reset();
-    } catch (error) {
-      alert('Error: ' + error.message);
-      console.error("Error during signup:", error);
-    } finally {
-      // Redirect to login page regardless of success or error
+      // Redirect to login page after successful signup
+      alert('Signup successful! Redirecting to login page...');
       window.location.href = "/index.html";
+    } catch (error) {
+      // Handle errors
+      console.error("Error during signup:", error);
+
+      // Display user-friendly error messages
+      if (error.code === "auth/email-already-in-use") {
+        alert("The email address is already in use. Please use a different email.");
+      } else if (error.code === "auth/invalid-email") {
+        alert("The email address is not valid. Please check and try again.");
+      } else if (error.code === "auth/weak-password") {
+        alert("The password is too weak. Please use a stronger password.");
+      } else if (error.code === "auth/network-request-failed") {
+        alert("Network error: Please check your internet connection and try again.");
+      } else {
+        alert("Signup failed: " + error.message);
+      }
     }
   });
 }

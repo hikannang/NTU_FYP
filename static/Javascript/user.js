@@ -2,39 +2,41 @@ import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
-const userEmailElement = document.getElementById('user-email');
-const userNameElement = document.getElementById('user-name'); // Add this element to your HTML
-const logoutButton = document.getElementById('logout-button');
+// Wait for the user to be authenticated
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    // User is signed in, fetch their data from Firestore
+    const userDocRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
 
-// Ensure the user is logged in, but exclude signup.html
-if (window.location.pathname !== '/signup.html') {
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      // Fetch user data from Firestore
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        if (userEmailElement) userEmailElement.textContent = userData.email;
-        if (userNameElement) userNameElement.textContent = `${userData.firstName} ${userData.lastName}`; // Display full name
-      } else {
-        alert("No user data found!");
-      }
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      console.log("User data from Firestore:", userData);
+
+      // Update the welcome message with the user's full name
+      const fullName = `${userData.firstName} ${userData.lastName}`;
+      document.getElementById("user-full-name").textContent = fullName;
     } else {
-      // Redirect to login page if not logged in
-      window.location.href = "/index.html";
+      console.error("No user document found in Firestore!");
+      alert("Error: User data not found. Please contact support.");
     }
-  });
-}
+  } else {
+    // User is not signed in, redirect to login page
+    window.location.href = "/index.html";
+  }
+});
 
 // Logout functionality
+const logoutButton = document.getElementById('logout-button');
 if (logoutButton) {
   logoutButton.addEventListener('click', async () => {
     try {
       await signOut(auth);
-      alert('Logged out successfully!');
+      alert("You have been logged out.");
       window.location.href = "/index.html"; // Redirect to login page
     } catch (error) {
-      alert('Error: ' + error.message);
+      console.error("Error during logout:", error);
+      alert("Logout failed: " + error.message);
     }
   });
 }
