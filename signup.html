@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up</title>
+  <!-- Link to external CSS -->
+  <link rel="stylesheet" href="./static/CSS/signup.css">
+</head>
+<body>
+  <div id="signup-container">
+    <h1>Create an Account</h1>
+    <form id="signup-form">
+      <!-- Step 1: Name -->
+      <div class="step active" id="step-1">
+        <h2>Step 1: Your Name</h2>
+        <input type="text" id="first-name" placeholder="First Name" required>
+        <input type="text" id="last-name" placeholder="Last Name" required>
+        <button type="button" id="next-1">Next</button>
+      </div>
+
+      <!-- Step 2: Email and Phone -->
+      <div class="step" id="step-2">
+        <h2>Step 2: Contact Information</h2>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="tel" id="phone" placeholder="Phone Number (8 digits)" required>
+        <button type="button" id="next-2">Next</button>
+      </div>
+
+      <!-- Step 3: License Information -->
+      <div class="step" id="step-3">
+        <h2>Step 3: License Information</h2>
+        <input type="text" id="license-number" placeholder="License Number" required>
+        <input type="date" id="license-issue-date" placeholder="Date of License Issue" required>
+        <button type="button" id="next-3">Next</button>
+      </div>
+
+      <!-- Step 4: Address -->
+      <div class="step" id="step-4">
+        <h2>Step 4: Address</h2>
+        <textarea id="address" placeholder="Address" rows="3" required></textarea>
+        <button type="button" id="next-4">Next</button>
+      </div>
+
+      <!-- Step 5: Card Information -->
+      <div class="step" id="step-5">
+        <h2>Step 5: Payment Information</h2>
+        <input type="text" id="card-number" placeholder="Card Number (16 digits)" required>
+        <button type="submit">Sign Up</button>
+      </div>
+    </form>
+    <p>Already have an account? <a href="/index.html">Click here to sign in!</a></p>
+  </div>
+
+  <!-- Firebase and App Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
+  <script src="./static/Javascript/firebase-config.js" type="module"></script>
+  <script src="./static/Javascript/auth.js" type="module"></script>
+  <script src="./static/Javascript/user.js" type="module"></script>
+  <script>
+    // Multi-step form logic with validation
+    const steps = document.querySelectorAll('.step');
+    let currentStep = 0;
+
+    function showStep(stepIndex) {
+      steps.forEach((step, index) => {
+        step.classList.remove('active');
+        if (index === stepIndex) {
+          step.classList.add('active');
+        }
+      });
+    }
+
+    function validateStep(stepIndex) {
+      if (stepIndex === 0) {
+        const firstName = document.getElementById('first-name').value.trim();
+        const lastName = document.getElementById('last-name').value.trim();
+        if (!firstName || !lastName) {
+          alert('Please fill in both First Name and Last Name.');
+          return false;
+        }
+      } else if (stepIndex === 1) {
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          alert('Please enter a valid email address.');
+          return false;
+        }
+        if (!/^\d{8}$/.test(phone)) {
+          alert('Phone number must be exactly 8 digits.');
+          return false;
+        }
+      } else if (stepIndex === 2) {
+        const licenseIssueDate = new Date(document.getElementById('license-issue-date').value);
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        if (licenseIssueDate > oneYearAgo) {
+          alert('License issue date must be more than 1 year ago.');
+          return false;
+        }
+      } else if (stepIndex === 3) {
+        const address = document.getElementById('address').value.trim();
+        if (!address) {
+          alert('Please fill in your address.');
+          return false;
+        }
+      } else if (stepIndex === 4) {
+        const cardNumber = document.getElementById('card-number').value.trim();
+        if (!/^\d{16}$/.test(cardNumber)) {
+          alert('Card number must be exactly 16 digits.');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    document.getElementById('next-1').addEventListener('click', () => {
+      if (validateStep(0)) {
+        currentStep++;
+        showStep(currentStep);
+      }
+    });
+
+    document.getElementById('next-2').addEventListener('click', () => {
+      if (validateStep(1)) {
+        currentStep++;
+        showStep(currentStep);
+      }
+    });
+
+    document.getElementById('next-3').addEventListener('click', () => {
+      if (validateStep(2)) {
+        currentStep++;
+        showStep(currentStep);
+      }
+    });
+
+    document.getElementById('next-4').addEventListener('click', () => {
+      if (validateStep(3)) {
+        currentStep++;
+        showStep(currentStep);
+      }
+    });
+
+    // Handle form submission
+    const signupForm = document.getElementById('signup-form');
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (validateStep(4)) {
+        alert('Form submitted successfully!');
+        // Firebase signup logic is handled in auth.js
+      }
+    });
+  </script>
+</body>
+</html>
