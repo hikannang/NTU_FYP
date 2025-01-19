@@ -3,61 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Cars Overview</title>
-  <link rel="stylesheet" href="./static/CSS/admin.css">
+  <title>Cars Overview</title>
+  <link rel="stylesheet" href="static/CSS/admin.css">
 </head>
 <body>
   <header>
     <h1>Cars Overview</h1>
-    <a href="admin-dashboard.html" class="back-button">Back to Dashboard</a>
+    <a href="admin-dashboard.html" class="nav-button">Back to Dashboard</a>
   </header>
-
   <main>
-    <!-- Cars Table Section -->
     <section id="cars-overview">
       <h2>All Cars</h2>
       <table id="cars-table">
         <thead>
           <tr>
-            <th>Car Model</th>
-            <th>Location</th>
-            <th>Price/Hour</th>
-            <th>Availability</th>
+            <th>Model ID</th>
+            <th>Address</th>
+            <th>Status</th>
+            <th>Service Due</th>
+            <th>Insurance Expiry</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <!-- Car details will be dynamically populated here -->
+          <!-- Rows will be dynamically populated -->
         </tbody>
       </table>
     </section>
   </main>
-
-  <!-- Bottom Navigation Bar -->
-  <nav class="bottom-nav">
-    <a href="admin-dashboard.html" class="nav-item">
-      <img src="./static/icons/dashboard-icon.svg" alt="Dashboard" />
-      <span>Dashboard</span>
-    </a>
-    <a href="admin-cars.html" class="nav-item active">
-      <img src="./static/icons/cars-icon.svg" alt="Cars" />
-      <span>Cars</span>
-    </a>
-    <a href="admin-users.html" class="nav-item">
-      <img src="./static/icons/users-icon.svg" alt="Users" />
-      <span>Users</span>
-    </a>
-    <a href="admin-bookings.html" class="nav-item">
-      <img src="./static/icons/bookings-icon.svg" alt="Bookings" />
-      <span>Bookings</span>
-    </a>
-  </nav>
-
-  <!-- Firebase and App Scripts -->
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
-  <script src="./static/Javascript/firebase-config.js" type="module"></script>
-  <script src="./static/Javascript/admin-cars.js" type="module"></script>
+  <footer>
+    <nav>
+      <a href="admin-dashboard.html">Dashboard</a>
+      <a href="admin-addCars.html">Add Car</a>
+      <a href="admin-users.html">Users</a>
+      <a href="admin-bookings.html">Bookings</a>
+    </nav>
+  </footer>
+  <script src="static/Javascript/firebase-config.js"></script>
+  <script src="static/Javascript/admin-cars.js"></script>
 </body>
 </html>

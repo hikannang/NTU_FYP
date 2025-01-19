@@ -1,38 +1,41 @@
-import { db } from "./firebase-config.js";
-import { collection, addDoc } from "firebase/firestore";
+import { db } from './firebase-config.js';
+import { collection, addDoc } from 'firebase/firestore';
+import { geocodeAddress } from './location_search/location.js';
 
-/**
- * Handle the form submission to add a new car.
- */
-document.getElementById("add-car-form").addEventListener("submit", async (event) => {
-  event.preventDefault(); // Prevent the default form submission behavior
+document.getElementById('add-car-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-  // Get form values
-  const carModel = document.getElementById("car-model").value.trim();
-  const carAddress = document.getElementById("car-address").value.trim();
-  const carPrice = parseFloat(document.getElementById("car-price").value);
-  const carAvailability = document.getElementById("car-availability").value === "true";
-  const carImage = document.getElementById("car-image").value.trim();
+  const modelId = document.getElementById('car-model').value;
+  const address = document.getElementById('car-address').value;
+  const latitude = parseFloat(document.getElementById('car-latitude').value);
+  const longitude = parseFloat(document.getElementById('car-longitude').value);
+  const status = document.getElementById('car-status').value;
+  const serviceDue = new Date(document.getElementById('service-due').value);
+  const insuranceExpiry = new Date(document.getElementById('insurance-expiry').value);
+
+  let carData = {
+    model_id: modelId,
+    address: address,
+    current_location: {
+      latitude: latitude,
+      longitude: longitude,
+    },
+    status: status,
+    service_due: serviceDue,
+    insurance_expiry: insuranceExpiry,
+  };
 
   try {
-    // Add the car to Firestore
-    const carsRef = collection(db, "cars");
-    await addDoc(carsRef, {
-      model_id: carModel,
-      address: carAddress,
-      price_per_hour: carPrice,
-      availability: carAvailability,
-      image_url: carImage || null, // Optional field
-      current_location: {
-        latitude: 0, // Placeholder, can be updated later
-        longitude: 0, // Placeholder, can be updated later
-      },
-    });
+    if (isNaN(latitude) || isNaN(longitude)) {
+      const location = await geocodeAddress(address);
+      carData.current_location = location;
+    }
 
-    alert("Car added successfully!");
-    document.getElementById("add-car-form").reset(); // Reset the form
+    await addDoc(collection(db, 'cars'), carData);
+    alert('Car added successfully!');
+    document.getElementById('add-car-form').reset();
   } catch (error) {
-    console.error("Error adding car:", error);
-    alert("An error occurred while adding the car. Please try again.");
+    console.error('Error adding car:', error);
+    alert('Failed to add car. Please try again.');
   }
 });
