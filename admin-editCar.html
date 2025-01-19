@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Add New Car</title>
+  <title>Edit Car</title>
   <link rel="stylesheet" href="./static/CSS/admin.css">
 </head>
 <body>
   <header>
-    <h1>Add New Car</h1>
+    <h1>Edit Car</h1>
     <a href="./admin-dashboard.html" class="nav-button">Back to Dashboard</a>
   </header>
   <main>
-    <section id="add-car-section">
-      <h2>Add New Car</h2>
-      <form id="add-car-form">
+    <section id="edit-car-section">
+      <h2>Edit Car</h2>
+      <form id="edit-car-form">
         <label for="car-model">Car Model ID</label>
         <input type="text" id="car-model" placeholder="Enter car model ID (e.g., model_1)" required />
 
@@ -40,7 +40,7 @@
         <label for="insurance-expiry">Insurance Expiry Date</label>
         <input type="date" id="insurance-expiry" required />
 
-        <button type="submit" id="add-car-button">Add Car</button>
+        <button type="submit" id="edit-car-button">Save Changes</button>
       </form>
     </section>
   </main>
@@ -53,6 +53,6 @@
     </nav>
   </footer>
   <script src="./static/Javascript/firebase-config.js" type="module"></script>
-  <script src="./static/Javascript/admin-addCars.js" type="module"></script>
+  <script src="./static/Javascript/admin-editCar.js" type="module"></script>
 </body>
 </html>
