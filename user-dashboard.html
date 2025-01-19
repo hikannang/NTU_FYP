@@ -13,11 +13,93 @@
   </header>
 
   <main>
-    <section id="welcome-section">
-      <h2>Welcome, <span id="user-full-name"></span>!</h2>
-      <p>This is your user dashboard. You can access your account details and other features here.</p>
+    <!-- Search Section -->
+    <section id="search-section">
+      <h2>Search for Cars</h2>
+      <!-- Row 1: Location Input -->
+      <div class="row">
+        <input
+          type="text"
+          id="location-input"
+          placeholder="Enter location or use current location"
+        />
+        <button id="current-location-button">Use Current Location</button>
+      </div>
+
+      <!-- Row 2: Date and Time Inputs -->
+      <div class="row">
+        <div class="input-group">
+          <label for="start-date">Start Date & Time</label>
+          <input type="datetime-local" id="start-date" />
+        </div>
+        <div class="input-group">
+          <label for="duration">Duration</label>
+          <div id="duration-wheel">
+            <div class="wheel">
+              <label for="hours">Hours</label>
+              <select id="hours">
+                <!-- Dynamically populate hours -->
+                <script>
+                  for (let i = 0; i <= 24; i++) {
+                    document.write(`<option value="${i}">${i} hr</option>`);
+                  }
+                </script>
+              </select>
+            </div>
+            <div class="wheel">
+              <label for="minutes">Minutes</label>
+              <select id="minutes">
+                <option value="0">0 min</option>
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="45">45 min</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Button -->
+      <div class="row">
+        <button id="search-button">Search</button>
+      </div>
+    </section>
+
+    <!-- Available Cars Section -->
+    <section id="available-cars-section">
+      <h2>Available Cars</h2>
+      <table id="available-cars-table">
+        <thead>
+          <tr>
+            <th>Car Model</th>
+            <th>Location</th>
+            <th>Distance</th>
+            <th>Price</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Car details will be dynamically populated here -->
+        </tbody>
+      </table>
     </section>
   </main>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="bottom-nav">
+    <a href="user-dashboard.html" class="nav-item">
+      <img src="./static/icons/search-icon.svg" alt="Search" />
+      <span>Search</span>
+    </a>
+    <a href="user-bookings.html" class="nav-item">
+      <img src="./static/icons/bookings-icon.svg" alt="Bookings" />
+      <span>Bookings</span>
+    </a>
+    <a href="user-profile.html" class="nav-item">
+      <img src="./static/icons/profile-icon.svg" alt="Profile" />
+      <span>Profile</span>
+    </a>
+  </nav>
 
   <!-- Firebase and App Scripts -->
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
@@ -25,5 +107,52 @@
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
   <script src="./static/Javascript/firebase-config.js" type="module"></script>
   <script src="./static/Javascript/user.js" type="module"></script>
+  <script src="./static/Javascript/location_search/location.js" type="module"></script>
+  <script src="./static/Javascript/location_search/search.js" type="module"></script>
+  <script src="./static/Javascript/location_search/table.js" type="module"></script>
+
+  <!-- Search Logic -->
+  <script type="module">
+    import { getCurrentLocation, geocodeAddress } from "./static/Javascript/location_search/location.js";
+    import { fetchAvailableCars } from "./static/Javascript/location_search/search.js";
+    import { populateTable } from "./static/Javascript/location_search/table.js";
+
+    const searchButton = document.getElementById("search-button");
+    const locationInput = document.getElementById("location-input");
+    const startDateInput = document.getElementById("start-date");
+    const hoursInput = document.getElementById("hours");
+    const minutesInput = document.getElementById("minutes");
+
+    searchButton.addEventListener("click", async () => {
+      try {
+        let userLocation;
+
+        // Get user location (either from input or current location)
+        if (locationInput.value.trim() !== "") {
+          userLocation = await geocodeAddress(locationInput.value.trim());
+        } else {
+          userLocation = await getCurrentLocation();
+        }
+
+        // Get start date and duration
+        const startDateTime = new Date(startDateInput.value);
+        const durationInMinutes =
+          parseInt(hoursInput.value) * 60 + parseInt(minutesInput.value);
+
+        // Fetch available cars
+        const availableCars = await fetchAvailableCars(
+          userLocation,
+          startDateTime,
+          durationInMinutes
+        );
+
+        // Populate the table with available cars
+        populateTable("available-cars-table", availableCars);
+      } catch (error) {
+        console.error("Error during search:", error);
+        alert("An error occurred while searching for cars. Please try again.");
+      }
+    });
+  </script>
 </body>
 </html>

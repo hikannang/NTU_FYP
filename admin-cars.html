@@ -3,38 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard</title>
+  <title>Admin - Cars Overview</title>
   <link rel="stylesheet" href="./static/CSS/admin.css">
 </head>
 <body>
   <header>
-    <h1>Admin Dashboard</h1>
-    <button id="logout-button">Logout</button>
+    <h1>Cars Overview</h1>
+    <a href="admin-dashboard.html" class="back-button">Back to Dashboard</a>
   </header>
 
   <main>
-    <!-- Admin Dashboard Navigation -->
-    <section id="admin-navigation">
-      <h2>Manage System</h2>
-      <div class="nav-buttons">
-        <!-- Button to navigate to Admin Cars Overview -->
-        <a href="admin-cars.html" class="nav-button">View All Cars</a>
-        <!-- Button to navigate to Add Cars Page -->
-        <a href="admin-addCars.html" class="nav-button">Add New Car</a>
-        <!-- Placeholder for other admin functionalities -->
-        <a href="admin-users.html" class="nav-button">Manage Users</a>
-        <a href="admin-bookings.html" class="nav-button">Manage Bookings</a>
-      </div>
+    <!-- Cars Table Section -->
+    <section id="cars-overview">
+      <h2>All Cars</h2>
+      <table id="cars-table">
+        <thead>
+          <tr>
+            <th>Car Model</th>
+            <th>Location</th>
+            <th>Price/Hour</th>
+            <th>Availability</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Car details will be dynamically populated here -->
+        </tbody>
+      </table>
     </section>
   </main>
 
   <!-- Bottom Navigation Bar -->
   <nav class="bottom-nav">
-    <a href="admin-dashboard.html" class="nav-item active">
+    <a href="admin-dashboard.html" class="nav-item">
       <img src="./static/icons/dashboard-icon.svg" alt="Dashboard" />
       <span>Dashboard</span>
     </a>
-    <a href="admin-cars.html" class="nav-item">
+    <a href="admin-cars.html" class="nav-item active">
       <img src="./static/icons/cars-icon.svg" alt="Cars" />
       <span>Cars</span>
     </a>
@@ -53,6 +58,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
   <script src="./static/Javascript/firebase-config.js" type="module"></script>
-  <script src="./static/Javascript/admin.js" type="module"></script>
+  <script src="./static/Javascript/admin-cars.js" type="module"></script>
 </body>
 </html>
