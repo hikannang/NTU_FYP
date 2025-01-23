@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add Car</title>
-  <link rel="stylesheet" href="static/CSS/admin.css">
-  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places"></script>
+  <link rel="stylesheet" href="static/CSS/admin-CarForm.css">
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places"></script>
 </head>
 <body>
   <div class="container">
@@ -37,17 +37,20 @@
       <label for="car-seats">Number of Seats:</label>
       <input type="text" id="car-seats" name="car-seats" readonly style="background-color: #e9ecef;">
 
+      <!-- Fuel Type -->
+      <label for="car-fuel-type">Fuel Type:</label>
+      <input type="text" id="car-fuel-type" name="car-fuel-type" readonly style="background-color: #e9ecef;">
+
       <!-- License Plate -->
       <label for="car-plate">License Plate:</label>
       <input type="text" id="car-plate" name="car-plate" placeholder="e.g., SMB123A" required>
       <span id="car-plate-error" class="error-message"></span>
 
-      <!-- Status -->
-      <label for="car-status">Status:</label>
+      <!-- Car Status -->
+      <label for="car-status">Car Status:</label>
       <select id="car-status" name="car-status" required>
         <option value="available">Available</option>
-        <option value="maintenance">Maintenance</option>
-        <option value="unavailable">Unavailable</option>
+        <option value="not available">Not Available</option>
       </select>
 
       <!-- Service Due Date -->
@@ -63,7 +66,7 @@
     </form>
   </div>
 
-  <script src="static/Javascript/firebase-config.js" type="module"></script>
-  <script src="static/Javascript/admin-addCars.js" type="module"></script>
+  <script src="./static/Javascript/firebase-config.js" type="module"></script>
+  <script src="./static/Javascript/admin-addCars.js" type="module"></script>
 </body>
 </html>

@@ -1,10 +1,10 @@
 // Import necessary Firebase modules
 import { db } from './firebase-config.js';
-import { collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+import { collection, doc, getDoc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
 // Geocoding function
 async function geocodeAddress(address) {
-  const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=YOUR_GOOGLE_MAPS_API_KEY`);
+  const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc`);
   const data = await response.json();
   if (data.status === 'OK') {
     const location = data.results[0].geometry.location;
@@ -22,6 +22,7 @@ async function populateCarModels() {
   const carTypeSelect = document.getElementById('car-type');
   const carColorInput = document.getElementById('car-color');
   const carSeatsInput = document.getElementById('car-seats');
+  const carFuelTypeInput = document.getElementById('car-fuel-type');
   try {
     const carModelsSnapshot = await getDocs(collection(db, 'car_models'));
     carModelsSnapshot.forEach((doc) => {
@@ -36,6 +37,7 @@ async function populateCarModels() {
       const selectedModel = carModelsSnapshot.docs.find(doc => doc.data().name === carTypeSelect.value).data();
       carColorInput.value = selectedModel.color;
       carSeatsInput.value = selectedModel.seating_capacity;
+      carFuelTypeInput.value = selectedModel.fuel_type;
     });
 
     // Trigger change event to populate initial values
@@ -69,7 +71,7 @@ document.getElementById('use-current-location').addEventListener('click', async 
       document.getElementById('car-longitude').value = longitude;
 
       // Reverse geocode to get the address
-      const apiUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=YOUR_GOOGLE_MAPS_API_KEY`;
+      const apiUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc`;
       try {
         const response = await fetch(apiUrl);
         const data = await response.json();
@@ -90,6 +92,22 @@ document.getElementById('use-current-location').addEventListener('click', async 
   }
 });
 
+// Function to get the next car ID
+async function getNextCarID() {
+  const carIDDocRef = doc(db, 'metadata', 'carID');
+  const carIDDoc = await getDoc(carIDDocRef);
+  if (carIDDoc.exists()) {
+    const currentID = carIDDoc.data().lastID;
+    const nextID = currentID + 1;
+    await setDoc(carIDDocRef, { lastID: nextID });
+    return nextID;
+  } else {
+    // If the document does not exist, create it with the initial ID
+    await setDoc(carIDDocRef, { lastID: 1 });
+    return 1;
+  }
+}
+
 // Form submission handler
 document.getElementById('add-car-form').addEventListener('submit', async (e) => {
   e.preventDefault(); // Prevent default form submission behavior
@@ -101,6 +119,7 @@ document.getElementById('add-car-form').addEventListener('submit', async (e) => 
   const carType = document.getElementById('car-type').value;
   const carColor = document.getElementById('car-color').value;
   const carSeats = parseInt(document.getElementById('car-seats').value, 10);
+  const carFuelType = document.getElementById('car-fuel-type').value;
   const licensePlate = document.getElementById('car-plate').value.trim();
   const status = document.getElementById('car-status').value;
   const serviceDue = document.getElementById('service-due').value;
@@ -144,6 +163,7 @@ document.getElementById('add-car-form').addEventListener('submit', async (e) => 
     car_type: carType,
     car_color: carColor,
     seating_capacity: carSeats,
+    fuel_type: carFuelType,
     license_plate: licensePlate,
     status: status,
     service_due: new Date(serviceDue),
@@ -151,8 +171,11 @@ document.getElementById('add-car-form').addEventListener('submit', async (e) => 
   };
 
   try {
-    // Add car data to Firestore
-    await addDoc(collection(db, 'cars'), carData);
+    // Get the next car ID
+    const carID = await getNextCarID();
+
+    // Add car data to Firestore with carID as the document ID
+    await setDoc(doc(db, 'cars', carID.toString()), carData);
 
     // Success feedback
     alert('Car added successfully!');
