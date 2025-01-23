@@ -5,14 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add Car</title>
   <link rel="stylesheet" href="static/CSS/admin.css">
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places"></script>
 </head>
 <body>
   <div class="container">
     <h1>Add a New Car</h1>
     <form id="add-car-form">
-      
-
       <!-- Car Location Address -->
       <label for="car-address">Car Location Address:</label>
       <input type="text" id="car-address" name="car-address" placeholder="Enter address or postal code" required autocomplete="off">
@@ -28,16 +26,16 @@
       <!-- Car Type -->
       <label for="car-type">Car Type:</label>
       <select id="car-type" name="car-type" required>
-        <option value="Petrol">Petrol</option>
-        <option value="Electric">Electric</option>
+        <!-- Options will be populated dynamically -->
       </select>
+
+      <!-- Car Color -->
+      <label for="car-color">Car Color:</label>
+      <input type="text" id="car-color" name="car-color" readonly style="background-color: #e9ecef;">
 
       <!-- Number of Seats -->
       <label for="car-seats">Number of Seats:</label>
-      <select id="car-seats" name="car-seats" required>
-        <option value="5">5</option>
-        <option value="7">7</option>
-      </select>
+      <input type="text" id="car-seats" name="car-seats" readonly style="background-color: #e9ecef;">
 
       <!-- License Plate -->
       <label for="car-plate">License Plate:</label>
@@ -65,44 +63,7 @@
     </form>
   </div>
 
-  <script>
-    // Initialize Google Places Autocomplete for the address input
-    const addressInput = document.getElementById('car-address');
-    const autocomplete = new google.maps.places.Autocomplete(addressInput, { componentRestrictions: { country: 'SG' } });
-
-    // Use Current Location Button
-    document.getElementById('use-current-location').addEventListener('click', async () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-          const latitude = position.coords.latitude;
-          const longitude = position.coords.longitude;
-
-          // Populate latitude and longitude fields
-          document.getElementById('car-latitude').value = latitude;
-          document.getElementById('car-longitude').value = longitude;
-
-          // Reverse geocode to get the address
-          const apiUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc`;
-          try {
-            const response = await fetch(apiUrl);
-            const data = await response.json();
-            if (data.status === 'OK') {
-              document.getElementById('car-address').value = data.results[0].formatted_address;
-            } else {
-              alert('Failed to retrieve address from coordinates.');
-            }
-          } catch (error) {
-            console.error('Error reverse geocoding:', error);
-            alert('Error retrieving address from coordinates.');
-          }
-        }, (error) => {
-          alert('Error retrieving current location: ' + error.message);
-        });
-      } else {
-        alert('Geolocation is not supported by this browser.');
-      }
-    });
-  </script>
-  <script src="static/Javascript/admin-addCars.js"></script>
+  <script src="static/Javascript/firebase-config.js" type="module"></script>
+  <script src="static/Javascript/admin-addCars.js" type="module"></script>
 </body>
 </html>
