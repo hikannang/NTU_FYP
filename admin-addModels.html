@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add New Car Model</title>
+  <link rel="stylesheet" href="static/CSS/admin-CarForm.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Add New Car Model</h1>
+    <form id="add-car-model-form">
+      <!-- Car Model Name -->
+      <label for="car-model-name">Car Model Name:</label>
+      <input type="text" id="car-model-name" name="car-model-name" placeholder="Enter car model name" required>
+
+      <!-- Car Color -->
+      <label for="car-color">Car Color:</label>
+      <input type="text" id="car-color" name="car-color" placeholder="Enter car color" required>
+
+      <!-- Fuel Type -->
+      <label for="fuel-type">Fuel Type:</label>
+      <select id="fuel-type" name="fuel-type" required>
+        <option value="Petrol">Petrol</option>
+        <option value="Electric">Electric</option>
+      </select>
+
+      <!-- Seating Capacity -->
+      <label for="seating-capacity">Seating Capacity:</label>
+      <select id="seating-capacity" name="seating-capacity" required>
+        <option value="5">5</option>
+        <option value="7">7</option>
+      </select>
+
+      <!-- Large Luggage Space -->
+      <label for="large-luggage">Large Luggage Space:</label>
+      <input type="number" id="large-luggage" name="large-luggage" placeholder="Enter large luggage capacity" required>
+
+      <!-- Small Luggage Space -->
+      <label for="small-luggage">Small Luggage Space:</label>
+      <input type="number" id="small-luggage" name="small-luggage" placeholder="Enter small luggage capacity" required>
+
+      <!-- Car Image -->
+      <label for="car-image">Car Image:</label>
+      <input type="file" id="car-image" name="car-image" accept="image/*" required>
+      <span id="image-upload-status"></span>
+
+      <!-- Submit Button -->
+      <button type="submit">Add Car Model</button>
+    </form>
+  </div>
+
+  <script src="static/Javascript/firebase-config.js" type="module"></script>
+  <script src="static/Javascript/admin-addModels.js" type="module"></script>
+</body>
+</html>
