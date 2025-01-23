@@ -109,9 +109,9 @@ if (loginForm) {
 
         // Check the user's role and redirect accordingly
         if (userData.role === "admin") {
-          window.location.href = "/admin-dashboard.html"; // Redirect to admin dashboard
+          window.location.href = "./admin-dashboard.html"; // Redirect to admin dashboard
         } else {
-          window.location.href = "/user-dashboard.html"; // Redirect to user dashboard
+          window.location.href = "./user-dashboard.html"; // Redirect to user dashboard
         }
       } else {
         console.error("No user document found in Firestore!");
