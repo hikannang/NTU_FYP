@@ -4,13 +4,45 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="./static/CSS/admin-CarForm.css">
+  <link rel="stylesheet" href="./static/CSS/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css">
+  <style>
+    /* Additional styles for beautification */
+    .car-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .car-table th, .car-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .car-table th {
+      background-color: #f2f2f2;
+    }
+
+    .car-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .car-table tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    .status-available {
+      color: green;
+    }
+
+    .status-not-available {
+      color: red;
+    }
+  </style>
 </head>
 <body>
-  <header>
-    <h1>Admin Dashboard</h1>
-    <button id="logout-button">Logout</button>
-  </header>
+  <div id="header"></div>
 
   <main>
     <!-- Admin Dashboard Navigation -->
@@ -21,40 +53,83 @@
         <a href="admin-cars.html" class="nav-button">View All Cars</a>
         <!-- Button to navigate to Add Cars Page -->
         <a href="admin-addCars.html" class="nav-button">Add New Car</a>
-         <!-- Button to navigate to Add Car Models Page -->
-         <a href="admin-addModels.html" class="nav-button">Add New Model</a>
+        <!-- Button to navigate to Add Car Models Page -->
+        <a href="admin-addModels.html" class="nav-button">Add New Model</a>
         <!-- Placeholder for other admin functionalities -->
         <a href="admin-users.html" class="nav-button">Manage Users</a>
         <a href="admin-bookings.html" class="nav-button">Manage Bookings</a>
       </div>
     </section>
+
+    <!-- Cars Overview Section -->
+    <section id="cars-overview">
+      <h2>All Cars</h2>
+      <table class="car-table">
+        <thead>
+          <tr>
+            <th>Car ID</th>
+            <th>Address</th>
+            <th>Car Plate</th>
+            <th>Status</th>
+            <th>Service Due</th>
+            <th>Insurance Expiry</th>
+            <th>Availability</th>
+          </tr>
+        </thead>
+        <tbody id="cars-table-body">
+          <!-- Rows will be dynamically populated -->
+        </tbody>
+      </table>
+    </section>
   </main>
 
-  <!-- Bottom Navigation Bar -->
-  <nav class="bottom-nav">
-    <a href="admin-dashboard.html" class="nav-item active">
-      <img src="./static/icons/dashboard-icon.svg" alt="Dashboard" />
-      <span>Dashboard</span>
-    </a>
-    <a href="admin-cars.html" class="nav-item">
-      <img src="./static/icons/cars-icon.svg" alt="Cars" />
-      <span>Cars</span>
-    </a>
-    <a href="admin-users.html" class="nav-item">
-      <img src="./static/icons/users-icon.svg" alt="Users" />
-      <span>Users</span>
-    </a>
-    <a href="admin-bookings.html" class="nav-item">
-      <img src="./static/icons/bookings-icon.svg" alt="Bookings" />
-      <span>Bookings</span>
-    </a>
-  </nav>
+  <div id="footer"></div>
 
-  <!-- Firebase and App Scripts -->
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
-  <script src="./static/Javascript/firebase-config.js" type="module"></script>
-  <script src="./static/Javascript/admin.js" type="module"></script>
+  <script type="module">
+    import { checkAdmin } from './static/Javascript/auth.js';
+    import { db } from './static/Javascript/firebase-config.js';
+    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+    // Load header and footer
+    document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
+    document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
+
+    // Check if the user is an admin
+    try {
+      const userData = await checkAdmin();
+      document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
+    } catch (error) {
+      alert(error);
+      window.location.href = "/index.html";
+    }
+
+    // Function to populate the cars table
+    async function populateCarsTable() {
+      const carsTableBody = document.getElementById('cars-table-body');
+      try {
+        const carsSnapshot = await getDocs(collection(db, 'cars'));
+        carsSnapshot.forEach((doc) => {
+          const car = doc.data();
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${doc.id}</td>
+            <td>${car.address}</td>
+            <td>${car.license_plate}</td>
+            <td class="${car.status === 'available' ? 'status-available' : 'status-not-available'}">${car.status}</td>
+            <td>${new Date(car.service_due.seconds * 1000).toLocaleDateString()}</td>
+            <td>${new Date(car.insurance_expiry.seconds * 1000).toLocaleDateString()}</td>
+            <td>${car.status === 'available' ? 'Available' : 'Not Available'}</td>
+          `;
+          carsTableBody.appendChild(row);
+        });
+      } catch (error) {
+        console.error('Error fetching cars:', error);
+        alert('Failed to load cars. Please try again.');
+      }
+    }
+
+    // Populate cars table on page load
+    populateCarsTable();
+  </script>
 </body>
 </html>

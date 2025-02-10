@@ -1,0 +1,26 @@
+<header>
+  <h1>User Dashboard</h1>
+  <button id="logout-button">Logout</button>
+</header>
+<nav class="bottom-nav">
+  <a href="user-dashboard.html" class="nav-item active">
+      <i class="bi bi-search"></i>
+      <span>Search</span>
+  </a>
+  <a href="user-bookings.html" class="nav-item">
+      <i class="bi bi-calendar-check"></i>
+      <span>Bookings</span>
+  </a>
+  <a href="user-profile.html" class="nav-item">
+      <i class="bi bi-person"></i>
+      <span>Profile</span>
+  </a>
+</nav>
+<script type="module">
+  import { logout } from '../static/Javascript/auth.js';
+
+  // Attach logout event listener
+  document.getElementById('logout-button').addEventListener('click', () => {
+      logout();
+  });
+</script>

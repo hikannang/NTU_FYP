@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css">
+
+<header>
+  <h1>Admin Dashboard</h1>
+  <span id="welcome-message"></span>
+  <button id="logout-button">Logout</button>
+</header>
+<nav class="bottom-nav">
+  <a href="admin-dashboard.html" class="nav-item active">
+      <i class="bi bi-speedometer2"></i>
+      <span>Dashboard</span>
+  </a>
+  <a href="admin-cars.html" class="nav-item">
+      <i class="bi bi-car"></i>
+      <span>Cars</span>
+  </a>
+  <a href="admin-users.html" class="nav-item">
+      <i class="bi bi-people"></i>
+      <span>Users</span>
+  </a>
+  <a href="admin-bookings.html" class="nav-item">
+      <i class="bi bi-calendar-check"></i>
+      <span>Bookings</span>
+  </a>
+</nav>
+<script type="module">
+  import { logout } from '../static/Javascript/auth.js';
+
+  // Attach logout event listener
+  document.getElementById('logout-button').addEventListener('click', () => {
+      logout();
+  });
+</script>

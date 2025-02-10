@@ -4,17 +4,7 @@ import { collection, doc, getDoc, setDoc, getDocs } from "https://www.gstatic.co
 
 // Geocoding function
 async function geocodeAddress(address) {
-  const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc`);
-  const data = await response.json();
-  if (data.status === 'OK') {
-    const location = data.results[0].geometry.location;
-    return {
-      latitude: location.lat,
-      longitude: location.lng
-    };
-  } else {
-    throw new Error('Geocoding failed');
-  }
+  // Implement geocoding logic here
 }
 
 // Populate car models dropdown
@@ -71,7 +61,7 @@ document.getElementById('use-current-location').addEventListener('click', async 
       document.getElementById('car-longitude').value = longitude;
 
       // Reverse geocode to get the address
-      const apiUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc`;
+      const apiUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=YOUR_API_KEY`;
       try {
         const response = await fetch(apiUrl);
         const data = await response.json();
@@ -106,6 +96,19 @@ async function getNextCarID() {
     await setDoc(carIDDocRef, { lastID: 1 });
     return 1;
   }
+}
+
+// Function to create a time sheet for the car
+async function createTimeSheet(carID) {
+  const timeSheetRef = collection(db, 'time_slots', carID.toString(), 'time_slots');
+  const initialTimeSlots = {
+    available: [],
+    booked: [],
+    price_per_slot: 10.0 // Example price per slot
+  };
+
+  // Create initial time slots for the car
+  await setDoc(doc(timeSheetRef, 'initial'), initialTimeSlots);
 }
 
 // Form submission handler
@@ -176,6 +179,9 @@ document.getElementById('add-car-form').addEventListener('submit', async (e) => 
 
     // Add car data to Firestore with carID as the document ID
     await setDoc(doc(db, 'cars', carID.toString()), carData);
+
+    // Create a time sheet for the car
+    await createTimeSheet(carID);
 
     // Success feedback
     alert('Car added successfully!');

@@ -8,65 +8,86 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>Add a New Car</h1>
-    <form id="add-car-form">
-      <!-- Car Location Address -->
-      <label for="car-address">Car Location Address:</label>
-      <input type="text" id="car-address" name="car-address" placeholder="Enter address or postal code" required autocomplete="off">
-      <span id="geocoding-status" class="status-message"></span>
+  <div id="header"></div>
 
-      <!-- Latitude and Longitude -->
-      <label for="car-latitude">Latitude:</label>
-      <input type="number" id="car-latitude" name="car-latitude" step="any" placeholder="Optional">
-      <label for="car-longitude">Longitude:</label>
-      <input type="number" id="car-longitude" name="car-longitude" step="any" placeholder="Optional">
-      <button type="button" id="use-current-location">Use Current Location</button>
+  <main>
+    <div class="container">
+      <h1>Add a New Car</h1>
+      <form id="add-car-form">
+        <!-- Car Location Address -->
+        <label for="car-address">Car Location Address:</label>
+        <input type="text" id="car-address" name="car-address" placeholder="Enter address or postal code" required autocomplete="off">
+        <span id="geocoding-status" class="status-message"></span>
 
-      <!-- Car Type -->
-      <label for="car-type">Car Type:</label>
-      <select id="car-type" name="car-type" required>
-        <!-- Options will be populated dynamically -->
-      </select>
+        <!-- Latitude and Longitude -->
+        <label for="car-latitude">Latitude:</label>
+        <input type="number" id="car-latitude" name="car-latitude" step="any" placeholder="Optional">
+        <label for="car-longitude">Longitude:</label>
+        <input type="number" id="car-longitude" name="car-longitude" step="any" placeholder="Optional">
+        <button type="button" id="use-current-location">Use Current Location</button>
 
-      <!-- Car Color -->
-      <label for="car-color">Car Color:</label>
-      <input type="text" id="car-color" name="car-color" readonly style="background-color: #e9ecef;">
+        <!-- Car Type -->
+        <label for="car-type">Car Type:</label>
+        <select id="car-type" name="car-type" required>
+          <!-- Options will be populated dynamically -->
+        </select>
 
-      <!-- Number of Seats -->
-      <label for="car-seats">Number of Seats:</label>
-      <input type="text" id="car-seats" name="car-seats" readonly style="background-color: #e9ecef;">
+        <!-- Car Color -->
+        <label for="car-color">Car Color:</label>
+        <input type="text" id="car-color" name="car-color" readonly style="background-color: #e9ecef;">
 
-      <!-- Fuel Type -->
-      <label for="car-fuel-type">Fuel Type:</label>
-      <input type="text" id="car-fuel-type" name="car-fuel-type" readonly style="background-color: #e9ecef;">
+        <!-- Number of Seats -->
+        <label for="car-seats">Number of Seats:</label>
+        <input type="text" id="car-seats" name="car-seats" readonly style="background-color: #e9ecef;">
 
-      <!-- License Plate -->
-      <label for="car-plate">License Plate:</label>
-      <input type="text" id="car-plate" name="car-plate" placeholder="e.g., SMB123A" required>
-      <span id="car-plate-error" class="error-message"></span>
+        <!-- Fuel Type -->
+        <label for="car-fuel-type">Fuel Type:</label>
+        <input type="text" id="car-fuel-type" name="car-fuel-type" readonly style="background-color: #e9ecef;">
 
-      <!-- Car Status -->
-      <label for="car-status">Car Status:</label>
-      <select id="car-status" name="car-status" required>
-        <option value="available">Available</option>
-        <option value="not available">Not Available</option>
-      </select>
+        <!-- License Plate -->
+        <label for="car-plate">License Plate:</label>
+        <input type="text" id="car-plate" name="car-plate" placeholder="e.g., SMB123A" required>
+        <span id="car-plate-error" class="error-message"></span>
 
-      <!-- Service Due Date -->
-      <label for="service-due">Service Due Date:</label>
-      <input type="date" id="service-due" name="service-due" required>
+        <!-- Car Status -->
+        <label for="car-status">Car Status:</label>
+        <select id="car-status" name="car-status" required>
+          <option value="available">Available</option>
+          <option value="not available">Not Available</option>
+        </select>
 
-      <!-- Insurance Expiry Date -->
-      <label for="insurance-expiry">Insurance Expiry Date:</label>
-      <input type="date" id="insurance-expiry" name="insurance-expiry" required>
+        <!-- Service Due Date -->
+        <label for="service-due">Service Due Date:</label>
+        <input type="date" id="service-due" name="service-due" required>
 
-      <!-- Submit Button -->
-      <button type="submit">Add Car</button>
-    </form>
-  </div>
+        <!-- Insurance Expiry Date -->
+        <label for="insurance-expiry">Insurance Expiry Date:</label>
+        <input type="date" id="insurance-expiry" name="insurance-expiry" required>
 
-  <script src="./static/Javascript/firebase-config.js" type="module"></script>
+        <!-- Submit Button -->
+        <button type="submit">Add Car</button>
+      </form>
+    </div>
+  </main>
+
+  <div id="footer"></div>
+
+  <script type="module">
+    import { checkAdmin } from './static/Javascript/auth.js';
+
+    // Load header and footer
+    document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
+    document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
+
+    // Check if the user is an admin
+    try {
+      const userData = await checkAdmin();
+      document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
+    } catch (error) {
+      alert(error);
+      window.location.href = "/index.html";
+    }
+  </script>
   <script src="./static/Javascript/admin-addCars.js" type="module"></script>
 </body>
 </html>

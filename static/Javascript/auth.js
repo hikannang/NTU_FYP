@@ -2,7 +2,8 @@ import { auth, db } from "./firebase-config.js";
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
-  signOut 
+  signOut, 
+  onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 import { doc, setDoc, getDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
@@ -54,7 +55,6 @@ if (signupForm) {
       };
 
       console.log("User data being written to Firestore:", userData);
-
       await setDoc(doc(db, "users", user.uid), userData);
 
       // Redirect to login page after successful signup
@@ -135,18 +135,36 @@ if (loginForm) {
 }
 
 //
+// CHECK ADMIN FUNCTIONALITY
+//
+export async function checkAdmin() {
+  return new Promise((resolve, reject) => {
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists() && userDoc.data().role === "admin") {
+          resolve(userDoc.data());
+        } else {
+          reject("Access denied. Admins only.");
+        }
+      } else {
+        reject("You must be logged in.");
+      }
+    });
+  });
+}
+
+//
 // LOGOUT FUNCTIONALITY
 //
-const logoutButton = document.getElementById('logout-button');
-if (logoutButton) {
-  logoutButton.addEventListener('click', async () => {
-    try {
-      await signOut(auth);
-      alert("You have been logged out.");
-      window.location.href = "/index.html"; // Redirect to login page
-    } catch (error) {
-      console.error("Error during logout:", error);
-      alert("Logout failed: " + error.message);
-    }
-  });
+export async function logout() {
+  try {
+    await signOut(auth);
+    alert("You have been logged out.");
+    window.location.href = "/index.html"; // Redirect to login page
+  } catch (error) {
+    console.error("Error during logout:", error);
+    alert("Logout failed: " + error.message);
+  }
 }

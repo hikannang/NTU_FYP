@@ -69,3 +69,10 @@ body {
   button:hover {
     background-color: #0056b3;
   }
+
+  /* admin.css */
+@media (max-width: 768px) {
+  #welcome-message {
+    display: none;
+  }
+}
