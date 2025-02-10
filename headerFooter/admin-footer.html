@@ -1,9 +1,75 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+  footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 10px 0;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+  }
+
+  footer nav {
+    display: flex;
+    justify-content: space-around;
+  }
+
+  footer nav a {
+    color: white;
+    text-decoration: none;
+    text-align: center;
+    flex: 1;
+  }
+
+  footer nav a:hover {
+    background-color: #444;
+  }
+
+  footer nav i {
+    display: block;
+    font-size: 24px;
+    margin-bottom: 5px;
+  }
+
+  footer nav span {
+    display: block;
+  }
+
+  @media (max-width: 768px) {
+    footer nav {
+      flex-direction: row;
+    }
+
+    footer nav span {
+      display: none;
+    }
+  }
+</style>
+
 <footer>
-    <nav>
-      <a href="admin-dashboard.html">Dashboard</a>
-      <a href="admin-addCars.html">Add Car</a>
-      <a href="admin-addModels.html">Add Models</a>
-      <a href="admin-users.html">Users</a>
-      <a href="admin-bookings.html">Bookings</a>
-    </nav>
-  </footer>
+  <nav>
+    <a href="admin-dashboard.html">
+      <i class="bi bi-speedometer2"></i>
+      <span>Dashboard</span>
+    </a>
+    <a href="admin-addCars.html">
+      <i class="bi bi-car-front"></i>
+
+      <span>Add Car</span>
+    </a>
+    <a href="admin-addModels.html">
+      <i class="bi bi-plus-circle"></i>
+      <span>Add Models</span>
+    </a>
+    <a href="admin-users.html">
+      <i class="bi bi-people"></i>
+      <span>Users</span>
+    </a>
+    <a href="admin-bookings.html">
+      <i class="bi bi-calendar-check"></i>
+      <span>Bookings</span>
+    </a>
+  </nav>
+</footer>

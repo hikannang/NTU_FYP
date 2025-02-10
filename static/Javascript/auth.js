@@ -135,6 +135,20 @@ if (loginForm) {
 }
 
 //
+// LOGOUT FUNCTIONALITY
+//
+export async function logout() {
+  try {
+    await signOut(auth);
+    alert("You have been logged out.");
+    window.location.href = "/index.html"; // Redirect to login page
+  } catch (error) {
+    console.error("Error during logout:", error);
+    alert("Logout failed: " + error.message);
+  }
+}
+
+//
 // CHECK ADMIN FUNCTIONALITY
 //
 export async function checkAdmin() {
@@ -153,18 +167,4 @@ export async function checkAdmin() {
       }
     });
   });
-}
-
-//
-// LOGOUT FUNCTIONALITY
-//
-export async function logout() {
-  try {
-    await signOut(auth);
-    alert("You have been logged out.");
-    window.location.href = "/index.html"; // Redirect to login page
-  } catch (error) {
-    console.error("Error during logout:", error);
-    alert("Logout failed: " + error.message);
-  }
 }

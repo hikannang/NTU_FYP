@@ -1,33 +1,132 @@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+  header {
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  header h1 {
+    margin: 0;
+    flex: 1;
+    text-align: center;
+  }
+
+  header button {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 50px; /* Pill shape */
+    margin-left: 20px; /* Space between welcome message and button */
+  }
+
+  header button:hover {
+    background-color: #cc0000;
+  }
+
+  .bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    background-color: #333;
+    padding: 10px 0;
+  }
+
+  .bottom-nav a {
+    color: white;
+    text-decoration: none;
+    text-align: center;
+    flex: 1;
+  }
+
+  .bottom-nav a:hover {
+    background-color: #444;
+  }
+
+  .bottom-nav i {
+    display: block;
+    font-size: 24px;
+    margin-bottom: 5px;
+  }
+
+  .bottom-nav span {
+    display: block;
+  }
+
+  @media (max-width: 768px) {
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .bottom-nav {
+      flex-direction: row;
+    }
+
+    .bottom-nav span {
+      display: none;
+    }
+  }
+</style>
 
 <header>
-  <h1>Admin Dashboard</h1>
+  <h1 id="page-title">Admin Portal</h1>
   <span id="welcome-message"></span>
   <button id="logout-button">Logout</button>
 </header>
 <nav class="bottom-nav">
-  <a href="admin-dashboard.html" class="nav-item active">
+  <a href="../admin-dashboard.html" class="nav-item active">
       <i class="bi bi-speedometer2"></i>
       <span>Dashboard</span>
   </a>
-  <a href="admin-cars.html" class="nav-item">
-      <i class="bi bi-car"></i>
+  <a href="../admin-cars.html" class="nav-item">
+      <i class="bi bi-car-front"></i>
       <span>Cars</span>
   </a>
-  <a href="admin-users.html" class="nav-item">
+  <a href="../admin-users.html" class="nav-item">
       <i class="bi bi-people"></i>
       <span>Users</span>
   </a>
-  <a href="admin-bookings.html" class="nav-item">
+  <a href="../admin-bookings.html" class="nav-item">
       <i class="bi bi-calendar-check"></i>
       <span>Bookings</span>
   </a>
 </nav>
 <script type="module">
-  import { logout } from '../static/Javascript/auth.js';
+  import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBvSNS37RNg1L1hO7u76z1N_4pEExKbjhU",
+    authDomain: "bao-car-liao.firebaseapp.com",
+    projectId: "bao-car-liao",
+    storageBucket: "bao-car-liao.appspot.com",
+    messagingSenderId: "584996100412",
+    appId: "1:584996100412:web:b072712450169f6ec02639",
+    measurementId: "G-G6XF2JEWPV"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
 
   // Attach logout event listener
-  document.getElementById('logout-button').addEventListener('click', () => {
-      logout();
+  document.getElementById('logout-button').addEventListener('click', async () => {
+    try {
+      await signOut(auth);
+      alert("You have been logged out.");
+      window.location.href = "/index.html"; // Redirect to login page
+    } catch (error) {
+      console.error("Error during logout:", error);
+      alert("Logout failed: " + error.message);
+    }
   });
 </script>

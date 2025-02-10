@@ -1,18 +1,18 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cars Overview</title>
   <link rel="stylesheet" href="./static/CSS/admin-cars.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body>
-  <header>
-    <h1>Cars Overview</h1>
-    <a href="admin-dashboard.html" class="nav-button">Back to Dashboard</a>
-  </header>
+  <div id="header"></div>
+
   <main>
     <section id="cars-overview">
-      <h2>All Cars</h2>
+      <h2 id="page-title">All Cars</h2>
       <input type="text" id="search-bar" placeholder="Search by Car ID, Location, or Car Plate">
       <table id="cars-table">
         <thead>
@@ -33,15 +33,53 @@
       </table>
     </section>
   </main>
-  <footer>
-    <nav>
-      <a href="admin-dashboard.html">Dashboard</a>
-      <a href="admin-addCars.html">Add Car</a>
-      <a href="admin-addModels.html">Add Models</a>
-      <a href="admin-users.html">Users</a>
-      <a href="admin-bookings.html">Bookings</a>
-    </nav>
-  </footer>
-  <script src="./static/Javascript/admin-cars.js" type="module"></script>
+
+  <div id="footer"></div>
+
+  <script type="module">
+    import { checkAdmin } from './static/Javascript/auth.js';
+    import { db } from './static/Javascript/firebase-config.js';
+    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+
+    // Load header and footer
+    document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
+    document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
+
+    // Check if the user is an admin
+    try {
+      const userData = await checkAdmin();
+      document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
+    } catch (error) {
+      alert(error);
+      window.location.href = "/index.html";
+    }
+
+    // Function to populate the cars table
+    async function populateCarsTable() {
+      const carsTableBody = document.getElementById('cars-table').getElementsByTagName('tbody')[0];
+      try {
+        const carsSnapshot = await getDocs(collection(db, 'cars'));
+        carsSnapshot.forEach((doc) => {
+          const car = doc.data();
+          const row = carsTableBody.insertRow();
+          row.insertCell(0).textContent = doc.id; // Car ID
+          row.insertCell(1).textContent = car.address;
+          row.insertCell(2).textContent = car.license_plate; // Car Plate
+          row.insertCell(3).textContent = car.status;
+          row.insertCell(4).textContent = car.car_type; // Car Type
+          row.insertCell(5).textContent = new Date(car.service_due.seconds * 1000).toLocaleDateString(); // Service Expiry
+          row.insertCell(6).textContent = new Date(car.insurance_expiry.seconds * 1000).toLocaleDateString(); // Insurance Expiry
+          const actionsCell = row.insertCell(7);
+          actionsCell.innerHTML = '<button>Edit</button> <button>Delete</button>';
+        });
+      } catch (error) {
+        console.error('Error fetching cars:', error);
+        alert('Failed to load cars. Please try again.');
+      }
+    }
+
+    // Populate cars table on page load
+    populateCarsTable();
+  </script>
 </body>
 </html>
