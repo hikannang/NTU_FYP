@@ -89,5 +89,35 @@
     }
   </script>
   <script src="./static/Javascript/admin-addCars.js" type="module"></script>
+
+  <!-- Firebase and App Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log("DOM fully loaded and parsed"); // Debugging step
+
+      // Attach logout event listener
+      const logoutButton = document.getElementById('logout-button');
+      if (logoutButton) {
+        console.log("Logout button found"); // Debugging step
+        logoutButton.addEventListener('click', async () => {
+          console.log("Logout button clicked"); // Debugging step
+          try {
+            const auth = firebase.auth();
+            await auth.signOut();
+            alert("You have been logged out.");
+          } catch (error) {
+            console.error("Error during logout:", error);
+            alert("Logout failed: " + error.message);
+          } finally {
+            window.location.href = "/index.html"; // Redirect to login page
+          }
+        });
+      } else {
+        console.log("Logout button not found"); // Debugging step
+      }
+    });
+  </script>
 </body>
 </html>

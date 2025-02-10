@@ -1,13 +1,42 @@
-// Import necessary Firebase modules
 import { db } from './firebase-config.js';
-import { collection, doc, getDoc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+import { collection, doc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
-// Geocoding function
+// Function to geocode address
 async function geocodeAddress(address) {
-  // Implement geocoding logic here
+  const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=YOUR_GOOGLE_MAPS_API_KEY`);
+  const data = await response.json();
+  if (data.status === 'OK') {
+    const location = data.results[0].geometry.location;
+    return {
+      latitude: location.lat,
+      longitude: location.lng
+    };
+  } else {
+    throw new Error('Geocoding failed');
+  }
 }
 
-// Populate car models dropdown
+// Function to create a timesheet for the car
+async function createTimeSheet(carID) {
+  try {
+    // Create an empty timesheet document with the car ID
+    const timesheetRef = doc(db, 'timesheets', carID.toString());
+    await setDoc(timesheetRef, {});
+
+    console.log(`Timesheet created for car ID: ${carID}`);
+  } catch (error) {
+    console.error('Error creating timesheet:', error);
+    throw new Error('Failed to create timesheet');
+  }
+}
+
+// Function to get the next car ID
+async function getNextCarID() {
+  const carsSnapshot = await getDocs(collection(db, 'cars'));
+  return carsSnapshot.size + 1; // Assuming car IDs are sequential
+}
+
+// Function to populate car models dropdown
 async function populateCarModels() {
   const carTypeSelect = document.getElementById('car-type');
   const carColorInput = document.getElementById('car-color');
@@ -61,77 +90,45 @@ document.getElementById('use-current-location').addEventListener('click', async 
       document.getElementById('car-longitude').value = longitude;
 
       // Reverse geocode to get the address
-      const apiUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=YOUR_API_KEY`;
+      const apiUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=YOUR_GOOGLE_MAPS_API_KEY`;
       try {
         const response = await fetch(apiUrl);
         const data = await response.json();
         if (data.status === 'OK') {
-          document.getElementById('car-address').value = data.results[0].formatted_address;
+          const address = data.results[0].formatted_address;
+          document.getElementById('car-address').value = address;
         } else {
-          alert('Failed to retrieve address from coordinates.');
+          throw new Error('Reverse geocoding failed');
         }
       } catch (error) {
-        console.error('Error reverse geocoding:', error);
-        alert('Error retrieving address from coordinates.');
+        console.error('Error reverse geocoding address:', error);
+        alert('Failed to reverse geocode address. Please try again.');
       }
-    }, (error) => {
-      alert('Error retrieving current location: ' + error.message);
     });
   } else {
     alert('Geolocation is not supported by this browser.');
   }
 });
 
-// Function to get the next car ID
-async function getNextCarID() {
-  const carIDDocRef = doc(db, 'metadata', 'carID');
-  const carIDDoc = await getDoc(carIDDocRef);
-  if (carIDDoc.exists()) {
-    const currentID = carIDDoc.data().lastID;
-    const nextID = currentID + 1;
-    await setDoc(carIDDocRef, { lastID: nextID });
-    return nextID;
-  } else {
-    // If the document does not exist, create it with the initial ID
-    await setDoc(carIDDocRef, { lastID: 1 });
-    return 1;
-  }
-}
+// Function to add a new car
+document.getElementById('add-car-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
 
-// Function to create a time sheet for the car
-async function createTimeSheet(carID) {
-  const timeSheetRef = collection(db, 'time_slots', carID.toString(), 'time_slots');
-  const initialTimeSlots = {
-    available: [],
-    booked: [],
-    price_per_slot: 10.0 // Example price per slot
-  };
-
-  // Create initial time slots for the car
-  await setDoc(doc(timeSheetRef, 'initial'), initialTimeSlots);
-}
-
-// Form submission handler
-document.getElementById('add-car-form').addEventListener('submit', async (e) => {
-  e.preventDefault(); // Prevent default form submission behavior
-
-  // Collect form data
-  const address = document.getElementById('car-address').value.trim();
-  const latitudeInput = document.getElementById('car-latitude').value.trim();
-  const longitudeInput = document.getElementById('car-longitude').value.trim();
+  const address = document.getElementById('car-address').value;
   const carType = document.getElementById('car-type').value;
   const carColor = document.getElementById('car-color').value;
-  const carSeats = parseInt(document.getElementById('car-seats').value, 10);
+  const carSeats = document.getElementById('car-seats').value;
   const carFuelType = document.getElementById('car-fuel-type').value;
-  const licensePlate = document.getElementById('car-plate').value.trim();
+  const licensePlate = document.getElementById('car-plate').value;
   const status = document.getElementById('car-status').value;
   const serviceDue = document.getElementById('service-due').value;
   const insuranceExpiry = document.getElementById('insurance-expiry').value;
+  const latitudeInput = document.getElementById('car-latitude').value;
+  const longitudeInput = document.getElementById('car-longitude').value;
 
-  // Validate license plate format
-  const licensePlatePattern = /^[A-Z]{3}\d{3}[A-Z]?$/; // Example pattern
-  if (!licensePlatePattern.test(licensePlate)) {
-    document.getElementById('car-plate-error').textContent = 'Invalid license plate format.';
+  // Validate license plate
+  if (!/^[A-Z0-9]+$/.test(licensePlate)) {
+    document.getElementById('car-plate-error').textContent = 'Invalid license plate format';
     return;
   } else {
     document.getElementById('car-plate-error').textContent = '';
@@ -180,12 +177,15 @@ document.getElementById('add-car-form').addEventListener('submit', async (e) => 
     // Add car data to Firestore with carID as the document ID
     await setDoc(doc(db, 'cars', carID.toString()), carData);
 
-    // Create a time sheet for the car
+    // Create a timesheet for the car
     await createTimeSheet(carID);
 
     // Success feedback
     alert('Car added successfully!');
     document.getElementById('add-car-form').reset(); // Reset the form
+
+    // Redirect to admin-dashboard.html
+    window.location.href = 'admin-dashboard.html';
   } catch (error) {
     console.error('Error adding car:', error);
     alert('Failed to add car. Please try again.');

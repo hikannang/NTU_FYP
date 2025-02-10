@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Booking</title>
+  <link rel="stylesheet" href="./static/CSS/admin-BookingsForm.css">
+</head>
+<body>
+  <div id="header"></div>
+
+  <main>
+    <div class="container">
+      <h1>Add a New Booking</h1>
+      <form id="add-booking-form">
+        <!-- Car Selection -->
+        <label for="car-select">Select Car:</label>
+        <select id="car-select" name="car-select" required>
+          <!-- Options will be populated dynamically -->
+        </select>
+
+        <!-- Car Information -->
+        <div id="car-info">
+          <img id="car-image" src="" alt="Car Image" style="width: 100%; max-width: 300px;">
+          <p id="car-details"></p>
+        </div>
+
+        <!-- Booking Date and Time -->
+        <label for="booking-date">Booking Date:</label>
+        <input type="date" id="booking-date" name="booking-date" required>
+
+        <label for="booking-time-hours">Booking Time (Hours):</label>
+        <select id="booking-time-hours" name="booking-time-hours" required>
+          <!-- Options for hours will be populated dynamically -->
+        </select>
+
+        <label for="booking-time-minutes">Booking Time (Minutes):</label>
+        <select id="booking-time-minutes" name="booking-time-minutes" required>
+          <option value="00">00</option>
+          <option value="15">15</option>
+          <option value="30">30</option>
+          <option value="45">45</option>
+        </select>
+
+        <!-- Booking Duration -->
+        <label for="booking-duration-days">Duration (Days):</label>
+        <select id="booking-duration-days" name="booking-duration-days" required>
+          <!-- Options will be populated dynamically -->
+        </select>
+
+        <label for="booking-duration-hours">Duration (Hours):</label>
+        <select id="booking-duration-hours" name="booking-duration-hours" required>
+          <!-- Options will be populated dynamically -->
+        </select>
+
+        <label for="booking-duration-minutes">Duration (Minutes):</label>
+        <select id="booking-duration-minutes" name="booking-duration-minutes" required>
+          <option value="0">0 min</option>
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+          <option value="45">45 min</option>
+        </select>
+
+        <!-- Submit Button -->
+        <button type="submit">Add Booking</button>
+      </form>
+    </div>
+  </main>
+
+  <div id="footer"></div>
+
+  <script type="module" src="./static/Javascript/admin-addBookings.js"></script>
+</body>
+</html>
