@@ -53,7 +53,7 @@ document.getElementById('edit-car-form').addEventListener('submit', async (e) =>
     });
 
     alert('Car updated successfully!');
-    window.location.href = 'cars.html';
+    window.location.href = './admin-cars.html';
   } catch (error) {
     console.error('Error updating car:', error);
     alert('Failed to update car. Please try again.');

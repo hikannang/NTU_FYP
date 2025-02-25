@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link rel="stylesheet" href="../static/css/users/user.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+</head>
+<body>
+    <div id="header"></div>
+
+    <main>
+        <!-- Quick Actions Section -->
+        <section id="quick-actions">
+            <div class="search-card">
+                <h2>Find a Car</h2>
+                <div class="search-inputs">
+                    <input type="text" id="location-input" placeholder="Enter location or use current">
+                    <button id="current-location-btn">
+                        <i class="bi bi-geo-alt"></i>
+                    </button>
+                </div>
+                <button id="quick-search-btn" class="primary-btn">Search Nearby Cars</button>
+            </div>
+        </section>
+
+        <!-- Map Section -->
+        <section id="map-section">
+            <div id="map"></div>
+            <div id="nearby-cars">
+                <!-- Will be populated with nearby cars -->
+            </div>
+        </section>
+
+        <!-- Recent Bookings Preview -->
+        <section id="recent-bookings">
+            <div class="section-header">
+                <h2>Recent Bookings</h2>
+                <a href="user-bookings.html" class="view-all">View All</a>
+            </div>
+            <div class="bookings-grid">
+                <!-- Will be populated with recent bookings -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="user-dashboard.html" class="nav-item active">
+            <i class="bi bi-house-door"></i>
+            <span>Home</span>
+        </a>
+        <a href="user-search.html" class="nav-item">
+            <i class="bi bi-search"></i>
+            <span>Search</span>
+        </a>
+        <a href="user-bookings.html" class="nav-item">
+            <i class="bi bi-calendar-check"></i>
+            <span>Bookings</span>
+        </a>
+        <a href="user-profile.html" class="nav-item">
+            <i class="bi bi-person"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+
+    <!-- Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/user/user.js" type="module"></script>
+    <script src="../static/js/user/location/location.js" type="module"></script>
+</body>
+</html>
