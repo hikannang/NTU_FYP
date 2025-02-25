@@ -1,4 +1,4 @@
-import { db } from './firebase-config.js';
+import { db, auth } from '../common/firebase-config.js';
 import { doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js';
 
 // Get car ID from query parameters
@@ -53,7 +53,7 @@ document.getElementById('edit-car-form').addEventListener('submit', async (e) =>
     });
 
     alert('Car updated successfully!');
-    window.location.href = 'admin-cars.html';
+    window.location.href = 'cars.html';
   } catch (error) {
     console.error('Error updating car:', error);
     alert('Failed to update car. Please try again.');

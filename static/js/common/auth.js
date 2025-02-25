@@ -59,7 +59,7 @@ if (signupForm) {
 
       // Redirect to login page after successful signup
       alert('Signup successful! Redirecting to login page...');
-      window.location.href = "/index.html";
+      window.location.href = "../index.html";
     } catch (error) {
       // Handle errors
       console.error("Error during signup:", error);
@@ -109,9 +109,9 @@ if (loginForm) {
 
         // Check the user's role and redirect accordingly
         if (userData.role === "admin") {
-          window.location.href = "./admin-dashboard.html"; // Redirect to admin dashboard
+          window.location.href = "./admin/admin-dashboard.html"; // Redirect to admin dashboard
         } else {
-          window.location.href = "./user-dashboard.html"; // Redirect to user dashboard
+          window.location.href = "./user/user-dashboard.html"; // Redirect to user dashboard
         }
       } else {
         console.error("No user document found in Firestore!");
@@ -141,7 +141,7 @@ export async function logout() {
   try {
     await signOut(auth);
     alert("You have been logged out.");
-    window.location.href = "/index.html"; // Redirect to login page
+    window.location.href = "../index.html"; // Redirect to login page
   } catch (error) {
     console.error("Error during logout:", error);
     alert("Logout failed: " + error.message);

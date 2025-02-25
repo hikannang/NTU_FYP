@@ -84,25 +84,25 @@
   <header>
     <h1 id="page-title">Admin Portal</h1>
     <span id="welcome-message"></span>
-    <a href="../index.html" id="logout-link" class="nav-item">
+    <a href="../../index.html" id="logout-link" class="nav-item">
       <i class="bi bi-box-arrow-right"></i>
       <span>Logout</span>
     </a>
   </header>
   <nav class="bottom-nav">
-    <a href="../admin-dashboard.html" class="nav-item active">
+    <a href="../../admin/admin-dashboard.html" class="nav-item active">
         <i class="bi bi-speedometer2"></i>
         <span>Dashboard</span>
     </a>
-    <a href="../admin-cars.html" class="nav-item">
+    <a href="../../admin/admin-cars.html" class="nav-item">
         <i class="bi bi-car-front"></i>
         <span>Cars</span>
     </a>
-    <a href="../admin-users.html" class="nav-item">
+    <a href="../../admin/admin-users.html" class="nav-item">
         <i class="bi bi-people"></i>
         <span>Users</span>
     </a>
-    <a href="../admin-bookings.html" class="nav-item">
+    <a href="../../admin/admin-bookings.html" class="nav-item">
         <i class="bi bi-calendar-check"></i>
         <span>Bookings</span>
     </a>
@@ -110,8 +110,8 @@
 
   <!-- Firebase and App Scripts -->
   <script type="module">
-    import { auth } from '../static/Javascript/firebase-config.js';
-    import { signOut } from "../static/Javascript/auth.js";
+    import { auth } from '../static/js/common/firebase-config.js';
+    import { signOut } from "../static/js/common/auth.js";
 
     document.addEventListener('DOMContentLoaded', () => {
       console.log("DOM fully loaded and parsed"); // Debugging step
@@ -126,7 +126,7 @@
           try {
             await signOut(auth);
             alert("You have been logged out.");
-            window.location.href = "/index.html"; // Redirect to login page
+            window.location.href = "../index.html"; // Redirect to login page
           } catch (error) {
             console.error("Error during logout:", error);
             alert("Logout failed: " + error.message);

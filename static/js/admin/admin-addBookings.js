@@ -1,4 +1,4 @@
-import { db, auth } from './firebase-config.js';
+import { db, auth } from '../common/firebase-config.js';
 import { collection, getDocs, doc, setDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
 // Initialize booking handlers

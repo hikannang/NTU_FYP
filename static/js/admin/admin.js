@@ -1,4 +1,4 @@
-import { db, auth } from "./firebase-config.js";
+import { db, auth } from "../common/firebase-config.js";
 import { doc, getDoc, getDocs, collection, updateDoc } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 
@@ -26,14 +26,14 @@ onAuthStateChanged(auth, async (user) => {
         });
       } else {
         alert("Access denied. Admins only.");
-        window.location.href = "/index.html";
+        window.location.href = "../index.html";
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
   } else {
     alert("You must be logged in.");
-    window.location.href = "/index.html";
+    window.location.href = "../index.html";
   }
 });
 
@@ -56,7 +56,7 @@ logoutButton.addEventListener('click', () => {
   signOut(auth)
     .then(() => {
       alert('Logged out successfully!');
-      window.location.href = "/index.html"; // Redirect to login page
+      window.location.href = "../index.html"; // Redirect to login page
     })
     .catch((error) => {
       alert('Error: ' + error.message);

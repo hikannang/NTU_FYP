@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="./static/CSS/admin.css">
+  <link rel="stylesheet" href="../static/css/admin/admin.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body>
@@ -16,14 +16,14 @@
       <h2>Manage System</h2>
       <div class="nav-buttons">
         <!-- Button to navigate to Admin Cars Overview -->
-        <a href="admin-cars.html" class="nav-button">View All Cars</a>
+        <a href="cars.html" class="nav-button">View All Cars</a>
         <!-- Button to navigate to Add Cars Page -->
-        <a href="admin-addCars.html" class="nav-button">Add New Car</a>
+        <a href="addCars.html" class="nav-button">Add New Car</a>
         <!-- Button to navigate to Add Car Models Page -->
-        <a href="admin-addModels.html" class="nav-button">Add New Model</a>
+        <a href="addModels.html" class="nav-button">Add New Model</a>
         <!-- Placeholder for other admin functionalities -->
-        <a href="admin-users.html" class="nav-button">Manage Users</a>
-        <a href="admin-bookings.html" class="nav-button">Manage Bookings</a>
+        <a href="users.html" class="nav-button">Manage Users</a>
+        <a href="bookings.html" class="nav-button">Manage Bookings</a>
       </div>
     </section>
 
@@ -52,13 +52,13 @@
   <div id="footer"></div>
 
   <script type="module">
-    import { checkAdmin } from './static/Javascript/auth.js';
-    import { db } from './static/Javascript/firebase-config.js';
+    import { checkAdmin } from '../static/js/common/auth.js';
+    import { db } from '../static/js/common/firebase-config.js';
     import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
     // Load header and footer
-    document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
-    document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
+    document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html').then(response => response.text());
+    document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html').then(response => response.text());
 
     // Check if the user is an admin
     try {
@@ -66,7 +66,7 @@
       document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
     } catch (error) {
       alert(error);
-      window.location.href = "/index.html";
+      window.location.href = "../index.html";
     }
 
     // Function to populate the cars table

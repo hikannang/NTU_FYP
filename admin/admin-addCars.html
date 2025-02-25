@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add Car</title>
-  <link rel="stylesheet" href="static/CSS/admin-CarForm.css">
+  <link rel="stylesheet" href="../static/CSS/admin/admin-CarForm.css">
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places"></script>
 </head>
 <body>
@@ -73,11 +73,11 @@
   <div id="footer"></div>
 
   <script type="module">
-    import { checkAdmin } from './static/Javascript/auth.js';
+    import { checkAdmin } from '../static/js/common/auth.js';
 
     // Load header and footer
-    document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
-    document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
+    document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html').then(response => response.text());
+    document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html').then(response => response.text());
 
     // Check if the user is an admin
     try {
@@ -85,10 +85,10 @@
       document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
     } catch (error) {
       alert(error);
-      window.location.href = "/index.html";
+      window.location.href = "../index.html";
     }
   </script>
-  <script src="./static/Javascript/admin-addCars.js" type="module"></script>
+  <script src="../static/js/admin/admin-addCars.js" type="module"></script>
 
   <!-- Firebase and App Scripts -->
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
@@ -111,7 +111,7 @@
             console.error("Error during logout:", error);
             alert("Logout failed: " + error.message);
           } finally {
-            window.location.href = "/index.html"; // Redirect to login page
+            window.location.href = "../index.html"; // Redirect to login page
           }
         });
       } else {

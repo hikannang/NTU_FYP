@@ -1,4 +1,4 @@
-import { db } from './firebase-config.js';
+import { db, auth } from '../common/firebase-config.js';
 import { collection, doc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
 // Function to geocode address
@@ -185,7 +185,7 @@ document.getElementById('add-car-form').addEventListener('submit', async (event)
     document.getElementById('add-car-form').reset(); // Reset the form
 
     // Redirect to admin-dashboard.html
-    window.location.href = 'admin-dashboard.html';
+    window.location.href = 'dashboard.html';
   } catch (error) {
     console.error('Error adding car:', error);
     alert('Failed to add car. Please try again.');

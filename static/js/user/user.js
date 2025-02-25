@@ -22,7 +22,7 @@ onAuthStateChanged(auth, async (user) => {
     }
   } else {
     // User is not signed in, redirect to login page
-    window.location.href = "/index.html";
+    window.location.href = "../index.html";
   }
 });
 
@@ -33,7 +33,7 @@ if (logoutButton) {
     try {
       await signOut(auth);
       alert("You have been logged out.");
-      window.location.href = "/index.html"; // Redirect to login page
+      window.location.href = "../index.html"; // Redirect to login page
     } catch (error) {
       console.error("Error during logout:", error);
       alert("Logout failed: " + error.message);

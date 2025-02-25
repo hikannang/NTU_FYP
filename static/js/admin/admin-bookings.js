@@ -1,12 +1,12 @@
-import { db } from './firebase-config.js';
+import { db, auth } from '../common/firebase-config.js';
 import { collection, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
-import { checkAdmin } from './auth.js';
+import { checkAdmin } from '../common/auth.js';
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', async () => {
     // Load header and footer
-    document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
-    document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
+    document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html').then(response => response.text());
+    document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html').then(response => response.text());
 
     // Check admin authorization
     try {
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadBookings();
     } catch (error) {
         alert(error);
-        window.location.href = "/index.html";
+        window.location.href = "../index.html";
     }
 
     // Add event listeners for filters
@@ -169,5 +169,5 @@ window.viewBookingDetails = (carId, bookingId) => {
     // Store IDs in session storage and redirect to details page
     sessionStorage.setItem('viewBookingCarId', carId);
     sessionStorage.setItem('viewBookingId', bookingId);
-    window.location.href = 'admin-booking-details.html';
+    window.location.href = 'booking-details.html';
 };

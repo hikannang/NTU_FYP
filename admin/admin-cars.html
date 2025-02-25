@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cars Overview</title>
-    <link rel="stylesheet" href="./static/CSS/admin.css">
-    <link rel="stylesheet" href="./static/CSS/admin-cars.css">
+    <link rel="stylesheet" href="../static/css/admin/admin.css">
+    <link rel="stylesheet" href="../static/css/admin/admin-cars.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
     <style>
         main {
@@ -89,13 +89,13 @@
     <div id="footer"></div>
 
     <script type="module">
-        import { checkAdmin } from './static/Javascript/auth.js';
-        import { db } from './static/Javascript/firebase-config.js';
+        import { checkAdmin } from '../static/js/common/auth.js';
+        import { db } from '../static/js/common/firebase-config.js';
         import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
         // Load header and footer
-        document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
-        document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
+        document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html').then(response => response.text());
+        document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html').then(response => response.text());
 
         // Check if user is admin
         try {
@@ -103,7 +103,7 @@
             document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
         } catch (error) {
             alert(error);
-            window.location.href = "/index.html";
+            window.location.href = "../index.html";
         }
 
         // Function to populate cars table
