@@ -1,4 +1,4 @@
-import { db } from './firebase-config.js';
+import { db, auth } from './firebase-config.js';
 import { collection, getDocs, doc, setDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
 // Initialize booking handlers
@@ -42,14 +42,12 @@ async function handleBookingOptions() {
 
     if (!bookingDate || !carId) return;
 
-    // Clear all existing options
     [hoursSelect, minutesSelect, daysSelect, durationHoursSelect, durationMinutesSelect]
         .forEach(select => select.innerHTML = '');
 
     const now = new Date();
     const selectedDate = new Date(bookingDate);
 
-    // Get existing bookings
     const bookingsQuery = query(
         collection(db, 'timesheets', carId, 'bookings'),
         where('start_time', '>=', selectedDate),
@@ -71,9 +69,8 @@ async function handleBookingOptions() {
         return;
     }
 
-    populateTimeOptions(hoursSelect, minutesSelect, timeSlots, now, selectedDate);
+    populateTimeOptions(hoursSelect, minutesSelect, timeSlots);
 
-    // Update duration when time changes
     const updateDuration = () => {
         if (hoursSelect.value && minutesSelect.value) {
             const selectedDateTime = new Date(selectedDate);
@@ -91,7 +88,6 @@ function getAvailableTimeSlots(selectedDate, now, bookings) {
     let currentTime = selectedDate.toDateString() === now.toDateString() ? 
         now : new Date(selectedDate.setHours(0, 0, 0, 0));
 
-    // If no bookings exist
     if (bookings.length === 0) {
         const endOfDay = new Date(selectedDate);
         endOfDay.setHours(23, 59, 0, 0);
@@ -100,7 +96,6 @@ function getAvailableTimeSlots(selectedDate, now, bookings) {
     }
 
     bookings.forEach((booking, index) => {
-        // Add slot before first booking
         if (index === 0 && currentTime < new Date(booking.start.getTime() - (15 * 60000))) {
             timeSlots.push({
                 start: currentTime,
@@ -108,7 +103,6 @@ function getAvailableTimeSlots(selectedDate, now, bookings) {
             });
         }
 
-        // Add slot after booking
         const slotStart = new Date(booking.end.getTime() + (15 * 60000));
         const nextBooking = bookings[index + 1];
 
@@ -130,7 +124,6 @@ function getAvailableTimeSlots(selectedDate, now, bookings) {
 }
 
 function populateTimeOptions(hoursSelect, minutesSelect, timeSlots) {
-    // Get unique available hours
     const availableHours = new Set();
     timeSlots.forEach(slot => {
         for (let hour = slot.start.getHours(); hour <= slot.end.getHours(); hour++) {
@@ -138,7 +131,6 @@ function populateTimeOptions(hoursSelect, minutesSelect, timeSlots) {
         }
     });
 
-    // Populate hours
     Array.from(availableHours).sort((a, b) => a - b).forEach(hour => {
         const option = document.createElement('option');
         option.value = hour.toString().padStart(2, '0');
@@ -146,12 +138,10 @@ function populateTimeOptions(hoursSelect, minutesSelect, timeSlots) {
         hoursSelect.appendChild(option);
     });
 
-    // Initial minutes population
     if (hoursSelect.value) {
         updateMinutesForHour(minutesSelect, parseInt(hoursSelect.value), timeSlots);
     }
 
-    // Update minutes when hour changes
     hoursSelect.addEventListener('change', () => {
         updateMinutesForHour(minutesSelect, parseInt(hoursSelect.value), timeSlots);
     });
@@ -204,17 +194,12 @@ function updateDurationBasedOnNextBooking(selectedDateTime, bookings, daysSelect
 }
 
 function populateDurationOptions(maxDurationMinutes, daysSelect, durationHoursSelect, durationMinutesSelect) {
-    // Clear existing options
-    daysSelect.innerHTML = '';
-    durationHoursSelect.innerHTML = '';
-    durationMinutesSelect.innerHTML = '';
+    [daysSelect, durationHoursSelect, durationMinutesSelect].forEach(select => select.innerHTML = '');
 
-    // Calculate maximum values
     const maxDays = Math.floor(maxDurationMinutes / (24 * 60));
     const maxHours = Math.floor((maxDurationMinutes % (24 * 60)) / 60);
     const maxMinutes = maxDurationMinutes % 60;
 
-    // Populate days
     for (let i = 0; i <= maxDays; i++) {
         const option = document.createElement('option');
         option.value = i;
@@ -222,7 +207,6 @@ function populateDurationOptions(maxDurationMinutes, daysSelect, durationHoursSe
         daysSelect.appendChild(option);
     }
 
-    // Populate hours
     for (let i = 0; i <= (maxDays > 0 ? 23 : maxHours); i++) {
         const option = document.createElement('option');
         option.value = i;
@@ -230,7 +214,6 @@ function populateDurationOptions(maxDurationMinutes, daysSelect, durationHoursSe
         durationHoursSelect.appendChild(option);
     }
 
-    // Populate minutes
     ['00', '15', '30', '45'].forEach(minute => {
         if (parseInt(minute) <= maxMinutes || maxDays > 0 || maxHours > 0) {
             const option = document.createElement('option');
@@ -241,7 +224,6 @@ function populateDurationOptions(maxDurationMinutes, daysSelect, durationHoursSe
     });
 }
 
-// Event Listeners
 document.getElementById('car-select').addEventListener('change', async (e) => {
     await updateCarDetails(e.target.value);
     await handleBookingOptions();
@@ -252,28 +234,37 @@ document.getElementById('booking-date').addEventListener('change', handleBooking
 document.getElementById('add-booking-form').addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const carId = document.getElementById('car-select').value;
-    const bookingDate = document.getElementById('booking-date').value;
-    const bookingTimeHours = document.getElementById('booking-time-hours').value;
-    const bookingTimeMinutes = document.getElementById('booking-time-minutes').value;
-    const durationDays = parseInt(document.getElementById('booking-duration-days').value);
-    const durationHours = parseInt(document.getElementById('booking-duration-hours').value);
-    const durationMinutes = parseInt(document.getElementById('booking-duration-minutes').value);
-
-    const startDateTime = new Date(`${bookingDate}T${bookingTimeHours}:${bookingTimeMinutes}`);
-    const endDateTime = new Date(startDateTime);
-    endDateTime.setDate(endDateTime.getDate() + durationDays);
-    endDateTime.setHours(endDateTime.getHours() + durationHours);
-    endDateTime.setMinutes(endDateTime.getMinutes() + durationMinutes);
-
-    const bookingData = {
-        car_id: carId,
-        start_time: startDateTime,
-        end_time: endDateTime,
-        booking_id: `booking_${Date.now()}`
-    };
-
     try {
+        // Check if user is logged in
+        if (!auth.currentUser) {
+            throw new Error('No user logged in');
+        }
+
+        const carId = document.getElementById('car-select').value;
+        const bookingDate = document.getElementById('booking-date').value;
+        const bookingTimeHours = document.getElementById('booking-time-hours').value;
+        const bookingTimeMinutes = document.getElementById('booking-time-minutes').value;
+        const durationDays = parseInt(document.getElementById('booking-duration-days').value);
+        const durationHours = parseInt(document.getElementById('booking-duration-hours').value);
+        const durationMinutes = parseInt(document.getElementById('booking-duration-minutes').value);
+
+        const startDateTime = new Date(`${bookingDate}T${bookingTimeHours}:${bookingTimeMinutes}`);
+        const endDateTime = new Date(startDateTime);
+        endDateTime.setDate(endDateTime.getDate() + durationDays);
+        endDateTime.setHours(endDateTime.getHours() + durationHours);
+        endDateTime.setMinutes(endDateTime.getMinutes() + durationMinutes);
+
+        const now = new Date();
+        const bookingData = {
+            booking_id: `booking_${Date.now()}`,
+            car_id: carId,
+            user_id: auth.currentUser.uid,
+            start_time: startDateTime,
+            end_time: endDateTime,
+            created_at: now,
+            updated_at: now
+        };
+
         const timesheetRef = doc(db, 'timesheets', carId);
         const bookingRef = doc(collection(timesheetRef, 'bookings'), bookingData.booking_id);
         await setDoc(bookingRef, bookingData);
@@ -287,10 +278,8 @@ document.getElementById('add-booking-form').addEventListener('submit', async (ev
     }
 });
 
-// Initialize date picker
 const bookingDateInput = document.getElementById('booking-date');
 const today = new Date().toISOString().split('T')[0];
 bookingDateInput.setAttribute('min', today);
 
-// Initial population
 populateCarSelect();

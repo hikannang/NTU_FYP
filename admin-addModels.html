@@ -1,51 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Add New Car Model</title>
-  <link rel="stylesheet" href="static/CSS/admin-CarForm.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Car Model</title>
+    <link rel="stylesheet" href="./static/CSS/admin-CarForm.css">
+    <link rel="stylesheet" href="./static/CSS/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        main {
+            margin-bottom: 60px; /* Space for fixed footer */
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 10px;
+            }
+            main {
+                padding: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Add New Car Model</h1>
-    <form id="add-car-model-form">
-      <!-- Car Model Name -->
-      <label for="car-model-name">Car Model Name:</label>
-      <input type="text" id="car-model-name" name="car-model-name" placeholder="Enter car model name" required>
+    <div id="header"></div>
 
-      <!-- Car Color -->
-      <label for="car-color">Car Color:</label>
-      <input type="text" id="car-color" name="car-color" placeholder="Enter car color" required>
+    <main>
+        <div class="container">
+            <h1>Add New Car Model</h1>
+            <form id="add-car-model-form">
+                <!-- Car Model Name -->
+                <label for="car-model-name">Car Model Name:</label>
+                <input type="text" id="car-model-name" name="car-model-name" placeholder="Enter car model name" required>
 
-      <!-- Fuel Type -->
-      <label for="fuel-type">Fuel Type:</label>
-      <select id="fuel-type" name="fuel-type" required>
-        <option value="Petrol">Petrol</option>
-        <option value="Electric">Electric</option>
-      </select>
+                <!-- Car Color -->
+                <label for="car-color">Car Color:</label>
+                <input type="text" id="car-color" name="car-color" placeholder="Enter car color" required>
 
-      <!-- Seating Capacity -->
-      <label for="seating-capacity">Seating Capacity:</label>
-      <select id="seating-capacity" name="seating-capacity" required>
-        <option value="5">5</option>
-        <option value="7">7</option>
-      </select>
+                <!-- Fuel Type -->
+                <label for="fuel-type">Fuel Type:</label>
+                <select id="fuel-type" name="fuel-type" required>
+                    <option value="Petrol">Petrol</option>
+                    <option value="Electric">Electric</option>
+                    <option value="Hybrid">Hybrid</option>
+                </select>
 
-      <!-- Large Luggage Space -->
-      <label for="large-luggage">Large Luggage Space:</label>
-      <input type="number" id="large-luggage" name="large-luggage" placeholder="Enter large luggage capacity" required>
+                <!-- Seating Capacity -->
+                <label for="seating-capacity">Seating Capacity:</label>
+                <select id="seating-capacity" name="seating-capacity" required>
+                    <option value="5">5</option>
+                    <option value="7">7</option>
+                </select>
 
-      <!-- Small Luggage Space -->
-      <label for="small-luggage">Small Luggage Space:</label>
-      <input type="number" id="small-luggage" name="small-luggage" placeholder="Enter small luggage capacity" required>
+                <!-- Large Luggage Space -->
+                <label for="large-luggage">Large Luggage Space:</label>
+                <input type="number" id="large-luggage" name="large-luggage" 
+                    placeholder="Enter large luggage capacity" required min="0">
 
-      <!-- Submit Button -->
-      <button type="submit">Add Car Model</button>
-    </form>
-  </div>
+                <!-- Small Luggage Space -->
+                <label for="small-luggage">Small Luggage Space:</label>
+                <input type="number" id="small-luggage" name="small-luggage" 
+                    placeholder="Enter small luggage capacity" required min="0">
 
-  <script src="static/Javascript/firebase-config.js" type="module"></script>
-  <script src="static/Javascript/admin-addModels.js" type="module"></script>
+                <!-- Submit Button -->
+                <button type="submit">Add Car Model</button>
+            </form>
+        </div>
+    </main>
+
+    <div id="footer"></div>
+
+    <script type="module">
+        import { checkAdmin } from './static/Javascript/auth.js';
+        import { db } from './static/Javascript/firebase-config.js';
+
+        // Load header and footer
+        document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
+        document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
+
+        // Check if user is admin
+        try {
+            const userData = await checkAdmin();
+            document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
+        } catch (error) {
+            alert(error);
+            window.location.href = "/index.html";
+        }
+    </script>
+    <script src="./static/Javascript/firebase-config.js" type="module"></script>
+    <script src="./static/Javascript/admin-addModels.js" type="module"></script>
 </body>
 </html>

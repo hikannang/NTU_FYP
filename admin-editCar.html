@@ -1,58 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edit Car</title>
-  <link rel="stylesheet" href="./static/CSS/admin-CarForm.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Car</title>
+    <link rel="stylesheet" href="./static/CSS/admin-CarForm.css">
+    <link rel="stylesheet" href="./static/CSS/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        main {
+            margin-bottom: 60px; /* Space for fixed footer */
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 10px;
+            }
+            main {
+                padding: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Edit Car</h1>
-    <a href="./admin-dashboard.html" class="nav-button">Back to Dashboard</a>
-  </header>
-  <main>
-    <section id="edit-car-section">
-      <h2>Edit Car</h2>
-      <form id="edit-car-form">
-        <label for="car-model">Car Model ID</label>
-        <input type="text" id="car-model" placeholder="Enter car model ID (e.g., model_1)" required />
+    <div id="header"></div>
 
-        <label for="car-address">Car Location Address</label>
-        <input type="text" id="car-address" placeholder="Enter car location address" required />
+    <main>
+        <div class="container">
+            <h1>Edit Car Details</h1>
+            <form id="edit-car-form">
+                <label for="car-model">Car Model ID</label>
+                <input type="text" id="car-model" placeholder="Enter car model ID (e.g., model_1)" required />
 
-        <label for="car-latitude">Latitude</label>
-        <input type="number" id="car-latitude" placeholder="Enter latitude" step="0.000001" required />
+                <label for="car-address">Car Location Address</label>
+                <input type="text" id="car-address" placeholder="Enter car location address" required />
 
-        <label for="car-longitude">Longitude</label>
-        <input type="number" id="car-longitude" placeholder="Enter longitude" step="0.000001" required />
+                <label for="car-latitude">Latitude</label>
+                <input type="number" id="car-latitude" placeholder="Enter latitude" step="0.000001" required />
 
-        <label for="car-status">Status</label>
-        <select id="car-status" required>
-          <option value="available">Available</option>
-          <option value="maintenance">Maintenance</option>
-          <option value="unavailable">Unavailable</option>
-        </select>
+                <label for="car-longitude">Longitude</label>
+                <input type="number" id="car-longitude" placeholder="Enter longitude" step="0.000001" required />
 
-        <label for="service-due">Service Due Date</label>
-        <input type="date" id="service-due" required />
+                <label for="car-status">Status</label>
+                <select id="car-status" required>
+                    <option value="available">Available</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="unavailable">Unavailable</option>
+                </select>
 
-        <label for="insurance-expiry">Insurance Expiry Date</label>
-        <input type="date" id="insurance-expiry" required />
+                <label for="service-due">Service Due Date</label>
+                <input type="date" id="service-due" required />
 
-        <button type="submit" id="edit-car-button">Save Changes</button>
-      </form>
-    </section>
-  </main>
-  <footer>
-    <nav>
-      <a href="./admin-dashboard.html">Dashboard</a>
-      <a href="./admin-cars.html">Cars</a>
-      <a href="./admin-users.html">Users</a>
-      <a href="./admin-bookings.html">Bookings</a>
-    </nav>
-  </footer>
-  <script src="./static/Javascript/firebase-config.js" type="module"></script>
-  <script src="./static/Javascript/admin-editCar.js" type="module"></script>
+                <label for="insurance-expiry">Insurance Expiry Date</label>
+                <input type="date" id="insurance-expiry" required />
+
+                <button type="submit" id="edit-car-button">Save Changes</button>
+            </form>
+        </div>
+    </main>
+
+    <div id="footer"></div>
+
+    <script type="module">
+        import { checkAdmin } from './static/Javascript/auth.js';
+        import { db } from './static/Javascript/firebase-config.js';
+
+        // Load header and footer
+        document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
+        document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
+
+        // Check if user is admin
+        try {
+            const userData = await checkAdmin();
+            document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
+        } catch (error) {
+            alert(error);
+            window.location.href = "/index.html";
+        }
+    </script>
+    <script src="./static/Javascript/firebase-config.js" type="module"></script>
+    <script src="./static/Javascript/admin-editCar.js" type="module"></script>
 </body>
 </html>

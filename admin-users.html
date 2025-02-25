@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management</title>
+  <link rel="stylesheet" href="./static/CSS/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+  <div id="header"></div>
+
+  <main>
+    <section id="users-overview">
+      <h2>User Management</h2>
+      
+      <!-- Search Bar -->
+      <div class="search-container">
+        <input type="text" id="search-users" placeholder="Search by name or email">
+        <select id="role-filter">
+          <option value="all">All Roles</option>
+          <option value="user">Users</option>
+          <option value="admin">Admins</option>
+        </select>
+      </div>
+
+      <!-- Users Table -->
+      <table id="users-table">
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Join Date</th>
+            <th>Last Login</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="users-table-body">
+          <!-- Will be populated dynamically -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="footer"></div>
+
+  <script type="module" src="./static/Javascript/admin-users.js"></script>
+</body>
+</html>

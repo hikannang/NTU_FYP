@@ -1,74 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Add Booking</title>
-  <link rel="stylesheet" href="./static/CSS/admin-BookingsForm.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Booking</title>
+    <link rel="stylesheet" href="./static/CSS/admin.css">
+    <link rel="stylesheet" href="./static/CSS/admin-BookingsForm.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        main {
+            margin-bottom: 60px;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .time-select-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .time-select-group select {
+            flex: 1;
+        }
+        .duration-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        #car-info {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        #car-info img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 10px;
+            }
+            .time-select-group, .duration-group {
+                flex-direction: column;
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div id="header"></div>
+    <div id="header"></div>
 
-  <main>
-    <div class="container">
-      <h1>Add a New Booking</h1>
-      <form id="add-booking-form">
-        <!-- Car Selection -->
-        <label for="car-select">Select Car:</label>
-        <select id="car-select" name="car-select" required>
-          <!-- Options will be populated dynamically -->
-        </select>
+    <main>
+        <div class="container">
+            <h1>Add New Booking</h1>
+            <form id="add-booking-form">
+                <!-- Car Selection -->
+                <label for="car-select">Select Car:</label>
+                <select id="car-select" name="car-select" required>
+                    <!-- Options will be populated dynamically -->
+                </select>
 
-        <!-- Car Information -->
-        <div id="car-info">
-          <img id="car-image" src="" alt="Car Image" style="width: 100%; max-width: 300px;">
-          <p id="car-details"></p>
+                <!-- Car Information -->
+                <div id="car-info">
+                    <img id="car-image" src="" alt="Car Image">
+                    <p id="car-details"></p>
+                </div>
+
+                <!-- Booking Date -->
+                <label for="booking-date">Booking Date:</label>
+                <input type="date" id="booking-date" name="booking-date" required>
+
+                <!-- Booking Time -->
+                <div class="time-select-group">
+                    <div>
+                        <label for="booking-time-hours">Hours:</label>
+                        <select id="booking-time-hours" name="booking-time-hours" required>
+                            <!-- Will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="booking-time-minutes">Minutes:</label>
+                        <select id="booking-time-minutes" name="booking-time-minutes" required>
+                            <!-- Will be populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Duration -->
+                <div class="duration-group">
+                    <div>
+                        <label for="booking-duration-days">Days:</label>
+                        <select id="booking-duration-days" name="booking-duration-days" required>
+                            <!-- Will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="booking-duration-hours">Hours:</label>
+                        <select id="booking-duration-hours" name="booking-duration-hours" required>
+                            <!-- Will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="booking-duration-minutes">Minutes:</label>
+                        <select id="booking-duration-minutes" name="booking-duration-minutes" required>
+                            <!-- Will be populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit">Create Booking</button>
+            </form>
         </div>
+    </main>
 
-        <!-- Booking Date and Time -->
-        <label for="booking-date">Booking Date:</label>
-        <input type="date" id="booking-date" name="booking-date" required>
+    <div id="footer"></div>
 
-        <label for="booking-time-hours">Booking Time (Hours):</label>
-        <select id="booking-time-hours" name="booking-time-hours" required>
-          <!-- Options for hours will be populated dynamically -->
-        </select>
+    <script type="module">
+        import { checkAdmin } from './static/Javascript/auth.js';
+        import { db } from './static/Javascript/firebase-config.js';
 
-        <label for="booking-time-minutes">Booking Time (Minutes):</label>
-        <select id="booking-time-minutes" name="booking-time-minutes" required>
-          <option value="00">00</option>
-          <option value="15">15</option>
-          <option value="30">30</option>
-          <option value="45">45</option>
-        </select>
+        // Load header and footer
+        document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
+        document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
 
-        <!-- Booking Duration -->
-        <label for="booking-duration-days">Duration (Days):</label>
-        <select id="booking-duration-days" name="booking-duration-days" required>
-          <!-- Options will be populated dynamically -->
-        </select>
-
-        <label for="booking-duration-hours">Duration (Hours):</label>
-        <select id="booking-duration-hours" name="booking-duration-hours" required>
-          <!-- Options will be populated dynamically -->
-        </select>
-
-        <label for="booking-duration-minutes">Duration (Minutes):</label>
-        <select id="booking-duration-minutes" name="booking-duration-minutes" required>
-          <option value="0">0 min</option>
-          <option value="15">15 min</option>
-          <option value="30">30 min</option>
-          <option value="45">45 min</option>
-        </select>
-
-        <!-- Submit Button -->
-        <button type="submit">Add Booking</button>
-      </form>
-    </div>
-  </main>
-
-  <div id="footer"></div>
-
-  <script type="module" src="./static/Javascript/admin-addBookings.js"></script>
+        // Check if user is admin
+        try {
+            const userData = await checkAdmin();
+            document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
+        } catch (error) {
+            alert(error);
+            window.location.href = "/index.html";
+        }
+    </script>
+    <script type="module" src="./static/Javascript/admin-addBookings.js"></script>
 </body>
 </html>

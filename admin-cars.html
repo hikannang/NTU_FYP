@@ -1,85 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cars Overview</title>
-  <link rel="stylesheet" href="./static/CSS/admin-cars.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cars Overview</title>
+    <link rel="stylesheet" href="./static/CSS/admin.css">
+    <link rel="stylesheet" href="./static/CSS/admin-cars.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        main {
+            margin-bottom: 60px;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #search-bar {
+            width: 100%;
+            padding: 10px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .action-btn {
+            margin: 2px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+        }
+        .action-btn:hover {
+            background-color: #0056b3;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 10px;
+            }
+            #cars-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div id="header"></div>
+    <div id="header"></div>
 
-  <main>
-    <section id="cars-overview">
-      <h2 id="page-title">All Cars</h2>
-      <input type="text" id="search-bar" placeholder="Search by Car ID, Location, or Car Plate">
-      <table id="cars-table">
-        <thead>
-          <tr>
-            <th>Car ID</th>
-            <th>Address</th>
-            <th>Car Plate</th>
-            <th>Status</th>
-            <th>Car Type</th>
-            <th>Service Expiry</th>
-            <th>Insurance Expiry</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Rows will be dynamically populated -->
-        </tbody>
-      </table>
-    </section>
-  </main>
+    <main>
+        <div class="container">
+            <h1>Cars Management</h1>
+            <input type="text" id="search-bar" placeholder="Search by Car ID, Location, or Car Plate">
+            
+            <table id="cars-table">
+                <thead>
+                    <tr>
+                        <th>Car ID</th>
+                        <th>Address</th>
+                        <th>Car Plate</th>
+                        <th>Status</th>
+                        <th>Car Type</th>
+                        <th>Service Due</th>
+                        <th>Insurance Expiry</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Will be populated dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </main>
 
-  <div id="footer"></div>
+    <div id="footer"></div>
 
-  <script type="module">
-    import { checkAdmin } from './static/Javascript/auth.js';
-    import { db } from './static/Javascript/firebase-config.js';
-    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+    <script type="module">
+        import { checkAdmin } from './static/Javascript/auth.js';
+        import { db } from './static/Javascript/firebase-config.js';
+        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
-    // Load header and footer
-    document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
-    document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
+        // Load header and footer
+        document.getElementById('header').innerHTML = await fetch('headerFooter/admin-header.html').then(response => response.text());
+        document.getElementById('footer').innerHTML = await fetch('headerFooter/admin-footer.html').then(response => response.text());
 
-    // Check if the user is an admin
-    try {
-      const userData = await checkAdmin();
-      document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
-    } catch (error) {
-      alert(error);
-      window.location.href = "/index.html";
-    }
+        // Check if user is admin
+        try {
+            const userData = await checkAdmin();
+            document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
+        } catch (error) {
+            alert(error);
+            window.location.href = "/index.html";
+        }
 
-    // Function to populate the cars table
-    async function populateCarsTable() {
-      const carsTableBody = document.getElementById('cars-table').getElementsByTagName('tbody')[0];
-      try {
-        const carsSnapshot = await getDocs(collection(db, 'cars'));
-        carsSnapshot.forEach((doc) => {
-          const car = doc.data();
-          const row = carsTableBody.insertRow();
-          row.insertCell(0).textContent = doc.id; // Car ID
-          row.insertCell(1).textContent = car.address;
-          row.insertCell(2).textContent = car.license_plate; // Car Plate
-          row.insertCell(3).textContent = car.status;
-          row.insertCell(4).textContent = car.car_type; // Car Type
-          row.insertCell(5).textContent = new Date(car.service_due.seconds * 1000).toLocaleDateString(); // Service Expiry
-          row.insertCell(6).textContent = new Date(car.insurance_expiry.seconds * 1000).toLocaleDateString(); // Insurance Expiry
-          const actionsCell = row.insertCell(7);
-          actionsCell.innerHTML = '<button>Edit</button> <button>Delete</button>';
-        });
-      } catch (error) {
-        console.error('Error fetching cars:', error);
-        alert('Failed to load cars. Please try again.');
-      }
-    }
+        // Function to populate cars table
+        async function populateCarsTable() {
+            const carsTableBody = document.getElementById('cars-table').getElementsByTagName('tbody')[0];
+            try {
+                const carsSnapshot = await getDocs(collection(db, 'cars'));
+                carsSnapshot.forEach((doc) => {
+                    const car = doc.data();
+                    const row = carsTableBody.insertRow();
+                    row.insertCell(0).textContent = doc.id;
+                    row.insertCell(1).textContent = car.address;
+                    row.insertCell(2).textContent = car.license_plate;
+                    row.insertCell(3).textContent = car.status;
+                    row.insertCell(4).textContent = car.car_type;
+                    row.insertCell(5).textContent = new Date(car.service_due.seconds * 1000).toLocaleDateString();
+                    row.insertCell(6).textContent = new Date(car.insurance_expiry.seconds * 1000).toLocaleDateString();
+                    const actionsCell = row.insertCell(7);
+                    actionsCell.innerHTML = `
+                        <button onclick="window.location.href='admin-editCar.html?carId=${doc.id}'" class="action-btn">Edit</button>
+                        <button onclick="deleteCar('${doc.id}')" class="action-btn delete-btn">Delete</button>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error fetching cars:', error);
+                alert('Failed to load cars. Please try again.');
+            }
+        }
 
-    // Populate cars table on page load
-    populateCarsTable();
-  </script>
+        // Add search functionality
+        document.getElementById('search-bar').addEventListener('input', filterCarsTable);
+
+        function filterCarsTable() {
+            const searchInput = document.getElementById('search-bar').value.toLowerCase();
+            const rows = document.getElementById('cars-table').getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+            Array.from(rows).forEach(row => {
+                const carId = row.cells[0].textContent.toLowerCase();
+                const address = row.cells[1].textContent.toLowerCase();
+                const plate = row.cells[2].textContent.toLowerCase();
+
+                if (carId.includes(searchInput) || address.includes(searchInput) || plate.includes(searchInput)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Initialize table
+        populateCarsTable();
+    </script>
 </body>
 </html>

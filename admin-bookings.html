@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Bookings</title>
+  <link rel="stylesheet" href="./static/CSS/admin.css">
+  <link rel="stylesheet" href="./static/CSS/admin-bookings.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+  <div id="header"></div>
+
+  <main>
+    <section id="bookings-overview">
+      <h2>Bookings Management</h2>
+      
+      <!-- Filters -->
+      <div class="filters-container">
+        <input type="text" id="search-bookings" placeholder="Search by Car ID or User">
+        <input type="date" id="date-filter">
+        <select id="status-filter">
+          <option value="all">All Status</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="ongoing">Ongoing</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <button onclick="resetFilters()" class="reset-btn">Reset Filters</button>
+      </div>
+
+      <!-- Bookings Table -->
+      <table id="bookings-table">
+        <thead>
+          <tr>
+            <th>Booking ID</th>
+            <th>Car Details</th>
+            <th>User</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="bookings-table-body">
+          <!-- Will be populated dynamically -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="footer"></div>
+
+  <script type="module" src="./static/Javascript/admin-bookings.js"></script>
+</body>
+</html>
