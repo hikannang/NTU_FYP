@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Details | CarShare</title>
+    <link rel="stylesheet" href="../static/css/users/user.css">
+    <link rel="stylesheet" href="../static/css/users/user-booking-details.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places"></script>
+</head>
+<body>
+    <div id="header"></div>
+    
+    <main>
+        <div class="container">
+            <!-- Back Navigation -->
+            <div class="back-nav">
+                <a href="user-bookings.html" class="back-link">
+                    <i class="bi bi-arrow-left"></i> Back to Bookings
+                </a>
+            </div>
+            
+            <!-- Loading Indicator -->
+            <div id="loading-indicator" class="loading-indicator">
+                <div class="spinner"></div>
+                <p>Loading booking details...</p>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="error-message" class="error-message" style="display: none;">
+                <i class="bi bi-exclamation-triangle"></i>
+                <p>Sorry, we couldn't load this booking's details. Please try again later.</p>
+                <button onclick="location.reload()" class="secondary-btn">Retry</button>
+            </div>
+            
+            <!-- Booking Details Content -->
+            <div id="booking-details-content" style="display: none;">
+                <div class="booking-status-banner">
+                    <div id="booking-status-indicator" class="status-indicator"></div>
+                    <div id="booking-status" class="status-text">Active</div>
+                    <div id="time-remaining" class="time-remaining">2h 15m remaining</div>
+                </div>
+                
+                <!-- Booking Reference -->
+                <div class="booking-reference">
+                    <span>Booking Reference:</span>
+                    <span id="booking-id">Loading...</span>
+                    <button id="copy-btn" class="icon-btn" aria-label="Copy booking reference">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                </div>
+                
+                <!-- Car Details Card -->
+                <section class="details-card">
+                    <h2 class="section-title">Car Details</h2>
+                    
+                    <div class="car-overview">
+                        <div class="car-image">
+                            <img id="car-image" src="../static/assets/images/car-placeholder.jpg" alt="Car Image">
+                        </div>
+                        
+                        <div class="car-info">
+                            <h3 id="car-model">Car Model</h3>
+                            <div class="car-specs">
+                                <div class="spec-item">
+                                    <i class="bi bi-people-fill"></i>
+                                    <span id="car-seats">5 seats</span>
+                                </div>
+                                <div class="spec-item">
+                                    <i class="bi bi-fuel-pump-fill"></i>
+                                    <span id="car-fuel">Petrol</span>
+                                </div>
+                                <div class="spec-item">
+                                    <i class="bi bi-briefcase-fill"></i>
+                                    <span id="car-luggage">2 large, 3 small</span>
+                                </div>
+                            </div>
+                            <div class="car-plate" id="car-plate">SBC1234D</div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Booking Details Card -->
+                <section class="details-card">
+                    <h2 class="section-title">Booking Details</h2>
+                    
+                    <div class="booking-details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">
+                                <i class="bi bi-calendar-event"></i>
+                                <span>Date</span>
+                            </div>
+                            <div class="detail-value" id="booking-date">June 1, 2023</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">
+                                <i class="bi bi-clock"></i>
+                                <span>Time</span>
+                            </div>
+                            <div class="detail-value" id="booking-time">2:00 PM - 4:00 PM</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">
+                                <i class="bi bi-hourglass-split"></i>
+                                <span>Duration</span>
+                            </div>
+                            <div class="detail-value" id="booking-duration">2 hours</div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label">
+                                <i class="bi bi-cash"></i>
+                                <span>Price</span>
+                            </div>
+                            <div class="detail-value" id="booking-price">$17.00</div>
+                        </div>
+                        
+                        <div class="detail-item full-width">
+                            <div class="detail-label">
+                                <i class="bi bi-geo-alt-fill"></i>
+                                <span>Location</span>
+                            </div>
+                            <div class="detail-value" id="booking-location">123 Main Street, Singapore</div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Location Map Card -->
+                <section class="details-card" id="map-section">
+                    <h2 class="section-title">Car Location</h2>
+                    
+                    <div id="booking-map" class="booking-map"></div>
+                    
+                    <div class="map-actions">
+                        <button id="directions-btn" class="secondary-btn">
+                            <i class="bi bi-map"></i> Get Directions
+                        </button>
+                        <button id="ar-btn" class="primary-btn" disabled>
+                            <i class="bi bi-pin-map-fill"></i> Find with AR
+                        </button>
+                    </div>
+                    
+                    <div id="ar-notice" class="ar-notice">
+                        <i class="bi bi-info-circle"></i>
+                        <span>AR wayfinding will be available 30 minutes before your booking starts.</span>
+                    </div>
+                </section>
+                
+                <!-- Booking Actions Card -->
+                <section class="details-card" id="actions-section">
+                    <h2 class="section-title">Booking Actions</h2>
+                    
+                    <div class="booking-actions">
+                        <button id="cancel-btn" class="danger-btn">
+                            <i class="bi bi-x-circle"></i> Cancel Booking
+                        </button>
+                        <button id="calendar-btn" class="secondary-btn">
+                            <i class="bi bi-calendar-plus"></i> Add to Calendar
+                        </button>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Cancel Booking Modal -->
+            <div id="cancel-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Cancel Booking</h3>
+                        <button id="close-modal" class="close-btn">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to cancel this booking?</p>
+                        <p class="warning-text">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="cancel-confirm-no" class="secondary-btn">No, Keep Booking</button>
+                        <button id="cancel-confirm-yes" class="danger-btn">Yes, Cancel Booking</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div id="footer"></div>
+
+    <!-- Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
+    <script src="../static/js/user/user-booking-details.js" type="module"></script>
+</body>
+</html>
