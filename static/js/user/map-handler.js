@@ -255,6 +255,7 @@ class MapHandler {
                 <p>Color: ${car.car_color}</p>
                 <p>Seats: ${car.seating_capacity}</p>
                 <p>Fuel: ${car.fuel_type}</p>
+                <p>Luggage: ${car.large_luggage || 0} large, ${car.small_luggage || 0} small</p>
                 ${distance ? `<p>Distance: ${distance.toFixed(1)} km</p>` : ''}
                 <button onclick="window.location.href='user-car-details.html?id=${car.id}'" class="info-button">View Details</button>
             </div>
@@ -279,9 +280,13 @@ class MapHandler {
                     <i class="bi bi-geo-alt"></i>
                     <span>${distance ? `${distance.toFixed(1)} km away` : car.address}</span>
                 </div>
-                <div>
-                    <i class="bi bi-fuel-pump"></i> ${car.fuel_type}
-                    <i class="bi bi-people"></i> ${car.seating_capacity} seats
+                <div class="car-specs">
+                    <span class="car-spec-item"><i class="bi bi-fuel-pump"></i> ${car.fuel_type}</span>
+                    <span class="car-spec-item"><i class="bi bi-people"></i> ${car.seating_capacity} seats</span>
+                </div>
+                <div class="luggage-info">
+                    <span class="car-spec-item"><i class="bi bi-briefcase-fill"></i> ${car.large_luggage || 0} large</span>
+                    <span class="car-spec-item"><i class="bi bi-briefcase"></i> ${car.small_luggage || 0} small</span>
                 </div>
                 <div class="car-price">$8.50/hour</div>
             </div>

@@ -1,0 +1,341 @@
+/* user-booking-confirmation.css */
+
+/* General Layout */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+}
+
+.confirmation-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Back Navigation */
+.back-nav {
+    margin-bottom: 20px;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    color: #555;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: #1e88e5;
+}
+
+.back-link i {
+    margin-right: 5px;
+}
+
+/* Confirmation Header */
+.confirmation-header {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.confirmation-header h1 {
+    margin-bottom: 8px;
+    font-size: 1.8rem;
+}
+
+.confirmation-header p {
+    color: #666;
+    margin: 0;
+}
+
+/* Confirmation Sections */
+.confirmation-section {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.confirmation-section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+/* Car Overview */
+.car-overview {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.car-image {
+    width: 100px;
+    height: 80px;
+    overflow: hidden;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.car-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.car-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.car-info h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.2rem;
+}
+
+.car-tag {
+    background-color: #e3f2fd;
+    color: #1e88e5;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    align-self: flex-start;
+    margin-bottom: 10px;
+}
+
+.car-detail {
+    display: flex;
+    align-items: center;
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.car-detail i {
+    margin-right: 5px;
+    color: #1e88e5;
+}
+
+/* Booking Details Grid */
+.booking-details-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    display: flex;
+    align-items: center;
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.detail-label i {
+    margin-right: 5px;
+    color: #1e88e5;
+}
+
+.detail-value {
+    font-weight: 500;
+}
+
+/* Price Summary */
+.price-summary {
+    display: flex;
+    flex-direction: column;
+}
+
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.price-row:last-child {
+    border-bottom: none;
+}
+
+.price-row.total {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-top: 5px;
+    border-top: 1px solid #ddd;
+    border-bottom: none;
+    padding-top: 15px;
+}
+
+/* Terms Section */
+.terms-section {
+    background-color: #fafafa;
+}
+
+.terms-agreement {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.terms-agreement label {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.terms-link {
+    color: #1e88e5;
+    text-decoration: none;
+}
+
+.terms-link:hover {
+    text-decoration: underline;
+}
+
+.error-message {
+    display: flex;
+    align-items: center;
+    color: #d32f2f;
+    font-size: 0.85rem;
+    margin-top: 10px;
+}
+
+.error-message i {
+    margin-right: 5px;
+}
+
+/* Confirmation Actions */
+.confirmation-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.confirmation-actions button {
+    flex: 1;
+    padding: 15px;
+    font-size: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(30, 136, 229, 0.2);
+    border-radius: 50%;
+    border-top: 4px solid #1e88e5;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* General Button Styles */
+.primary-btn {
+    background-color: #1e88e5;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.primary-btn:hover {
+    background-color: #1565c0;
+}
+
+.secondary-btn {
+    background-color: white;
+    color: #1e88e5;
+    border: 1px solid #1e88e5;
+    border-radius: 8px;
+    padding: 12px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+    background-color: #e3f2fd;
+}
+
+/* Responsive Design */
+@media (min-width: 768px) {
+    .booking-details-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .confirmation-actions {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 767px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .confirmation-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .confirmation-section {
+        padding: 15px;
+    }
+    
+    .car-overview {
+        flex-direction: column;
+    }
+    
+    .car-image {
+        width: 100%;
+        height: 150px;
+    }
+    
+    .confirmation-actions {
+        flex-direction: column;
+    }
+    
+    .confirmation-actions button {
+        width: 100%;
+    }
+}

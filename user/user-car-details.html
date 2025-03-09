@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Details | BaoCarLiao</title>
+    <link rel="stylesheet" href="../static/css/users/user.css">
+    <link rel="stylesheet" href="../static/css/users/user-car-details.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places"></script>
+</head>
+<body>
+    <div id="header"></div>
+    
+    <main>
+        <div class="container">
+            <!-- Back Navigation -->
+            <div class="back-nav">
+                <a href="user-dashboard.html" class="back-link">
+                    <i class="bi bi-arrow-left"></i> Back to search
+                </a>
+            </div>
+            
+            <!-- Car Details Loading Indicator -->
+            <div id="loading-indicator" class="loading-indicator">
+                <div class="spinner"></div>
+                <p>Loading car details...</p>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="error-message" class="error-message" style="display: none;">
+                <i class="bi bi-exclamation-triangle"></i>
+                <p>Sorry, we couldn't load this car's details. Please try again later.</p>
+                <button onclick="location.reload()" class="secondary-btn">Retry</button>
+            </div>
+            
+            <!-- Car Details Content -->
+            <div id="car-details-content" style="display: none;">
+                <!-- Car Basic Info Section -->
+                <section class="car-basic-info">
+                    <div class="car-images">
+                        <img id="car-main-image" src="../static/assets/images/car-placeholder.jpg" alt="Car Image">
+                    </div>
+                    
+                    <div class="car-summary">
+                        <h1 id="car-title">Car Model</h1>
+                        <div class="car-tags">
+                            <span class="car-tag" id="car-status">Available</span>
+                            <span class="car-tag" id="car-type">Sedan</span>
+                        </div>
+                        
+                        <div class="car-location">
+                            <i class="bi bi-geo-alt-fill"></i>
+                            <span id="car-address">Loading address...</span>
+                        </div>
+                        
+                        <div class="car-pricing">
+                            <h3>$<span id="car-price">8.50</span>/hour</h3>
+                        </div>
+                        
+                        <div class="car-actions">
+                            <button id="book-now-btn" class="primary-btn">
+                                <i class="bi bi-calendar-plus"></i> Book Now
+                            </button>
+                            <button id="directions-btn" class="secondary-btn">
+                                <i class="bi bi-map"></i> Get Directions
+                            </button>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Car Details Section -->
+                <section class="car-details-section">
+                    <h2>Car Specifications</h2>
+                    <div class="car-specs-grid">
+                        <div class="spec-item">
+                            <i class="bi bi-palette-fill"></i>
+                            <div class="spec-info">
+                                <span class="spec-label">Color</span>
+                                <span class="spec-value" id="car-color">White</span>
+                            </div>
+                        </div>
+                        
+                        <div class="spec-item">
+                            <i class="bi bi-fuel-pump"></i>
+                            <div class="spec-info">
+                                <span class="spec-label">Fuel Type</span>
+                                <span class="spec-value" id="car-fuel">Petrol</span>
+                            </div>
+                        </div>
+                        
+                        <div class="spec-item">
+                            <i class="bi bi-people-fill"></i>
+                            <div class="spec-info">
+                                <span class="spec-label">Seating</span>
+                                <span class="spec-value" id="car-seating">5 Seats</span>
+                            </div>
+                        </div>
+                        
+                        <div class="spec-item">
+                            <i class="bi bi-briefcase-fill"></i>
+                            <div class="spec-info">
+                                <span class="spec-label">Large Luggage</span>
+                                <span class="spec-value" id="car-large-luggage">2</span>
+                            </div>
+                        </div>
+                        
+                        <div class="spec-item">
+                            <i class="bi bi-briefcase"></i>
+                            <div class="spec-info">
+                                <span class="spec-label">Small Luggage</span>
+                                <span class="spec-value" id="car-small-luggage">3</span>
+                            </div>
+                        </div>
+                        
+                        <div class="spec-item">
+                            <i class="bi bi-car-front-fill"></i>
+                            <div class="spec-info">
+                                <span class="spec-label">License Plate</span>
+                                <span class="spec-value" id="car-plate">ABC123</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Location Section -->
+                <section class="car-location-section">
+                    <h2>Car Location</h2>
+                    <div id="car-map" class="car-map"></div>
+                    <p class="location-note">
+                        <i class="bi bi-info-circle"></i>
+                        You can find this car at the marked location. Use the Get Directions button to navigate there.
+                    </p>
+                </section>
+                
+                <!-- Booking Section -->
+                <section class="booking-section">
+                    <h2>Book This Car</h2>
+                    <div class="booking-form">
+                        <div class="form-group">
+                            <label for="pickup-date">Pickup Date</label>
+                            <input type="date" id="pickup-date" min="" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="pickup-time">Pickup Time</label>
+                            <input type="time" id="pickup-time" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="duration">Duration</label>
+                            <select id="duration" required>
+                                <option value="1">1 hour</option>
+                                <option value="2">2 hours</option>
+                                <option value="4">4 hours</option>
+                                <option value="8">8 hours</option>
+                                <option value="24">1 day</option>
+                                <option value="48">2 days</option>
+                                <option value="72">3 days</option>
+                            </select>
+                        </div>
+                        
+                        <div class="booking-summary">
+                            <h3>Booking Summary</h3>
+                            <div class="summary-row">
+                                <span>Hourly Rate:</span>
+                                <span>$<span id="summary-rate">8.50</span></span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Duration:</span>
+                                <span><span id="summary-duration">1</span> hour(s)</span>
+                            </div>
+                            <div class="summary-row total">
+                                <span>Total:</span>
+                                <span>$<span id="summary-total">8.50</span></span>
+                            </div>
+                        </div>
+                        
+                        <button id="proceed-booking-btn" class="primary-btn wide-btn">
+                            Proceed with Booking
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+    
+    <div id="footer"></div>
+
+    <!-- Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
+    <script src="../static/js/user/user-car-details.js" type="module"></script>
+</body>
+</html>

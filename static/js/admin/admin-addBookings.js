@@ -27,7 +27,7 @@ async function updateCarDetails(carId) {
         const car = carDoc.data();
         document.getElementById('car-image').src = `static/images/${car.car_type}.jpg`;
         document.getElementById('car-details').textContent = 
-            `Seats: ${car.seating_capacity}, Fuel: ${car.fuel_type}, Baggage: ${car.baggage_space}`;
+            `Seats: ${car.seating_capacity}, Fuel: ${car.fuel_type}, Luggage: ${car.large_luggage || 0} large, ${car.small_luggage || 0} small`;
     }
 }
 

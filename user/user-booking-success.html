@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Successful | CarShare</title>
+    <link rel="stylesheet" href="../static/css/users/user.css">
+    <link rel="stylesheet" href="../static/css/users/user-booking-success.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+    <div id="header"></div>
+    
+    <main>
+        <div class="container">
+            <!-- Success Message -->
+            <div class="success-card">
+                <div class="success-icon">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                
+                <h1>Booking Successful!</h1>
+                
+                <p class="success-message">
+                    Your car has been successfully booked. You can find all the details below.
+                </p>
+                
+                <div class="booking-reference">
+                    <span>Booking Reference:</span>
+                    <span id="booking-id">Loading...</span>
+                    <button id="copy-btn" class="icon-btn" aria-label="Copy booking reference">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Booking Summary -->
+            <div class="summary-card">
+                <h2>Booking Summary</h2>
+                
+                <div class="car-overview">
+                    <div class="car-image">
+                        <img id="car-image" src="../static/assets/images/car-placeholder.jpg" alt="Car image">
+                    </div>
+                    <div class="car-info">
+                        <h3 id="car-model">Car Model</h3>
+                        <div class="car-tag" id="car-type">Sedan</div>
+                    </div>
+                </div>
+                
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <i class="bi bi-geo-alt-fill"></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">Pickup Location</div>
+                            <div class="detail-value" id="pickup-location">123 Main Street, Singapore</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <i class="bi bi-calendar-event"></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">Pickup Date</div>
+                            <div class="detail-value" id="pickup-date">June 1, 2023</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <i class="bi bi-clock"></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">Pickup Time</div>
+                            <div class="detail-value" id="pickup-time">2:00 PM</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                        <div class="detail-content">
+                            <div class="detail-label">Duration</div>
+                            <div class="detail-value" id="booking-duration">2 hours</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Next Steps -->
+            <div class="next-steps-card">
+                <h2>Next Steps</h2>
+                
+                <div class="steps-list">
+                    <div class="step-item">
+                        <div class="step-icon">
+                            <i class="bi bi-1-circle-fill"></i>
+                        </div>
+                        <div class="step-content">
+                            <h3>Check Your Email</h3>
+                            <p>We've sent a confirmation to your registered email with all your booking details.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-item">
+                        <div class="step-icon">
+                            <i class="bi bi-2-circle-fill"></i>
+                        </div>
+                        <div class="step-content">
+                            <h3>Arrive at the Pickup Location</h3>
+                            <p>Be at the car's location 5-10 minutes before your booking starts.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-item">
+                        <div class="step-icon">
+                            <i class="bi bi-3-circle-fill"></i>
+                        </div>
+                        <div class="step-content">
+                            <h3>Use the App to Locate Your Car</h3>
+                            <p>Within 30 minutes of your booking start time, you'll be able to use our AR feature to locate your car.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-item">
+                        <div class="step-icon">
+                            <i class="bi bi-4-circle-fill"></i>
+                        </div>
+                        <div class="step-content">
+                            <h3>Return the Car</h3>
+                            <p>Return the car to the same location by the end of your booking period.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="user-bookings.html" class="secondary-btn">
+                    <i class="bi bi-list"></i> View All Bookings
+                </a>
+                <a href="user-dashboard.html" class="primary-btn">
+                    <i class="bi bi-house"></i> Back to Dashboard
+                </a>
+            </div>
+            
+            <!-- Calendar Add Button -->
+            <div class="calendar-button">
+                <button id="add-to-calendar" class="outline-btn">
+                    <i class="bi bi-calendar-plus"></i> Add to Calendar
+                </button>
+            </div>
+        </div>
+    </main>
+    
+    <div id="footer"></div>
+
+    <!-- Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
+    <script src="../static/js/user/user-booking-success.js" type="module"></script>
+</body>
+</html>

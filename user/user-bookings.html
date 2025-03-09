@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings | CarShare</title>
+    <link rel="stylesheet" href="../static/css/users/user.css">
+    <link rel="stylesheet" href="../static/css/users/user-bookings.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+    <div id="header"></div>
+    
+    <main>
+        <div class="container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>My Bookings</h1>
+                <a href="user-dashboard.html" class="back-link">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            
+            <!-- Booking Tabs -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="active">Active & Upcoming</button>
+                    <button class="tab-btn" data-tab="past">Past Bookings</button>
+                    <button class="tab-btn" data-tab="cancelled">Cancelled</button>
+                </div>
+            </div>
+            
+            <!-- Filter Controls -->
+            <div class="filter-controls">
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="search-input" placeholder="Search bookings...">
+                </div>
+                <div class="sort-controls">
+                    <label for="sort-select">Sort by:</label>
+                    <select id="sort-select">
+                        <option value="date-desc">Newest First</option>
+                        <option value="date-asc">Oldest First</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Loading State -->
+            <div id="loading-state" class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading your bookings...</p>
+            </div>
+            
+            <!-- No Bookings State -->
+            <div id="no-bookings" class="no-bookings" style="display: none;">
+                <div class="empty-state">
+                    <i class="bi bi-calendar-x"></i>
+                    <h2>No bookings found</h2>
+                    <p id="empty-state-message">You don't have any bookings in this category.</p>
+                    <a href="user-dashboard.html" class="primary-btn">Find a Car</a>
+                </div>
+            </div>
+            
+            <!-- Active & Upcoming Bookings -->
+            <div id="active-tab" class="tab-content">
+                <div class="bookings-list" id="active-bookings-list"></div>
+            </div>
+            
+            <!-- Past Bookings -->
+            <div id="past-tab" class="tab-content" style="display: none;">
+                <div class="bookings-list" id="past-bookings-list"></div>
+            </div>
+            
+            <!-- Cancelled Bookings -->
+            <div id="cancelled-tab" class="tab-content" style="display: none;">
+                <div class="bookings-list" id="cancelled-bookings-list"></div>
+            </div>
+        </div>
+    </main>
+    
+    <div id="footer"></div>
+    
+    <!-- Booking Card Template -->
+    <template id="booking-card-template">
+        <div class="booking-card">
+            <div class="booking-status">
+                <span class="status-indicator"></span>
+                <span class="status-text"></span>
+            </div>
+            
+            <div class="booking-content">
+                <div class="car-image">
+                    <img src="../static/assets/images/car-placeholder.jpg" alt="Car image">
+                </div>
+                
+                <div class="booking-details">
+                    <div class="booking-header">
+                        <h3 class="car-model">Car Model</h3>
+                        <div class="booking-id">Booking #<span class="id-text">12345</span></div>
+                    </div>
+                    
+                    <div class="booking-time">
+                        <div class="time-icon"><i class="bi bi-calendar-event"></i></div>
+                        <div class="time-text">June 1, 2023 • 2:00 PM - 4:00 PM</div>
+                    </div>
+                    
+                    <div class="booking-location">
+                        <div class="location-icon"><i class="bi bi-geo-alt"></i></div>
+                        <div class="location-text">123 Main Street, Singapore</div>
+                    </div>
+                    
+                    <div class="booking-action">
+                        <a href="#" class="view-details-btn">View Details</a>
+                        <button class="cancel-btn">Cancel Booking</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <!-- Confirmation Modal -->
+    <div class="modal" id="cancel-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cancel Booking</h3>
+                <button class="close-modal"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this booking?</p>
+                <p class="warning-text">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary-btn" id="cancel-no">No, Keep Booking</button>
+                <button class="primary-btn" id="cancel-yes">Yes, Cancel Booking</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
+    <script src="../static/js/user/user-bookings.js" type="module"></script>
+</body>
+</html>
