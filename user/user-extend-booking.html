@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extend Booking | CarShare</title>
+    <link rel="stylesheet" href="../static/css/users/user.css">
+    <link rel="stylesheet" href="../static/css/users/user-extend-booking.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+    <div id="header"></div>
+    
+    <main>
+        <div class="container">
+            <!-- Back Navigation -->
+            <div class="back-nav">
+                <a href="javascript:history.back()" class="back-link">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+            
+            <!-- Loading Indicator -->
+            <div id="loading-indicator" class="loading-indicator">
+                <div class="spinner"></div>
+                <p>Loading booking details...</p>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="error-message" class="error-message" style="display: none;">
+                <i class="bi bi-exclamation-circle"></i>
+                <p></p>
+            </div>
+            
+            <!-- Main Content -->
+            <div id="extend-booking-content" style="display: none;">
+                <div class="extension-header">
+                    <h1>Extend Your Booking</h1>
+                    <p>Add more time to your current booking</p>
+                </div>
+                
+                <!-- Current Booking Summary -->
+                <section class="extension-section">
+                    <h2>Current Booking</h2>
+                    <div class="booking-summary">
+                        <div class="car-overview">
+                            <div class="car-image">
+                                <img id="car-image" src="../static/assets/images/car-placeholder.jpg" alt="Car image">
+                            </div>
+                            <div class="car-info">
+                                <h3 id="car-model">Car Model</h3>
+                                <div class="car-tag" id="car-type">Sedan</div>
+                                <div class="booking-id">Booking #<span id="booking-id">123456</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="booking-details-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                    <span>Location</span>
+                                </div>
+                                <div class="detail-value" id="car-location">123 Main Street</div>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="bi bi-calendar-date-fill"></i>
+                                    <span>Date</span>
+                                </div>
+                                <div class="detail-value" id="booking-date">Monday, June 10, 2024</div>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="bi bi-clock-fill"></i>
+                                    <span>Current Time</span>
+                                </div>
+                                <div class="detail-value" id="current-time">10:00 AM - 12:00 PM</div>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="bi bi-hourglass-split"></i>
+                                    <span>Current Duration</span>
+                                </div>
+                                <div class="detail-value" id="current-duration">2 hours</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Extension Options -->
+                <section class="extension-section">
+                    <h2>Add More Time</h2>
+                    <form id="extension-form">
+                        <div class="extension-options">
+                            <label class="extension-option">
+                                <input type="radio" name="extension-duration" value="30" checked>
+                                <div class="option-content">
+                                    <div class="option-header">
+                                        <h3>30 Minutes</h3>
+                                        <span class="price-tag">$<span id="price-30">4.25</span></span>
+                                    </div>
+                                    <p class="option-description">Quick extension for a little more time</p>
+                                </div>
+                            </label>
+                            
+                            <label class="extension-option">
+                                <input type="radio" name="extension-duration" value="60">
+                                <div class="option-content">
+                                    <div class="option-header">
+                                        <h3>1 Hour</h3>
+                                        <span class="price-tag">$<span id="price-60">8.50</span></span>
+                                    </div>
+                                    <p class="option-description">Standard extension for most needs</p>
+                                </div>
+                            </label>
+                            
+                            <label class="extension-option">
+                                <input type="radio" name="extension-duration" value="120">
+                                <div class="option-content">
+                                    <div class="option-header">
+                                        <h3>2 Hours</h3>
+                                        <span class="price-tag">$<span id="price-120">17.00</span></span>
+                                    </div>
+                                    <p class="option-description">Longer extension for extended use</p>
+                                </div>
+                            </label>
+                            
+                            <label class="extension-option">
+                                <input type="radio" name="extension-duration" value="custom">
+                                <div class="option-content">
+                                    <div class="option-header">
+                                        <h3>Custom</h3>
+                                    </div>
+                                    <div class="custom-duration">
+                                        <select id="custom-hours" disabled>
+                                            <option value="0">0</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                        </select>
+                                        <span>hours</span>
+                                        <select id="custom-minutes" disabled>
+                                            <option value="0">0</option>
+                                            <option value="30">30</option>
+                                        </select>
+                                        <span>minutes</span>
+                                    </div>
+                                    <p class="option-price">
+                                        Price: $<span id="custom-price">0.00</span>
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <!-- New End Time -->
+                        <div class="new-end-time">
+                            <div class="time-label">New end time:</div>
+                            <div class="time-value" id="new-end-time">12:30 PM</div>
+                        </div>
+                        
+                        <!-- Extension Summary -->
+                        <div class="extension-summary">
+                            <div class="summary-row">
+                                <span>Extension fee:</span>
+                                <span>$<span id="extension-fee">4.25</span></span>
+                            </div>
+                            <div class="summary-row total">
+                                <span>Total to pay:</span>
+                                <span>$<span id="total-price">4.25</span></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="form-actions">
+                            <button type="button" class="secondary-btn" id="cancel-btn">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                            <button type="submit" class="primary-btn">
+                                <i class="bi bi-check-circle"></i> Confirm Extension
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+            
+            <!-- Loading Overlay -->
+            <div id="processing-overlay" class="loading-overlay" style="display: none;">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <p>Processing your request...</p>
+                </div>
+            </div>
+            
+            <!-- Success Message -->
+            <div id="success-message" class="success-message" style="display: none;">
+                <i class="bi bi-check-circle-fill"></i>
+                <h2>Booking Extended!</h2>
+                <p>Your booking has been successfully extended.</p>
+                <div class="success-actions">
+                    <button class="primary-btn" id="view-booking-btn">
+                        View Booking Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div id="footer"></div>
+    
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/user/user-extend-booking.js" type="module"></script>
+</body>
+</html>

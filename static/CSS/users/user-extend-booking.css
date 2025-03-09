@@ -1,0 +1,353 @@
+/* Extension Booking Styles */
+.extension-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.extension-header h1 {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.extension-header p {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.extension-section {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.extension-section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    color: #333;
+    font-weight: 600;
+}
+
+/* Booking Summary */
+.booking-summary {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.car-overview {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.car-image {
+    width: 100px;
+    height: 70px;
+    margin-right: 20px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.car-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.car-info h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.3rem;
+}
+
+.car-tag {
+    display: inline-block;
+    background-color: #e3f2fd;
+    color: #1e88e5;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.booking-id {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.booking-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.detail-label i {
+    margin-right: 8px;
+    color: #1e88e5;
+    font-size: 1rem;
+}
+
+.detail-value {
+    font-weight: 500;
+    color: #333;
+}
+
+/* Extension Options */
+.extension-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.extension-option {
+    position: relative;
+    display: block;
+    cursor: pointer;
+}
+
+.extension-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.option-content {
+    padding: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.extension-option input[type="radio"]:checked + .option-content {
+    border-color: #1e88e5;
+    background-color: #e3f2fd;
+}
+
+.option-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.option-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.price-tag {
+    font-weight: 600;
+    color: #1e88e5;
+}
+
+.option-description {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.custom-duration {
+    display: flex;
+    align-items: center;
+    margin: 12px 0;
+}
+
+.custom-duration select {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-right: 8px;
+}
+
+.custom-duration span {
+    color: #666;
+    margin-right: 12px;
+}
+
+.option-price {
+    margin: 8px 0 0 0;
+    font-size: 0.9rem;
+    color: #1e88e5;
+    font-weight: 500;
+}
+
+/* New End Time */
+.new-end-time {
+    background-color: #f0f7ff;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.time-label {
+    font-weight: 500;
+    margin-right: 12px;
+    color: #666;
+}
+
+.time-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1e88e5;
+}
+
+/* Extension Summary */
+.extension-summary {
+    background-color: #f5f5f5;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+}
+
+.summary-row.total {
+    border-top: 1px solid #ddd;
+    margin-top: 8px;
+    padding-top: 16px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+}
+
+.form-actions button {
+    min-width: 120px;
+}
+
+/* Loading and Success States */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-content {
+    text-align: center;
+    padding: 24px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(30, 136, 229, 0.2);
+    border-top-color: #1e88e5;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.success-message {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.success-message i {
+    font-size: 64px;
+    color: #4caf50;
+    margin-bottom: 16px;
+}
+
+.success-message h2 {
+    margin-bottom: 12px;
+    font-size: 1.8rem;
+    color: #333;
+}
+
+.success-message p {
+    margin-bottom: 24px;
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.success-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+/* Error Message */
+.error-message {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+}
+
+.error-message i {
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+/* Loading Indicator */
+.loading-indicator {
+    text-align: center;
+    padding: 40px 0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .booking-details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .extension-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .form-actions button {
+        width: 100%;
+    }
+}
