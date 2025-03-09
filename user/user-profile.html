@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | CarShare</title>
+    <link rel="stylesheet" href="../static/css/users/user.css">
+    <link rel="stylesheet" href="../static/css/users/user-profile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+    <div id="header"></div>
+    
+    <main>
+        <div class="container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>My Profile</h1>
+                <a href="user-dashboard.html" class="back-link">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            
+            <!-- Loading State -->
+            <div id="loading-indicator" class="loading-indicator">
+                <div class="spinner"></div>
+                <p>Loading your profile...</p>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="error-message" class="error-message" style="display: none;">
+                <i class="bi bi-exclamation-triangle"></i>
+                <p>Sorry, we couldn't load your profile. Please try again later.</p>
+                <button onclick="location.reload()" class="secondary-btn">Retry</button>
+            </div>
+            
+            <!-- Profile Content -->
+            <div id="profile-content" style="display: none;">
+                <!-- Profile Summary -->
+                <div class="profile-summary">
+                    <div class="profile-avatar">
+                        <div class="avatar-circle">
+                            <span id="avatar-initials">JD</span>
+                        </div>
+                    </div>
+                    <div class="profile-name">
+                        <h2 id="user-full-name">John Doe</h2>
+                        <p id="user-email">johndoe@example.com</p>
+                        <span class="account-status">Account Active</span>
+                    </div>
+                </div>
+                
+                <!-- Sections Navigation -->
+                <div class="sections-nav">
+                    <button class="section-btn active" data-section="personal-info">Personal Information</button>
+                    <button class="section-btn" data-section="license-info">Driver's License</button>
+                    <button class="section-btn" data-section="security">Security</button>
+                </div>
+                
+                <!-- Personal Information Section -->
+                <section id="personal-info" class="profile-section">
+                    <h3>Personal Information</h3>
+                    <p class="section-desc">Update your personal details</p>
+                    
+                    <form id="personal-info-form" class="profile-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="first-name">First Name</label>
+                                <input type="text" id="first-name" name="firstName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="last-name">Last Name</label>
+                                <input type="text" id="last-name" name="lastName" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" disabled>
+                            <span class="field-note">Email cannot be changed</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" placeholder="8-digit phone number" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <textarea id="address" name="address" rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="primary-btn">Save Changes</button>
+                        </div>
+                    </form>
+                </section>
+                
+                <!-- Driver's License Section -->
+                <section id="license-info" class="profile-section" style="display: none;">
+                    <h3>Driver's License Information</h3>
+                    <p class="section-desc">Your driving license information helps us verify your identity</p>
+                    
+                    <form id="license-info-form" class="profile-form">
+                        <div class="form-group">
+                            <label for="license-number">License Number</label>
+                            <input type="text" id="license-number" name="licenseNumber" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="license-issue-date">Issue Date</label>
+                            <input type="date" id="license-issue-date" name="licenseIssueDate" required>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="primary-btn">Save Changes</button>
+                        </div>
+                    </form>
+                </section>
+                
+                <!-- Security Section -->
+                <section id="security" class="profile-section" style="display: none;">
+                    <h3>Security Settings</h3>
+                    <p class="section-desc">Update your password and security settings</p>
+                    
+                    <form id="security-form" class="profile-form">
+                        <div class="form-group">
+                            <label for="current-password">Current Password</label>
+                            <div class="password-field">
+                                <input type="password" id="current-password" name="currentPassword" required>
+                                <button type="button" class="toggle-password" aria-label="Toggle password visibility">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="new-password">New Password</label>
+                            <div class="password-field">
+                                <input type="password" id="new-password" name="newPassword" required>
+                                <button type="button" class="toggle-password" aria-label="Toggle password visibility">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength-meter">
+                                <div class="strength-bar" data-strength="0"></div>
+                            </div>
+                            <ul class="password-requirements">
+                                <li data-requirement="length">At least 8 characters</li>
+                                <li data-requirement="uppercase">At least 1 uppercase letter</li>
+                                <li data-requirement="number">At least 1 number</li>
+                                <li data-requirement="special">At least 1 special character</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirm-password">Confirm New Password</label>
+                            <div class="password-field">
+                                <input type="password" id="confirm-password" name="confirmPassword" required>
+                                <button type="button" class="toggle-password" aria-label="Toggle password visibility">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="primary-btn">Update Password</button>
+                        </div>
+                    </form>
+                    
+                    <div class="danger-zone">
+                        <h4>Danger Zone</h4>
+                        <p>Actions in this section can't be undone</p>
+                        <button type="button" id="delete-account-btn" class="danger-btn">Delete My Account</button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+    
+    <div id="footer"></div>
+    
+    <!-- Delete Account Confirmation Modal -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Delete Account</h3>
+                <button class="close-modal"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="modal-body">
+                <i class="bi bi-exclamation-triangle-fill warning-icon"></i>
+                <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+                <p>All of your data will be permanently deleted, including booking history.</p>
+                <div class="confirmation-input">
+                    <label for="delete-confirm">To confirm, type "DELETE" below:</label>
+                    <input type="text" id="delete-confirm" placeholder="DELETE">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary-btn close-modal">Cancel</button>
+                <button class="danger-btn" id="confirm-delete-btn" disabled>Delete Account</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Success Toast -->
+    <div id="success-toast" class="toast">
+        <i class="bi bi-check-circle"></i>
+        <span id="toast-message">Changes saved successfully</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
+    <script src="../static/js/user/user-profile.js" type="module"></script>
+</body>
+</html>

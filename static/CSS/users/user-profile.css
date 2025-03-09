@@ -1,0 +1,557 @@
+/* user-profile.css */
+
+/* General Layout */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Page Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: #333;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    color: #555;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: #1e88e5;
+}
+
+.back-link i {
+    margin-right: 5px;
+}
+
+/* Loading and Error States */
+.loading-indicator {
+    text-align: center;
+    padding: 40px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 20px;
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-left-color: #1e88e5;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-message {
+    text-align: center;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #d32f2f;
+}
+
+.error-message i {
+    font-size: 32px;
+    margin-bottom: 15px;
+}
+
+.error-message button {
+    margin-top: 15px;
+}
+
+/* Profile Summary */
+.profile-summary {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 24px;
+}
+
+.profile-avatar {
+    flex: 0 0 auto;
+    margin-right: 10px;
+}
+
+.avatar-circle {
+    width: 80px;
+    height: 80px;
+    background-color: #1e88e5;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
+    user-select: none;
+}
+
+.profile-name {
+    flex: 1;
+}
+
+.profile-name h2 {
+    margin: 0 0 5px 0;
+    font-size: 1.5rem;
+}
+
+.profile-name p {
+    margin: 0 0 10px 0;
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.account-status {
+    display: inline-block;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 16px;
+}
+
+/* Sections Navigation */
+.sections-nav {
+    display: flex;
+    background-color: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 24px;
+}
+
+.section-btn {
+    flex: 1;
+    background-color: transparent;
+    border: none;
+    padding: 15px 10px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    color: #666;
+    position: relative;
+}
+
+.section-btn:hover {
+    background-color: #f5f5f5;
+}
+
+.section-btn.active {
+    color: #1e88e5;
+    font-weight: 600;
+}
+
+.section-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: #1e88e5;
+}
+
+/* Profile Section */
+.profile-section {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 24px;
+}
+
+.profile-section h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.3rem;
+    color: #333;
+}
+
+.section-desc {
+    color: #666;
+    margin: 0 0 20px 0;
+    font-size: 0.95rem;
+}
+
+/* Form Styles */
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+}
+
+.form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 500;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: #1e88e5;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.2);
+}
+
+.form-group input:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.field-note {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+/* Password Field */
+.password-field {
+    position: relative;
+    display: flex;
+}
+
+.password-field input {
+    flex: 1;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1.1rem;
+}
+
+/* Password Strength Meter */
+.password-strength-meter {
+    height: 5px;
+    background-color: #eee;
+    margin-top: 10px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.strength-bar {
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s, background-color 0.3s;
+}
+
+.strength-bar[data-strength="1"] { width: 25%; background-color: #f44336; }
+.strength-bar[data-strength="2"] { width: 50%; background-color: #ff9800; }
+.strength-bar[data-strength="3"] { width: 75%; background-color: #ffeb3b; }
+.strength-bar[data-strength="4"] { width: 100%; background-color: #4caf50; }
+
+.password-requirements {
+    list-style-type: none;
+    padding: 0;
+    margin: 10px 0 0;
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.password-requirements li {
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 4px;
+}
+
+.password-requirements li::before {
+    content: "\f659"; /* Bootstrap icon x-circle */
+    font-family: "bootstrap-icons";
+    position: absolute;
+    left: 0;
+    color: #ccc;
+}
+
+.password-requirements li.met::before {
+    content: "\f633"; /* Bootstrap icon check-circle-fill */
+    color: #4caf50;
+}
+
+/* Danger Zone */
+.danger-zone {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.danger-zone h4 {
+    color: #d32f2f;
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+}
+
+.danger-zone p {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+.danger-btn {
+    background-color: white;
+    color: #d32f2f;
+    border: 1px solid #d32f2f;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.danger-btn:hover {
+    background-color: #d32f2f;
+    color: white;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    animation: modal-appear 0.3s ease-out;
+}
+
+@keyframes modal-appear {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #d32f2f;
+    font-size: 1.2rem;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #666;
+}
+
+.modal-body {
+    padding: 20px;
+    text-align: center;
+}
+
+.warning-icon {
+    font-size: 48px;
+    color: #f44336;
+    margin-bottom: 15px;
+}
+
+.confirmation-input {
+    margin-top: 20px;
+    text-align: left;
+}
+
+.confirmation-input label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.modal-footer {
+    padding: 16px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #eee;
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background-color: #2e7d32;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    opacity: 0;
+    transition: transform 0.3s, opacity 0.3s;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.toast i {
+    font-size: 1.2rem;
+}
+
+/* Button Styles */
+.primary-btn {
+    background-color: #1e88e5;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.primary-btn:hover {
+    background-color: #1565c0;
+}
+
+.secondary-btn {
+    background-color: white;
+    color: #1e88e5;
+    border: 1px solid #1e88e5;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+    background-color: #f0f7ff;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .profile-summary {
+        padding: 16px;
+    }
+    
+    .avatar-circle {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+    }
+    
+    .sections-nav {
+        flex-direction: column;
+    }
+    
+    .section-btn {
+        padding: 12px;
+    }
+    
+    .section-btn.active::after {
+        width: 3px;
+        height: 100%;
+        left: 0;
+        bottom: 0;
+    }
+    
+    .profile-section {
+        padding: 16px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .modal-content {
+        width: 95%;
+    }
+}
