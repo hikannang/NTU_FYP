@@ -43,42 +43,46 @@
         <!-- Fuel Type -->
         <label for="car-fuel-type">Fuel Type:</label>
         <input type="text" id="car-fuel-type" name="car-fuel-type" readonly style="background-color: #e9ecef;">
+        
+        <!-- Big Luggage Space -->
+        <label for="car-big-luggage">Big Luggage Capacity:</label>
+        <input type="text" id="car-big-luggage" name="car-big-luggage" readonly style="background-color: #e9ecef;">
+
+        <!-- Small Luggage Space -->
+        <label for="car-small-luggage">Small Luggage Capacity:</label>
+        <input type="text" id="car-small-luggage" name="car-small-luggage" readonly style="background-color: #e9ecef;">
 
         <!-- License Plate -->
         <label for="car-plate">License Plate:</label>
         <input type="text" id="car-plate" name="car-plate" placeholder="e.g., SMB123A" required>
         <span id="car-plate-error" class="error-message"></span>
-
+        
         <!-- Car Status -->
         <label for="car-status">Car Status:</label>
         <select id="car-status" name="car-status" required>
           <option value="available">Available</option>
           <option value="not available">Not Available</option>
         </select>
-
+        
         <!-- Service Due Date -->
         <label for="service-due">Service Due Date:</label>
         <input type="date" id="service-due" name="service-due" required>
-
+        
         <!-- Insurance Expiry Date -->
         <label for="insurance-expiry">Insurance Expiry Date:</label>
         <input type="date" id="insurance-expiry" name="insurance-expiry" required>
-
+        
         <!-- Submit Button -->
         <button type="submit">Add Car</button>
       </form>
     </div>
   </main>
-
   <div id="footer"></div>
-
   <script type="module">
     import { checkAdmin } from '../static/js/common/auth.js';
-
     // Load header and footer
     document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html').then(response => response.text());
     document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html').then(response => response.text());
-
     // Check if the user is an admin
     try {
       const userData = await checkAdmin();
@@ -89,35 +93,5 @@
     }
   </script>
   <script src="../static/js/admin/admin-addCars.js" type="module"></script>
-
-  <!-- Firebase and App Scripts -->
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log("DOM fully loaded and parsed"); // Debugging step
-
-      // Attach logout event listener
-      const logoutButton = document.getElementById('logout-button');
-      if (logoutButton) {
-        console.log("Logout button found"); // Debugging step
-        logoutButton.addEventListener('click', async () => {
-          console.log("Logout button clicked"); // Debugging step
-          try {
-            const auth = firebase.auth();
-            await auth.signOut();
-            alert("You have been logged out.");
-          } catch (error) {
-            console.error("Error during logout:", error);
-            alert("Logout failed: " + error.message);
-          } finally {
-            window.location.href = "../index.html"; // Redirect to login page
-          }
-        });
-      } else {
-        console.log("Logout button not found"); // Debugging step
-      }
-    });
-  </script>
 </body>
 </html>

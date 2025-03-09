@@ -1,26 +1,14 @@
-<header>
-  <h1>User Dashboard</h1>
-  <button id="logout-button">Logout</button>
+<header class="main-header">
+  <div class="header-content">
+      <div class="logo">
+          <img src="../static/images/logo.png" alt="Logo">
+      </div>
+      <div class="user-welcome">
+          <span id="welcome-message">Welcome</span>
+      </div>
+      <a href="#" id="logout-button" class="header-btn">
+          <i class="bi bi-box-arrow-right"></i>
+          <span>Logout</span>
+      </a>
+  </div>
 </header>
-<nav class="bottom-nav">
-  <a href="../../users/dashboard.html" class="nav-item active">
-      <i class="bi bi-search"></i>
-      <span>Search</span>
-  </a>
-  <a href="../../users/bookings.html" class="nav-item">
-      <i class="bi bi-calendar-check"></i>
-      <span>Bookings</span>
-  </a>
-  <a href="../../users/profile.html" class="nav-item">
-      <i class="bi bi-person"></i>
-      <span>Profile</span>
-  </a>
-</nav>
-<script type="module">
-  import { logout } from '../static/Javascript/auth.js';
-
-  // Attach logout event listener
-  document.getElementById('logout-button').addEventListener('click', () => {
-      logout();
-  });
-</script>

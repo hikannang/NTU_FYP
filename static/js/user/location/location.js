@@ -1,5 +1,5 @@
 // location.js
-const GOOGLE_MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY"; // Replace with your API key
+const GOOGLE_MAPS_API_KEY = "AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc"; // Replace with your API key
 
 /**
  * Get the user's current location using the Geolocation API.

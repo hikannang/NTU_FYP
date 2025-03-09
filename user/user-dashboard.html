@@ -3,72 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Dashboard</title>
+    <title>Dashboard | CarShare</title>
     <link rel="stylesheet" href="../static/css/users/user.css">
+    <link rel="stylesheet" href="../static/css/users/user-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
 </head>
 <body>
     <div id="header"></div>
-
     <main>
-        <!-- Quick Actions Section -->
-        <section id="quick-actions">
+        <!-- Welcome Section -->
+        <section id="welcome-section">
+            <div class="welcome-container">
+                <h1>Welcome, <span id="user-name">User</span></h1>
+                <p>Find and book available cars near you</p>
+            </div>
+        </section>
+
+        <!-- Quick Search Section -->
+        <section id="quick-search">
             <div class="search-card">
-                <h2>Find a Car</h2>
-                <div class="search-inputs">
-                    <input type="text" id="location-input" placeholder="Enter location or use current">
-                    <button id="current-location-btn">
-                        <i class="bi bi-geo-alt"></i>
+                <h2><i class="bi bi-search"></i> Find a Car</h2>
+                <div class="search-form">
+                    <div class="input-group">
+                        <input type="text" id="location-input" placeholder="Enter location">
+                        <button id="current-location-btn" class="icon-btn" aria-label="Use current location">
+                            <i class="bi bi-geo-alt"></i>
+                        </button>
+                    </div>
+                    <div class="date-time-container">
+                        <div class="input-group">
+                            <label for="pickup-date">Pickup Date</label>
+                            <input type="date" id="pickup-date">
+                        </div>
+                        <div class="input-group">
+                            <label for="pickup-time">Pickup Time</label>
+                            <input type="time" id="pickup-time">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="duration">Duration</label>
+                        <select id="duration">
+                            <option value="1">1 hour</option>
+                            <option value="2">2 hours</option>
+                            <option value="4">4 hours</option>
+                            <option value="8">8 hours</option>
+                            <option value="24">1 day</option>
+                            <option value="48">2 days</option>
+                            <option value="72">3 days</option>
+                        </select>
+                    </div>
+                    <button id="search-btn" class="primary-btn">
+                        <i class="bi bi-search"></i> Search Cars
                     </button>
                 </div>
-                <button id="quick-search-btn" class="primary-btn">Search Nearby Cars</button>
             </div>
         </section>
 
         <!-- Map Section -->
         <section id="map-section">
+            <div class="section-header">
+                <h2><i class="bi bi-geo-alt"></i> Nearby Cars</h2>
+                <div class="map-filters">
+                    <select id="car-type-filter">
+                        <option value="all">All Car Types</option>
+                        <option value="sedan">Sedan</option>
+                        <option value="suv">SUV</option>
+                        <option value="compact">Compact</option>
+                    </select>
+                </div>
+            </div>
             <div id="map"></div>
-            <div id="nearby-cars">
+            <div id="nearby-cars" class="cars-grid">
                 <!-- Will be populated with nearby cars -->
             </div>
         </section>
 
-        <!-- Recent Bookings Preview -->
-        <section id="recent-bookings">
+        <!-- Active Bookings Section -->
+        <section id="active-bookings">
             <div class="section-header">
-                <h2>Recent Bookings</h2>
-                <a href="user-bookings.html" class="view-all">View All</a>
+                <h2><i class="bi bi-calendar-check"></i> Your Bookings</h2>
+                <a href="user-bookings.html" class="view-all">View All <i class="bi bi-chevron-right"></i></a>
             </div>
-            <div class="bookings-grid">
-                <!-- Will be populated with recent bookings -->
+            <div class="bookings-container">
+                <!-- Will be populated with active bookings -->
+                <div id="no-bookings-message" class="empty-state">
+                    <i class="bi bi-calendar-x"></i>
+                    <p>You have no active bookings</p>
+                    <a href="#quick-search" class="primary-btn">Find a car now</a>
+                </div>
             </div>
         </section>
     </main>
 
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <a href="user-dashboard.html" class="nav-item active">
-            <i class="bi bi-house-door"></i>
-            <span>Home</span>
-        </a>
-        <a href="user-search.html" class="nav-item">
-            <i class="bi bi-search"></i>
-            <span>Search</span>
-        </a>
-        <a href="user-bookings.html" class="nav-item">
-            <i class="bi bi-calendar-check"></i>
-            <span>Bookings</span>
-        </a>
-        <a href="user-profile.html" class="nav-item">
-            <i class="bi bi-person"></i>
-            <span>Profile</span>
-        </a>
-    </nav>
+    <div id="footer"></div>
 
     <!-- Scripts -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places"></script>
     <script src="../static/js/common/firebase-config.js" type="module"></script>
-    <script src="../static/js/user/user.js" type="module"></script>
-    <script src="../static/js/user/location/location.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
+    <script src="../static/js/user/user-dashboard.js" type="module"></script>
+    <script src="../static/js/user/map-handler.js" type="module"></script>
 </body>
 </html>

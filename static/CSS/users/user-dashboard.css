@@ -1,0 +1,255 @@
+/* user-dashboard.css */
+
+/* Welcome Section */
+#welcome-section {
+    margin-bottom: 20px;
+}
+
+.welcome-container {
+    background: linear-gradient(135deg, var(--primary-color), #0056b3);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: left;
+}
+
+.welcome-container h1 {
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+/* Quick Search Section */
+.date-time-container {
+    display: flex;
+    gap: 10px;
+}
+
+.date-time-container .input-group {
+    flex: 1;
+}
+
+.search-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.search-form label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.icon-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Map Section */
+#map-section {
+    margin-bottom: 20px;
+}
+
+#map {
+    height: 300px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+}
+
+.map-filters {
+    display: flex;
+    gap: 10px;
+}
+
+.cars-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.car-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.car-card:hover {
+    transform: translateY(-5px);
+}
+
+.car-image {
+    height: 150px;
+    width: 100%;
+    object-fit: cover;
+}
+
+.car-details {
+    padding: 15px;
+}
+
+.car-title {
+    font-weight: 500;
+    margin: 0 0 5px 0;
+}
+
+.car-location {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.car-features {
+    display: flex;
+    font-size: 0.9rem;
+    gap: 15px;
+    color: #555;
+    margin-bottom: 15px;
+}
+
+.car-price {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Active Bookings Section */
+.bookings-container {
+    margin-top: 15px;
+}
+
+.booking-card {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.booking-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.booking-title {
+    font-weight: 500;
+    margin: 0;
+}
+
+.booking-status {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 20px;
+}
+
+.status-upcoming {
+    background-color: #e3f2fd;
+    color: #007bff;
+}
+
+.status-ongoing {
+    background-color: #e8f5e9;
+    color: #28a745;
+}
+
+.booking-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+.booking-detail {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    color: #666;
+    font-size: 0.8rem;
+}
+
+.detail-value {
+    font-weight: 500;
+}
+
+.booking-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.booking-action {
+    flex: 1;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    text-align: center;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.primary-action {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.secondary-action {
+    background-color: #f8f9fa;
+    color: #212529;
+    border: 1px solid #dee2e6;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: #dee2e6;
+    margin-bottom: 10px;
+}
+
+.empty-state p {
+    color: #6c757d;
+    margin-bottom: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .date-time-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .welcome-container h1 {
+        font-size: 1.5rem;
+    }
+    
+    #map {
+        height: 250px;
+    }
+    
+    .booking-details {
+        grid-template-columns: 1fr;
+    }
+}

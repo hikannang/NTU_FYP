@@ -3,7 +3,7 @@ import { collection, doc, setDoc, getDocs } from "https://www.gstatic.com/fireba
 
 // Function to geocode address
 async function geocodeAddress(address) {
-  const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=YOUR_GOOGLE_MAPS_API_KEY`);
+  const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc`);
   const data = await response.json();
   if (data.status === 'OK') {
     const location = data.results[0].geometry.location;
@@ -42,6 +42,9 @@ async function populateCarModels() {
   const carColorInput = document.getElementById('car-color');
   const carSeatsInput = document.getElementById('car-seats');
   const carFuelTypeInput = document.getElementById('car-fuel-type');
+  const carBigLuggageInput = document.getElementById('car-big-luggage');
+  const carSmallLuggageInput = document.getElementById('car-small-luggage');
+  
   try {
     const carModelsSnapshot = await getDocs(collection(db, 'car_models'));
     carModelsSnapshot.forEach((doc) => {
@@ -57,10 +60,21 @@ async function populateCarModels() {
       carColorInput.value = selectedModel.color;
       carSeatsInput.value = selectedModel.seating_capacity;
       carFuelTypeInput.value = selectedModel.fuel_type;
+      
+      // Set luggage values based on car model
+      if (selectedModel.large_luggage) {
+        carBigLuggageInput.value = selectedModel.large_luggage;
+      }
+      
+      if (selectedModel.small_luggage) {
+        carSmallLuggageInput.value = selectedModel.small_luggage;
+      }
     });
 
-    // Trigger change event to populate initial values
-    carTypeSelect.dispatchEvent(new Event('change'));
+    // Trigger change event to populate initial values if there are any options
+    if (carTypeSelect.options.length > 0) {
+      carTypeSelect.dispatchEvent(new Event('change'));
+    }
   } catch (error) {
     console.error('Error fetching car models:', error);
     alert('Failed to load car models. Please try again.');
@@ -90,7 +104,7 @@ document.getElementById('use-current-location').addEventListener('click', async 
       document.getElementById('car-longitude').value = longitude;
 
       // Reverse geocode to get the address
-      const apiUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=YOUR_GOOGLE_MAPS_API_KEY`;
+      const apiUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc`;
       try {
         const response = await fetch(apiUrl);
         const data = await response.json();
@@ -111,6 +125,7 @@ document.getElementById('use-current-location').addEventListener('click', async 
 });
 
 // Function to add a new car
+// Form submission event handler
 document.getElementById('add-car-form').addEventListener('submit', async (event) => {
   event.preventDefault();
 
@@ -125,6 +140,9 @@ document.getElementById('add-car-form').addEventListener('submit', async (event)
   const insuranceExpiry = document.getElementById('insurance-expiry').value;
   const latitudeInput = document.getElementById('car-latitude').value;
   const longitudeInput = document.getElementById('car-longitude').value;
+  // Get luggage values from the input fields (which are populated from the model)
+  const carBigLuggage = document.getElementById('car-big-luggage').value;
+  const carSmallLuggage = document.getElementById('car-small-luggage').value;
 
   // Validate license plate
   if (!/^[A-Z0-9]+$/.test(licensePlate)) {
@@ -162,10 +180,12 @@ document.getElementById('add-car-form').addEventListener('submit', async (event)
     },
     car_type: carType,
     car_color: carColor,
-    seating_capacity: carSeats,
+    seating_capacity: parseInt(carSeats),
     fuel_type: carFuelType,
     license_plate: licensePlate,
     status: status,
+    large_luggage: parseInt(carBigLuggage),
+    small_luggage: parseInt(carSmallLuggage),
     service_due: new Date(serviceDue),
     insurance_expiry: new Date(insuranceExpiry),
   };
@@ -185,7 +205,7 @@ document.getElementById('add-car-form').addEventListener('submit', async (event)
     document.getElementById('add-car-form').reset(); // Reset the form
 
     // Redirect to admin-dashboard.html
-    window.location.href = 'dashboard.html';
+    window.location.href = 'admin-dashboard.html';
   } catch (error) {
     console.error('Error adding car:', error);
     alert('Failed to add car. Please try again.');
