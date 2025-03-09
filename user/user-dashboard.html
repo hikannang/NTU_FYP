@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | CarShare</title>
+    <title>Dashboard | BaoCarLiao</title>
     <link rel="stylesheet" href="../static/css/users/user.css">
     <link rel="stylesheet" href="../static/css/users/user-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
@@ -37,20 +37,48 @@
                         </div>
                         <div class="input-group">
                             <label for="pickup-time">Pickup Time</label>
-                            <input type="time" id="pickup-time">
+                            <select id="pickup-time-hours" class="time-select">
+                                <!-- Will be populated with hours dynamically -->
+                            </select>
+                            <span class="time-separator">:</span>
+                            <select id="pickup-time-minutes" class="time-select">
+                                <option value="0">00</option>
+                                <option value="15">15</option>
+                                <option value="30">30</option>
+                                <option value="45">45</option>
+                            </select>
                         </div>
                     </div>
                     <div class="input-group">
-                        <label for="duration">Duration</label>
-                        <select id="duration">
-                            <option value="1">1 hour</option>
-                            <option value="2">2 hours</option>
-                            <option value="4">4 hours</option>
-                            <option value="8">8 hours</option>
-                            <option value="24">1 day</option>
-                            <option value="48">2 days</option>
-                            <option value="72">3 days</option>
-                        </select>
+                        <label>Duration</label>
+                        <div class="duration-select-container">
+                            <div class="duration-select">
+                                <select id="duration-days">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                                <label for="duration-days">Days</label>
+                            </div>
+                            
+                            <div class="duration-select">
+                                <select id="duration-hours">
+                                    <!-- Will be populated with hours dynamically -->
+                                </select>
+                                <label for="duration-hours">Hours</label>
+                            </div>
+                            
+                            <div class="duration-select">
+                                <select id="duration-minutes">
+                                    <option value="0">0</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="45">45</option>
+                                </select>
+                                <label for="duration-minutes">Minutes</label>
+                            </div>
+                        </div>
                     </div>
                     <button id="search-btn" class="primary-btn">
                         <i class="bi bi-search"></i> Search Cars
@@ -75,6 +103,10 @@
             <div id="map"></div>
             <div id="nearby-cars" class="cars-grid">
                 <!-- Will be populated with nearby cars -->
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Finding cars near you...</p>
+                </div>
             </div>
         </section>
 
@@ -85,8 +117,13 @@
                 <a href="user-bookings.html" class="view-all">View All <i class="bi bi-chevron-right"></i></a>
             </div>
             <div class="bookings-container">
+                <!-- Loading indicator for bookings -->
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading your bookings...</p>
+                </div>
                 <!-- Will be populated with active bookings -->
-                <div id="no-bookings-message" class="empty-state">
+                <div id="no-bookings-message" class="empty-state" style="display: none;">
                     <i class="bi bi-calendar-x"></i>
                     <p>You have no active bookings</p>
                     <a href="#quick-search" class="primary-btn">Find a car now</a>
@@ -102,6 +139,5 @@
     <script src="../static/js/common/firebase-config.js" type="module"></script>
     <script src="../static/js/common/auth.js" type="module"></script>
     <script src="../static/js/user/user-dashboard.js" type="module"></script>
-    <script src="../static/js/user/map-handler.js" type="module"></script>
 </body>
 </html>

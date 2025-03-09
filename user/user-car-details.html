@@ -28,47 +28,51 @@
             </div>
             
             <!-- Error Message -->
-            <div id="error-message" class="error-message" style="display: none;">
+            <div id="error-message" class="error-message" style="display:none;">
                 <i class="bi bi-exclamation-triangle"></i>
-                <p>Sorry, we couldn't load this car's details. Please try again later.</p>
-                <button onclick="location.reload()" class="secondary-btn">Retry</button>
+                <p>Unable to load car details. Please try again.</p>
+                <a href="user-dashboard.html" class="primary-btn">Back to Dashboard</a>
             </div>
             
-            <!-- Car Details Content -->
-            <div id="car-details-content" style="display: none;">
-                <!-- Car Basic Info Section -->
-                <section class="car-basic-info">
-                    <div class="car-images">
-                        <img id="car-main-image" src="../static/assets/images/car-placeholder.jpg" alt="Car Image">
+            <!-- Car Details Content Container -->
+            <div id="car-details-content" class="content-container" style="display:none;">
+                <!-- Car Overview Section -->
+                <section class="car-overview-section">
+                    <div class="car-header">
+                        <h1 id="car-name">Car Name</h1>
+                        <div class="car-type-badge" id="car-type">Sedan</div>
                     </div>
                     
-                    <div class="car-summary">
-                        <h1 id="car-title">Car Model</h1>
-                        <div class="car-tags">
-                            <span class="car-tag" id="car-status">Available</span>
-                            <span class="car-tag" id="car-type">Sedan</span>
+                    <div class="car-rating">
+                        <div class="stars">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-half"></i>
                         </div>
-                        
-                        <div class="car-location">
-                            <i class="bi bi-geo-alt-fill"></i>
-                            <span id="car-address">Loading address...</span>
-                        </div>
-                        
-                        <div class="car-pricing">
-                            <h3>$<span id="car-price">8.50</span>/hour</h3>
-                        </div>
-                        
-                        <div class="car-actions">
-                            <button id="book-now-btn" class="primary-btn">
-                                <i class="bi bi-calendar-plus"></i> Book Now
-                            </button>
-                            <button id="directions-btn" class="secondary-btn">
-                                <i class="bi bi-map"></i> Get Directions
-                            </button>
-                        </div>
+                        <span id="car-rating-count">4.5 (20 ratings)</span>
+                    </div>
+                    
+                    <div class="car-location">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <span id="car-address">Loading address...</span>
+                    </div>
+                    
+                    <div class="car-pricing">
+                        <h3>$<span id="car-price">8.50</span>/hour</h3>
+                    </div>
+                    
+                    <div class="car-actions">
+                        <button id="book-now-btn" class="primary-btn">
+                            <i class="bi bi-calendar-plus"></i> Book Now
+                        </button>
+                        <button id="directions-btn" class="secondary-btn">
+                            <i class="bi bi-map"></i> Get Directions
+                        </button>
                     </div>
                 </section>
-                
+
                 <!-- Car Details Section -->
                 <section class="car-details-section">
                     <h2>Car Specifications</h2>
@@ -77,109 +81,145 @@
                             <i class="bi bi-palette-fill"></i>
                             <div class="spec-info">
                                 <span class="spec-label">Color</span>
-                                <span class="spec-value" id="car-color">White</span>
+                                <span class="spec-value" id="car-color">Red</span>
                             </div>
                         </div>
-                        
                         <div class="spec-item">
-                            <i class="bi bi-fuel-pump"></i>
+                            <i class="bi bi-people-fill"></i>
+                            <div class="spec-info">
+                                <span class="spec-label">Seats</span>
+                                <span class="spec-value" id="car-seats">5</span>
+                            </div>
+                        </div>
+                        <div class="spec-item">
+                            <i class="bi bi-fuel-pump-fill"></i>
                             <div class="spec-info">
                                 <span class="spec-label">Fuel Type</span>
                                 <span class="spec-value" id="car-fuel">Petrol</span>
                             </div>
                         </div>
-                        
                         <div class="spec-item">
-                            <i class="bi bi-people-fill"></i>
+                            <i class="bi bi-gear-fill"></i>
                             <div class="spec-info">
-                                <span class="spec-label">Seating</span>
-                                <span class="spec-value" id="car-seating">5 Seats</span>
-                            </div>
-                        </div>
-                        
-                        <div class="spec-item">
-                            <i class="bi bi-briefcase-fill"></i>
-                            <div class="spec-info">
-                                <span class="spec-label">Large Luggage</span>
-                                <span class="spec-value" id="car-large-luggage">2</span>
-                            </div>
-                        </div>
-                        
-                        <div class="spec-item">
-                            <i class="bi bi-briefcase"></i>
-                            <div class="spec-info">
-                                <span class="spec-label">Small Luggage</span>
-                                <span class="spec-value" id="car-small-luggage">3</span>
-                            </div>
-                        </div>
-                        
-                        <div class="spec-item">
-                            <i class="bi bi-car-front-fill"></i>
-                            <div class="spec-info">
-                                <span class="spec-label">License Plate</span>
-                                <span class="spec-value" id="car-plate">ABC123</span>
+                                <span class="spec-label">Transmission</span>
+                                <span class="spec-value" id="car-transmission">Automatic</span>
                             </div>
                         </div>
                     </div>
                 </section>
                 
-                <!-- Location Section -->
-                <section class="car-location-section">
+                <!-- Car Images Section -->
+                <section class="car-images-section">
+                    <div class="car-main-image">
+                        <img id="car-main-image" src="../static/assets/images/car-placeholder.jpg" alt="Car Image">
+                    </div>
+                    <div class="car-thumbnail-container">
+                        <div class="car-thumbnail active">
+                            <img src="../static/assets/images/car-placeholder.jpg" alt="Car Thumbnail 1">
+                        </div>
+                        <div class="car-thumbnail">
+                            <img src="../static/assets/images/car-interior.jpg" alt="Car Interior">
+                        </div>
+                        <div class="car-thumbnail">
+                            <img src="../static/assets/images/car-rear.jpg" alt="Car Rear">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Car Location Map Section -->
+                <section class="car-map-section">
                     <h2>Car Location</h2>
                     <div id="car-map" class="car-map"></div>
-                    <p class="location-note">
-                        <i class="bi bi-info-circle"></i>
-                        You can find this car at the marked location. Use the Get Directions button to navigate there.
-                    </p>
                 </section>
                 
                 <!-- Booking Section -->
                 <section class="booking-section">
-                    <h2>Book This Car</h2>
-                    <div class="booking-form">
-                        <div class="form-group">
-                            <label for="pickup-date">Pickup Date</label>
-                            <input type="date" id="pickup-date" min="" required>
+                    <h2 class="section-title">Book This Car</h2>
+                    
+                    <form id="booking-form" class="booking-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pickup-date">Pickup Date</label>
+                                <input type="date" id="pickup-date" required>
+                            </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="pickup-time">Pickup Time</label>
-                            <input type="time" id="pickup-time" required>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pickup-time-hours">Pickup Time</label>
+                                <div class="time-select-container">
+                                    <select id="pickup-time-hours" required>
+                                        <!-- Will be populated with available hours -->
+                                    </select>
+                                    <span>:</span>
+                                    <select id="pickup-time-minutes" required>
+                                        <!-- Will be populated with 15-minute intervals -->
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="duration">Duration</label>
-                            <select id="duration" required>
-                                <option value="1">1 hour</option>
-                                <option value="2">2 hours</option>
-                                <option value="4">4 hours</option>
-                                <option value="8">8 hours</option>
-                                <option value="24">1 day</option>
-                                <option value="48">2 days</option>
-                                <option value="72">3 days</option>
-                            </select>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Duration</label>
+                                <div class="duration-select-container">
+                                    <div class="duration-select">
+                                        <select id="duration-days">
+                                            <option value="0">0</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                        <label for="duration-days">Days</label>
+                                    </div>
+                                    
+                                    <div class="duration-select">
+                                        <select id="duration-hours">
+                                            <!-- Will be populated with hours (0-23) -->
+                                        </select>
+                                        <label for="duration-hours">Hours</label>
+                                    </div>
+                                    
+                                    <div class="duration-select">
+                                        <select id="duration-minutes">
+                                            <option value="0">0</option>
+                                            <option value="15">15</option>
+                                            <option value="30">30</option>
+                                            <option value="45">45</option>
+                                        </select>
+                                        <label for="duration-minutes">Minutes</label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
+                        <!-- Booking Summary -->
                         <div class="booking-summary">
                             <h3>Booking Summary</h3>
-                            <div class="summary-row">
-                                <span>Hourly Rate:</span>
-                                <span>$<span id="summary-rate">8.50</span></span>
+                            <div class="summary-content">
+                                <div class="summary-row">
+                                    <span>Start:</span>
+                                    <span id="summary-start">Select a date and time</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>End:</span>
+                                    <span id="summary-end">---</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Duration:</span>
+                                    <span id="summary-duration">---</span>
+                                </div>
+                                <div class="summary-row total">
+                                    <span>Total:</span>
+                                    <span>$<span id="summary-total">0.00</span></span>
+                                </div>
                             </div>
-                            <div class="summary-row">
-                                <span>Duration:</span>
-                                <span><span id="summary-duration">1</span> hour(s)</span>
-                            </div>
-                            <div class="summary-row total">
-                                <span>Total:</span>
-                                <span>$<span id="summary-total">8.50</span></span>
-                            </div>
+                            
+                            <button id="proceed-booking-btn" class="primary-btn wide-btn">
+                                Proceed with Booking
+                            </button>
                         </div>
-                        
-                        <button id="proceed-booking-btn" class="primary-btn wide-btn">
-                            Proceed with Booking
-                        </button>
-                    </div>
+                    </form>
                 </section>
             </div>
         </div>
