@@ -117,240 +117,169 @@ function setupLogoutButton() {
 
 // Set default date and time (current time rounded to next 15-minute interval)
 function setDefaultDateTime() {
-  console.log("Setting default date and time");
-
-  const dateInput = document.getElementById("pickup-date");
-  const hoursSelect = document.getElementById("pickup-time-hours");
-  const minutesSelect = document.getElementById("pickup-time-minutes");
-
-  // Set default date to today
+  // Set today's date as minimum
   const today = new Date();
-  const formattedDate = today.toISOString().split("T")[0];
+  const dateString = today.toISOString().split("T")[0];
+  const dateInput = document.getElementById("pickup-date");
+
   if (dateInput) {
-    dateInput.value = formattedDate;
-    dateInput.min = formattedDate; // Can't pick dates in the past
+    dateInput.min = dateString;
+    dateInput.value = dateString;
 
-    // Update time when date changes
-    dateInput.addEventListener("change", updateTimeOptions);
+    // Listen for date changes
+    dateInput.addEventListener("change", updateTimeBasedOnDate);
   }
 
-  // Initialize time options right away
-  updateTimeOptions();
+  // Round current time to next 15-minute interval
+  const currentHour = today.getHours();
+  const currentMinute = today.getMinutes();
+  const roundedMinute = Math.ceil(currentMinute / 15) * 15;
+  const adjustedHour = roundedMinute === 60 ? currentHour + 1 : currentHour;
+  const finalMinute = roundedMinute === 60 ? 0 : roundedMinute;
 
-  // Update time options based on current date
-  function updateTimeOptions() {
-    // Clear existing options
-    if (hoursSelect) hoursSelect.innerHTML = "";
-    if (minutesSelect) minutesSelect.innerHTML = "";
+  // Initialize time selectors
+  initializeTimeSelectors(adjustedHour, finalMinute);
 
-    const now = new Date();
-    const isToday =
-      dateInput && dateInput.value === now.toISOString().split("T")[0];
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+  // Set default duration
+  const durationDays = document.getElementById("duration-days");
+  const durationHours = document.getElementById("duration-hours");
+  const durationMinutes = document.getElementById("duration-minutes");
 
-    // Round up to nearest 15 minutes
-    const roundedMinute = Math.ceil(currentMinute / 15) * 15;
-    const adjustedHour = isToday
-      ? roundedMinute === 60
-        ? currentHour + 1
-        : currentHour
-      : 0;
-    const adjustedMinute = roundedMinute === 60 ? 0 : roundedMinute;
-
-    // Add hours options
-    if (hoursSelect) {
-      for (let i = 0; i < 24; i++) {
-        const option = document.createElement("option");
-        option.value = i;
-        option.text = i.toString().padStart(2, "0");
-
-        // Disable past hours if today
-        if (isToday && i < adjustedHour) {
-          option.disabled = true;
-        }
-
-        hoursSelect.appendChild(option);
-      }
-
-      // Try to select current/next hour if today
-      if (isToday) {
-        // Find first non-disabled option
-        const availableOption = [...hoursSelect.options].find(
-          (opt) => !opt.disabled
-        );
-        if (availableOption) {
-          hoursSelect.value = availableOption.value;
-        } else {
-          hoursSelect.value = "0"; // Fallback
-        }
-      } else {
-        hoursSelect.value = "9"; // Default to 9 AM for future dates
-      }
-
-      // Add change listener
-      hoursSelect.addEventListener("change", updateMinuteOptions);
-    }
-
-    // Initial update of minute options
-    updateMinuteOptions();
-  }
-
-  function updateMinuteOptions() {
-    if (!minutesSelect || !hoursSelect) return;
-
-    // Clear existing options
-    minutesSelect.innerHTML = "";
-
-    const now = new Date();
-    const isToday =
-      dateInput && dateInput.value === now.toISOString().split("T")[0];
-    const selectedHour = parseInt(hoursSelect.value);
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-
-    // Available minute intervals
-    const minuteIntervals = [0, 15, 30, 45];
-
-    minuteIntervals.forEach((interval) => {
-      const option = document.createElement("option");
-      option.value = interval;
-      option.text = interval.toString().padStart(2, "0");
-
-      // Disable past times if on current hour and today
-      if (
-        isToday &&
-        selectedHour === currentHour &&
-        interval < Math.ceil(currentMinute / 15) * 15
-      ) {
-        option.disabled = true;
-      }
-
-      minutesSelect.appendChild(option);
-    });
-
-    // Select first non-disabled option
-    const availableOption = [...minutesSelect.options].find(
-      (opt) => !opt.disabled
-    );
-    if (availableOption) {
-      minutesSelect.value = availableOption.value;
-    } else if (minutesSelect.options.length > 0) {
-      minutesSelect.value = minutesSelect.options[0].value; // Fallback
-    }
-  }
+  if (durationDays) durationDays.value = "0";
+  if (durationHours) durationHours.value = "1";
+  if (durationMinutes) durationMinutes.value = "0";
 }
 
-// Replace your existing initializeTimeSelectors function with this version
+// Initialize time selectors with proper options
 function initializeTimeSelectors(currentHour, currentMinute) {
-  console.log("Initializing time selectors with:", {
-    currentHour,
-    currentMinute,
-  });
-
   const hoursSelect = document.getElementById("pickup-time-hours");
   const minutesSelect = document.getElementById("pickup-time-minutes");
 
-  if (!hoursSelect || !minutesSelect) {
-    console.error("Time selectors not found in the DOM");
-    return;
-  }
+  if (!hoursSelect || !minutesSelect) return;
 
   // Clear existing options
   hoursSelect.innerHTML = "";
+  minutesSelect.innerHTML = "";
 
-  // Add hours
+  // Today's date
+  const selectedDate = document.getElementById("pickup-date").value;
+  const today = new Date().toISOString().split("T")[0];
+  const isToday = selectedDate === today;
+
+  // Hours options (0-23)
   for (let i = 0; i < 24; i++) {
+    // Skip hours that have already passed if today
+    if (isToday && i < currentHour) continue;
+
     const option = document.createElement("option");
     option.value = i;
-    option.textContent = i.toString().padStart(2, "0");
-
-    // If today, disable hours that have already passed
-    if (isToday() && i < currentHour) {
-      option.disabled = true;
-    }
-
+    option.text = i.toString().padStart(2, "0");
     hoursSelect.appendChild(option);
   }
 
-  // Set current hour if available and valid
-  if (currentHour !== null && currentHour >= 0 && currentHour < 24) {
-    hoursSelect.value = currentHour;
+  // If no options were added (all hours passed), add remaining hours
+  if (hoursSelect.options.length === 0 && isToday) {
+    const option = document.createElement("option");
+    option.value = currentHour;
+    option.text = currentHour.toString().padStart(2, "0");
+    hoursSelect.appendChild(option);
   }
 
-  // Update minutes options based on selected hour
-  updateMinutesOptions(minutesSelect, parseInt(hoursSelect.value));
+  // Set default hour
+  if (hoursSelect.options.length > 0) {
+    // Find closest available hour
+    const defaultHour = isToday ? currentHour : 9; // 9 AM default for future dates
+    let selectedIndex = 0;
 
-  // Set up event listener for hour change
-  hoursSelect.addEventListener("change", () => {
-    updateMinutesOptions(minutesSelect, parseInt(hoursSelect.value));
+    for (let i = 0; i < hoursSelect.options.length; i++) {
+      const optionValue = parseInt(hoursSelect.options[i].value);
+      if (optionValue >= defaultHour) {
+        selectedIndex = i;
+        break;
+      }
+    }
+
+    hoursSelect.selectedIndex = selectedIndex;
+  }
+
+  // Update minutes based on selected hour
+  updateMinutesOptions(minutesSelect, isToday ? currentHour : 0);
+
+  // Listen for hour changes
+  hoursSelect.addEventListener("change", function () {
+    updateMinutesOptions(minutesSelect, isToday ? currentHour : 0);
   });
 }
 
-// Replace your updateMinutesOptions function with this version
-function updateMinutesOptions(minutesSelect, selectedHour) {
-  console.log("Updating minutes options for hour:", selectedHour);
+// Update minutes options based on selected hour
+function updateMinutesOptions(minutesSelect, currentHour) {
+  const selectedDate = document.getElementById("pickup-date").value;
+  const today = new Date().toISOString().split("T")[0];
+  const isToday = selectedDate === today;
 
-  if (!minutesSelect) {
-    console.error("Minutes select element not found");
-    return;
-  }
+  const hoursSelect = document.getElementById("pickup-time-hours");
+  const selectedHour = parseInt(hoursSelect.value);
 
   // Clear existing options
   minutesSelect.innerHTML = "";
 
-  // Get current time if today
-  const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
+  // Minutes options (0, 15, 30, 45)
+  const minuteValues = [0, 15, 30, 45];
+  const currentMinute = new Date().getMinutes();
+  const roundedCurrentMinute = Math.ceil(currentMinute / 15) * 15;
 
-  // Minute intervals (0, 15, 30, 45)
-  const minuteIntervals = [0, 15, 30, 45];
-
-  minuteIntervals.forEach((minute) => {
-    // If today and selected hour is current hour, disable minutes that have passed
-    const shouldDisable =
-      isToday() && selectedHour === currentHour && minute <= currentMinute;
+  minuteValues.forEach((minute) => {
+    // Skip minutes that have already passed if same hour on today
+    if (
+      isToday &&
+      selectedHour === currentHour &&
+      minute < roundedCurrentMinute
+    )
+      return;
 
     const option = document.createElement("option");
     option.value = minute;
-    option.textContent = minute.toString().padStart(2, "0");
-    option.disabled = shouldDisable;
-
+    option.text = minute.toString().padStart(2, "0");
     minutesSelect.appendChild(option);
   });
 
-  // Select first non-disabled option
-  const firstValidOption = [...minutesSelect.options].find(
-    (option) => !option.disabled
-  );
-  if (firstValidOption) {
-    minutesSelect.value = firstValidOption.value;
+  // If no options were added (all minutes passed), add next hour's minutes
+  if (minutesSelect.options.length === 0) {
+    minuteValues.forEach((minute) => {
+      const option = document.createElement("option");
+      option.value = minute;
+      option.text = minute.toString().padStart(2, "0");
+      minutesSelect.appendChild(option);
+    });
+  }
+
+  // Set default
+  if (minutesSelect.options.length > 0) {
+    minutesSelect.selectedIndex = 0;
   }
 }
 
-// Helper function to check if the selected date is today
-function isToday() {
-  const today = new Date().toISOString().split("T")[0];
-  const selectedDate = document.getElementById("pickup-date")?.value;
-  return selectedDate === today;
-}
-
-// Modify the updateTimeBasedOnDate function to handle date changes
+// Update time options based on selected date
 function updateTimeBasedOnDate() {
-  console.log("Updating time options based on date");
+  const selectedDate = document.getElementById("pickup-date").value;
+  const today = new Date().toISOString().split("T")[0];
 
+  // Get current hour and minute
   const now = new Date();
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
   const roundedMinute = Math.ceil(currentMinute / 15) * 15;
   const adjustedHour = roundedMinute === 60 ? currentHour + 1 : currentHour;
-  const adjustedMinute = roundedMinute === 60 ? 0 : roundedMinute;
+  const finalMinute = roundedMinute === 60 ? 0 : roundedMinute;
 
-  initializeTimeSelectors(
-    isToday() ? adjustedHour : 0,
-    isToday() ? adjustedMinute : 0
-  );
+  // Reinitialize time selectors based on date
+  if (selectedDate === today) {
+    // Today: Only show future times
+    initializeTimeSelectors(adjustedHour, finalMinute);
+  } else {
+    // Future date: Show all times
+    initializeTimeSelectors(0, 0);
+  }
 }
 
 // Load user data
@@ -799,69 +728,19 @@ function getCurrentLocation() {
   }
 }
 
-// Add this debug function to your code
-async function debugDatabaseAndMap() {
-  console.log("===== DEBUGGING DATABASE AND MAP =====");
-
-  try {
-    // Check if map element exists
-    const mapEl = document.getElementById("map");
-    console.log("Map element exists:", !!mapEl);
-    if (mapEl) {
-      console.log("Map dimensions:", {
-        offsetWidth: mapEl.offsetWidth,
-        offsetHeight: mapEl.offsetHeight,
-        style: mapEl.style.cssText,
-      });
-    }
-
-    // Check if the database has cars
-    const carsRef = collection(db, "cars");
-    const carsSnapshot = await getDocs(carsRef);
-
-    console.log(`Found ${carsSnapshot.size} total cars in database`);
-
-    // Log each car
-    carsSnapshot.docs.forEach((doc, i) => {
-      const car = doc.data();
-      console.log(`Car ${i + 1} (ID: ${doc.id})`, {
-        status: car.status,
-        location: car.current_location,
-        car_type: car.car_type,
-      });
-
-      // Check if car should be displayed
-      const shouldShow =
-        car.status &&
-        car.status.toLowerCase() === "available" &&
-        car.current_location &&
-        typeof car.current_location.latitude === "number" &&
-        typeof car.current_location.longitude === "number";
-
-      console.log(`Should car ${doc.id} show up? ${shouldShow ? "YES" : "NO"}`);
-    });
-
-    console.log("===== END DEBUG =====");
-  } catch (e) {
-    console.error("Debug error:", e);
-  }
-}
-
-// Replace loadNearbyCars with this version
+// Load nearby cars
 async function loadNearbyCars() {
   console.log("Loading nearby cars...");
   const nearbyCarsContainer = document.getElementById("nearby-cars");
 
   try {
-    // Debug the database first
-    await debugDatabaseAndMap();
-
     // Show loading state
     nearbyCarsContainer.innerHTML =
       '<div class="loading-state"><div class="spinner"></div><p>Finding cars near you...</p></div>';
 
-    // Get all available cars
+    // Get all cars
     const carsSnapshot = await getDocs(collection(db, "cars"));
+    console.log(`Found ${carsSnapshot.size} total cars in database`);
 
     if (carsSnapshot.empty) {
       console.log("No cars found in database");
@@ -870,19 +749,18 @@ async function loadNearbyCars() {
       return;
     }
 
-    console.log(`Found ${carsSnapshot.size} cars in database`);
-
     // Process cars
     nearbyCarsList = [];
+
+    // Debug counters
     let availableCount = 0;
     let withLocationCount = 0;
 
-    // Process each car
     for (const carDoc of carsSnapshot.docs) {
       const carData = carDoc.data();
       console.log(`Processing car ${carDoc.id}:`, carData);
 
-      // Check if status is "available" (case-insensitive)
+      // Check if car is available
       if (carData.status && carData.status.toLowerCase() === "available") {
         availableCount++;
         console.log(`Car ${carDoc.id} is available`);
@@ -899,7 +777,7 @@ async function loadNearbyCars() {
             carData.current_location
           );
 
-          // Extract car info from car_type
+          // Extract car information from car_type (e.g., "modely_white" -> "Model Y", "White")
           const carTypeInfo = parseCarType(carData.car_type || "");
 
           // Calculate distance if user position is available
@@ -913,24 +791,20 @@ async function loadNearbyCars() {
             );
           }
 
-          // Add car to display list with required fields
+          // Add to cars list with proper formatting for your structure
           nearbyCarsList.push({
             id: carDoc.id,
             ...carData,
+            // Use extracted info from car_type instead of separate model collection
             make: carTypeInfo.make,
             modelName: carTypeInfo.model,
-            image: `../static/assets/images/car_images/${
+            image: `../static/images/car_images/${
               carData.car_type || "car"
             }.png`,
             distance: distance,
           });
-
-          console.log(`Added car ${carDoc.id} to display list`);
         } else {
-          console.warn(
-            `Car ${carDoc.id} missing valid location data:`,
-            carData.current_location
-          );
+          console.log(`Car ${carDoc.id} is missing valid location data`);
         }
       } else {
         console.log(
@@ -967,37 +841,15 @@ async function loadNearbyCars() {
         nearbyCarsContainer.appendChild(carElement);
       });
 
-      // Force map to display after a short delay
-      setTimeout(() => {
-        // Initialize map with car locations
-        console.log("Initializing map with", nearbyCarsList.length, "cars");
-        initializeMap(nearbyCarsList);
-      }, 500);
+      // Initialize map with car locations
+      console.log("Initializing map with", nearbyCarsList.length, "cars");
+      initializeMap(nearbyCarsList);
     }
   } catch (error) {
     console.error("Error loading cars:", error);
     nearbyCarsContainer.innerHTML =
       '<div class="error-state"><i class="bi bi-exclamation-triangle"></i><p>Failed to load cars. Please try again.</p></div>';
   }
-}
-
-// Make sure the map has height
-function initializeMap(cars) {
-  console.log("Initializing map with cars:", cars);
-
-  // Force map dimensions first
-  const mapElement = document.getElementById("map");
-  if (!mapElement) {
-    console.error("Map element not found");
-    return;
-  }
-
-  // CRITICAL: Set explicit height
-  mapElement.style.height = "400px";
-  console.log("Set map height to 400px");
-
-  // Rest of your map initialization code...
-  // [Keep the existing initializeMap code, but add the style.height above]
 }
 
 // Helper function to parse car_type into make and model
@@ -1097,7 +949,7 @@ function createCarElement(car) {
   return carEl;
 }
 
-// Modified initializeMap function
+// Initialize map with car markers
 function initializeMap(cars) {
   console.log("Initializing map with cars:", cars);
 
@@ -1152,8 +1004,6 @@ function initializeMap(cars) {
     mapCenter = { lat: 1.3521, lng: 103.8198 }; // Default to Singapore
   }
 
-  console.log("Map center will be:", mapCenter);
-
   // Clear existing markers if any
   if (markers && markers.length > 0) {
     console.log("Clearing", markers.length, "existing markers");
@@ -1182,12 +1032,6 @@ function initializeMap(cars) {
     map.setCenter(mapCenter);
   }
 
-  // Ensure Google Maps API is fully loaded
-  if (!google || !google.maps) {
-    console.error("Google Maps API not loaded");
-    return;
-  }
-
   // Add user location marker if available
   if (userPosition) {
     console.log("Adding user marker at:", userPosition);
@@ -1208,105 +1052,88 @@ function initializeMap(cars) {
     }
   }
 
-  // Delay adding car markers slightly to ensure map is ready
-  setTimeout(() => {
-    // Add markers for each car
-    console.log("Adding markers for", cars.length, "cars");
+  // Add markers for each car
+  const bounds = new google.maps.LatLngBounds();
 
-    cars.forEach((car, index) => {
-      if (
-        car.current_location &&
-        typeof car.current_location.latitude === "number" &&
-        typeof car.current_location.longitude === "number"
-      ) {
-        const position = {
-          lat: car.current_location.latitude,
-          lng: car.current_location.longitude,
-        };
+  // If user position exists, extend bounds
+  if (userPosition) {
+    bounds.extend(userPosition);
+  }
 
-        console.log(`Adding marker for car ${car.id || index} at:`, position);
+  console.log("Adding", cars.length, "car markers");
 
-        try {
-          const marker = new google.maps.Marker({
-            position: position,
-            map: map,
-            title: `${car.make || ""} ${
-              car.modelName || car.car_type || "Car"
-            }`,
-            icon: {
-              url: "../static/assets/images/car-marker.png",
-              scaledSize: new google.maps.Size(32, 32),
-            },
-          });
+  cars.forEach((car, index) => {
+    if (car.current_location) {
+      const position = {
+        lat: car.current_location.latitude,
+        lng: car.current_location.longitude,
+      };
 
-          // Store car ID with marker for filtering
-          marker.userData = {
-            carId: car.id,
-            type: "car",
-          };
+      console.log(`Adding marker for car ${index + 1}:`, position);
 
-          // Info window for the marker
-          const infoWindow = new google.maps.InfoWindow({
-            content: `
-                                        <div class="map-info-window">
-                                            <h4>${car.make || ""} ${
-              car.modelName || car.car_type || "Car"
-            }</h4>
-                                            <p>${
-                                              car.address ||
-                                              "Location not available"
-                                            }</p>
-                                            <a href="user-car-details.html?id=${
-                                              car.id
-                                            }" class="info-window-link">View Details</a>
-                                        </div>
-                                    `,
-          });
-
-          marker.addListener("click", () => {
-            infoWindow.open(map, marker);
-          });
-
-          markers.push(marker);
-        } catch (error) {
-          console.error(
-            `Error adding marker for car ${car.id || index}:`,
-            error
-          );
-        }
-      } else {
-        console.warn(
-          `Car ${car.id || index} has invalid location:`,
-          car.current_location
-        );
-      }
-    });
-
-    // If we have markers, fit the map to show all of them
-    if (markers.length > 0) {
       try {
-        const bounds = new google.maps.LatLngBounds();
-        markers.forEach((marker) => {
-          if (marker.getPosition) {
-            bounds.extend(marker.getPosition());
-          }
+        const marker = new google.maps.Marker({
+          position: position,
+          map: map,
+          title: `${car.make} ${car.modelName}`,
+          icon: {
+            url: "../static/assets/images/car-marker.png",
+            scaledSize: new google.maps.Size(32, 32),
+          },
         });
 
-        map.fitBounds(bounds);
+        markers.push(marker);
 
-        // Limit zoom level
-        google.maps.event.addListenerOnce(map, "idle", () => {
-          if (map.getZoom() > 15) map.setZoom(15);
+        // Info window for the marker
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+                                    <div class="map-info-window">
+                                        <h4>${car.make} ${car.modelName}</h4>
+                                        <p>${
+                                          car.address ||
+                                          "Location not available"
+                                        }</p>
+                                        <a href="user-car-details.html?id=${
+                                          car.id
+                                        }" class="info-window-link">View Details</a>
+                                    </div>
+                                `,
         });
 
-        console.log("Map bounds set to show all markers");
+        marker.addListener("click", () => {
+          infoWindow.open(map, marker);
+        });
+
+        // Extend bounds to include this marker
+        bounds.extend(position);
       } catch (error) {
-        console.error("Error setting map bounds:", error);
+        console.error(`Error adding marker for car ${index + 1}:`, error);
       }
     } else {
-      console.warn("No markers to show on map");
+      console.warn(`Car ${index + 1} has no location data`);
     }
-  }, 500); // Short delay to ensure map is ready
+  });
+
+  // If we have markers, fit the map to their bounds
+  if (markers.length > 0) {
+    console.log("Fitting map to bounds with", markers.length, "markers");
+    try {
+      map.fitBounds(bounds);
+
+      // Don't zoom in too much
+      const listener = google.maps.event.addListener(map, "idle", () => {
+        if (map.getZoom() > 15) {
+          console.log("Limiting zoom level to 15");
+          map.setZoom(15);
+        }
+        google.maps.event.removeListener(listener);
+      });
+    } catch (error) {
+      console.error("Error fitting bounds:", error);
+    }
+  } else {
+    console.warn("No markers to fit bounds");
+  }
 }
 
 // Filter nearby cars by type
