@@ -140,6 +140,9 @@ function setDefaultDateTime() {
   // Initialize time selectors
   initializeTimeSelectors(adjustedHour, finalMinute);
 
+  // Add this line to initialize duration selectors
+  initializeDurationSelectors();
+
   // Set default duration
   const durationDays = document.getElementById("duration-days");
   const durationHours = document.getElementById("duration-hours");
@@ -209,6 +212,71 @@ function initializeTimeSelectors(currentHour, currentMinute) {
   hoursSelect.addEventListener("change", function () {
     updateMinutesOptions(minutesSelect, isToday ? currentHour : 0);
   });
+}
+
+// Add this function to ensure duration selectors have options
+function initializeDurationSelectors() {
+  console.log("Initializing duration selectors");
+  
+  const daysSelect = document.getElementById("duration-days");
+  const hoursSelect = document.getElementById("duration-hours");
+  const minutesSelect = document.getElementById("duration-minutes");
+  
+  // Check if all elements exist
+  if (!daysSelect || !hoursSelect || !minutesSelect) {
+    console.error("Duration selectors not found in DOM");
+    return;
+  }
+  
+  // Set up days options (0-30)
+  if (daysSelect.options.length === 0) {
+    for (let i = 0; i <= 30; i++) {
+      const option = document.createElement("option");
+      option.value = i;
+      option.textContent = i;
+      daysSelect.appendChild(option);
+    }
+    daysSelect.value = "0"; // Default to 0 days
+  }
+  
+  // Set up hours options (0-23)
+  if (hoursSelect.options.length === 0) {
+    for (let i = 0; i <= 23; i++) {
+      const option = document.createElement("option");
+      option.value = i;
+      option.textContent = i;
+      hoursSelect.appendChild(option);
+    }
+    hoursSelect.value = "1"; // Default to 1 hour
+  }
+  
+  // Set up minutes options (0, 15, 30, 45)
+  if (minutesSelect.options.length === 0) {
+    [0, 15, 30, 45].forEach(minute => {
+      const option = document.createElement("option");
+      option.value = minute;
+      option.textContent = minute;
+      minutesSelect.appendChild(option);
+    });
+    minutesSelect.value = "0"; // Default to 0 minutes
+  }
+  
+  // Validate that at least some duration is selected
+  daysSelect.addEventListener("change", validateDuration);
+  hoursSelect.addEventListener("change", validateDuration);
+  minutesSelect.addEventListener("change", validateDuration);
+  
+  function validateDuration() {
+    const totalMinutes = 
+      parseInt(daysSelect.value) * 24 * 60 + 
+      parseInt(hoursSelect.value) * 60 + 
+      parseInt(minutesSelect.value);
+      
+    if (totalMinutes <= 0) {
+      alert("Duration must be greater than 0 minutes.");
+      hoursSelect.value = "1"; // Default to 1 hour
+    }
+  }
 }
 
 // Update minutes options based on selected hour
@@ -458,7 +526,7 @@ function createBookingElement(booking) {
   // Get car info with fallbacks
   const carInfo = booking.car || {};
   const carImage =
-    carInfo.image || "../static/assets/images/car-placeholder.jpg";
+    carInfo.image || "../static/images/assets/car-placeholder.png";
   const carAddress = carInfo.address || "Location not available";
 
   // Create the card content
@@ -474,7 +542,7 @@ function createBookingElement(booking) {
                     </div>
                     <div class="booking-content">
                         <div class="car-image">
-                            <img src="${carImage}" alt="Car" onerror="this.src='../static/assets/images/car-placeholder.jpg';">
+                            <img src="${carImage}" alt="Car" onerror="this.src='../static/images/assets/car-placeholder.png';">
                         </div>
                         <div class="booking-details">
                             <h3 class="booking-title">${carInfo.make || ""} ${
@@ -852,6 +920,52 @@ async function loadNearbyCars() {
   }
 }
 
+// Add after loadNearbyCars function
+async function debugMapAndCars() {
+  console.log("==== DEBUG MAP AND CARS ====");
+  
+  // 1. Check map element
+  const mapEl = document.getElementById('map');
+  console.log("Map element exists:", !!mapEl);
+  if (mapEl) {
+    console.log("Map dimensions:", {
+      offsetWidth: mapEl.offsetWidth,
+      offsetHeight: mapEl.offsetHeight,
+      clientWidth: mapEl.clientWidth,
+      clientHeight: mapEl.clientHeight,
+      style: mapEl.style.cssText
+    });
+  }
+  
+  // 2. Check cars in database
+  try {
+    const carsSnapshot = await getDocs(collection(db, "cars"));
+    console.log(`Found ${carsSnapshot.size} total cars in database`);
+    
+    if (carsSnapshot.size > 0) {
+      // Log the first car for inspection
+      const firstCar = carsSnapshot.docs[0].data();
+      console.log("Sample car data:", firstCar);
+      
+      // Check critical properties
+      console.log("Car status:", firstCar.status);
+      console.log("Car location:", firstCar.current_location);
+      
+      if (firstCar.current_location) {
+        console.log("Location lat type:", typeof firstCar.current_location.latitude);
+        console.log("Location lng type:", typeof firstCar.current_location.longitude);
+      }
+    }
+  } catch (e) {
+    console.error("Error checking cars:", e);
+  }
+  
+  console.log("==== END DEBUG ====");
+}
+
+// Call this at the beginning of your loadNearbyCars function
+await debugMapAndCars();
+
 // Helper function to parse car_type into make and model
 function parseCarType(carType) {
   // Default values
@@ -921,7 +1035,7 @@ function createCarElement(car) {
                     <div class="car-image">
                         <img src="${car.image}" alt="${car.make} ${
     car.modelName
-  }" onerror="this.src='../static/assets/images/car-placeholder.jpg';">
+  }" onerror="this.src='../static/images/assets/car-placeholder.png';">
                     </div>
                     <div class="car-info">
                         <div class="car-header">
@@ -953,186 +1067,205 @@ function createCarElement(car) {
 function initializeMap(cars) {
   console.log("Initializing map with cars:", cars);
 
-  // Check if the map element exists and is visible
+  // Check marker image paths
+  const userMarkerPath = "../static/images/assets/user-marker.png";
+  const carMarkerPath = "../static/images/assets/car-marker.png";
+  
+  // Debug image paths
+  const userImg = new Image();
+  userImg.onload = () => console.log("User marker image loaded successfully");
+  userImg.onerror = () => console.error("User marker image failed to load");
+  userImg.src = userMarkerPath;
+  
+  const carImg = new Image();
+  carImg.onload = () => console.log("Car marker image loaded successfully");
+  carImg.onerror = () => console.error("Car marker image failed to load");
+  carImg.src = carMarkerPath;
+
+  // Force map dimensions
   const mapElement = document.getElementById("map");
   if (!mapElement) {
     console.error("Map element not found");
     return;
   }
-
-  // Force dimensions if needed
-  if (mapElement.offsetWidth === 0 || mapElement.offsetHeight === 0) {
-    console.log("Map container has zero dimensions. Setting height.");
-    mapElement.style.height = "400px";
-  }
-
+  
+  // CRITICAL: Explicitly set map height inline
+  mapElement.style.height = '400px';
+  mapElement.style.width = '100%';
+  console.log("Set map dimensions explicitly");
+  
+  // Debug map element
+  console.log("Map element dimensions:", {
+    offsetHeight: mapElement.offsetHeight,
+    clientHeight: mapElement.clientHeight,
+    style: mapElement.style.cssText
+  });
+  
   // Default center (Singapore)
   let mapCenter = { lat: 1.3521, lng: 103.8198 };
-
-  // Try to use user position or first valid car position
-  if (
-    userPosition &&
-    typeof userPosition.lat === "number" &&
-    typeof userPosition.lng === "number"
-  ) {
+  
+  // Try to use user position or car position
+  if (userPosition && typeof userPosition.lat === 'number') {
     mapCenter = userPosition;
-  } else if (cars && cars.length > 0) {
-    // Find first car with valid location
-    const carWithLocation = cars.find(
-      (car) =>
-        car.current_location &&
-        typeof car.current_location.latitude === "number" &&
-        typeof car.current_location.longitude === "number"
-    );
-
-    if (carWithLocation) {
-      mapCenter = {
-        lat: carWithLocation.current_location.latitude,
-        lng: carWithLocation.current_location.longitude,
-      };
-    }
+  } else if (cars.length > 0 && cars[0].current_location) {
+    const firstCar = cars[0];
+    mapCenter = {
+      lat: firstCar.current_location.latitude,
+      lng: firstCar.current_location.longitude
+    };
   }
-
-  // Ensure the map center is valid
-  if (
-    typeof mapCenter.lat !== "number" ||
-    typeof mapCenter.lng !== "number" ||
-    isNaN(mapCenter.lat) ||
-    isNaN(mapCenter.lng)
-  ) {
-    console.error("Invalid map center:", mapCenter);
-    mapCenter = { lat: 1.3521, lng: 103.8198 }; // Default to Singapore
+  
+  console.log("Map will center at:", mapCenter);
+  
+  // Clear existing markers
+  if (markers.length > 0) {
+    markers.forEach(marker => marker.setMap(null));
+    markers = [];
   }
-
-  // Clear existing markers if any
-  if (markers && markers.length > 0) {
-    console.log("Clearing", markers.length, "existing markers");
-    markers.forEach((marker) => marker.setMap(null));
+  
+  // Ensure the Google Maps API is loaded
+  if (!window.google || !window.google.maps) {
+    console.error("Google Maps API not loaded!");
+    return;
   }
-  markers = [];
-
-  // Initialize map if not already
-  if (!map) {
-    console.log("Creating new map instance");
+  
+  // Create the map with a timeout to ensure DOM is ready
+  setTimeout(() => {
     try {
+      // Create new map instance
       map = new google.maps.Map(mapElement, {
         center: mapCenter,
         zoom: 13,
         mapTypeControl: false,
         fullscreenControl: false,
-        streetViewControl: false,
+        streetViewControl: false
       });
+      
       console.log("Map created successfully");
+      
+      // Add markers after a small delay
+      setTimeout(() => addMarkersToMap(cars), 500);
     } catch (error) {
       console.error("Error creating map:", error);
-      return;
     }
-  } else {
-    console.log("Reusing existing map instance");
-    map.setCenter(mapCenter);
-  }
+  }, 300);
+}
 
-  // Add user location marker if available
+// Separate function to add markers
+function addMarkersToMap(cars) {
+  if (!map) {
+    console.error("Map not initialized!");
+    return;
+  }
+  
+  console.log("Adding markers to map");
+  const bounds = new google.maps.LatLngBounds();
+  
+  // Add user position marker if available
   if (userPosition) {
-    console.log("Adding user marker at:", userPosition);
     try {
       const userMarker = new google.maps.Marker({
         position: userPosition,
         map: map,
-        title: "Your Location",
+        title: "Your location",
         icon: {
-          url: "../static/assets/images/user-marker.png",
-          scaledSize: new google.maps.Size(32, 32),
+          url: "../static/images/assets/user-marker.png",
+          scaledSize: new google.maps.Size(32, 32)
         },
-        zIndex: 1000, // Keep user marker on top
+        zIndex: 1000
       });
+      
       markers.push(userMarker);
-    } catch (error) {
-      console.error("Error adding user marker:", error);
+      bounds.extend(userPosition);
+      console.log("Added user position marker");
+    } catch (e) {
+      console.error("Error adding user marker:", e);
     }
   }
-
-  // Add markers for each car
-  const bounds = new google.maps.LatLngBounds();
-
-  // If user position exists, extend bounds
-  if (userPosition) {
-    bounds.extend(userPosition);
-  }
-
-  console.log("Adding", cars.length, "car markers");
-
+  
+  // Fallback car marker icon if custom icon fails
+  const defaultIcon = {
+    path: google.maps.SymbolPath.CIRCLE,
+    scale: 8,
+    fillColor: "#1e88e5",
+    fillOpacity: 1,
+    strokeColor: "#ffffff",
+    strokeWeight: 2
+  };
+  
+  // Add car markers
   cars.forEach((car, index) => {
     if (car.current_location) {
       const position = {
         lat: car.current_location.latitude,
-        lng: car.current_location.longitude,
+        lng: car.current_location.longitude
       };
-
-      console.log(`Adding marker for car ${index + 1}:`, position);
-
+      
       try {
+        // Create marker with fallback icon
         const marker = new google.maps.Marker({
           position: position,
           map: map,
           title: `${car.make} ${car.modelName}`,
           icon: {
-            url: "../static/assets/images/car-marker.png",
-            scaledSize: new google.maps.Size(32, 32),
+            url: "../static/images/assets/car-marker.png",
+            scaledSize: new google.maps.Size(32, 32)
           },
+          // Use default icon as fallback if custom icon fails
+          animation: google.maps.Animation.DROP
         });
-
-        markers.push(marker);
-
-        // Info window for the marker
+        
+        // Handle icon load error
+        google.maps.event.addListener(marker, 'icon_changed', function() {
+          if (!marker.getIcon()) {
+            marker.setIcon(defaultIcon);
+          }
+        });
+        
+        // Create info window
         const infoWindow = new google.maps.InfoWindow({
           content: `
-                                    <div class="map-info-window">
-                                        <h4>${car.make} ${car.modelName}</h4>
-                                        <p>${
-                                          car.address ||
-                                          "Location not available"
-                                        }</p>
-                                        <a href="user-car-details.html?id=${
-                                          car.id
-                                        }" class="info-window-link">View Details</a>
-                                    </div>
-                                `,
+            <div style="padding: 10px; max-width: 200px;">
+              <h4 style="margin-top: 0;">${car.make} ${car.modelName}</h4>
+              <p style="margin-bottom: 8px;">${car.address || 'Location not available'}</p>
+              <a href="user-car-details.html?id=${car.id}" 
+                 style="display: inline-block; background: #1e88e5; color: white; 
+                        padding: 4px 10px; text-decoration: none; border-radius: 4px;">
+                View Details
+              </a>
+            </div>
+          `
         });
-
-        marker.addListener("click", () => {
+        
+        marker.addListener('click', function() {
           infoWindow.open(map, marker);
         });
-
-        // Extend bounds to include this marker
+        
+        markers.push(marker);
         bounds.extend(position);
-      } catch (error) {
-        console.error(`Error adding marker for car ${index + 1}:`, error);
+        console.log(`Added marker for car ${index} at position:`, position);
+      } catch (e) {
+        console.error(`Error adding marker for car ${index}:`, e);
       }
     } else {
-      console.warn(`Car ${index + 1} has no location data`);
+      console.warn(`Car ${index} missing location data:`, car);
     }
   });
-
-  // If we have markers, fit the map to their bounds
+  
+  // Fit bounds if we have markers
   if (markers.length > 0) {
-    console.log("Fitting map to bounds with", markers.length, "markers");
     try {
       map.fitBounds(bounds);
-
-      // Don't zoom in too much
-      const listener = google.maps.event.addListener(map, "idle", () => {
-        if (map.getZoom() > 15) {
-          console.log("Limiting zoom level to 15");
-          map.setZoom(15);
-        }
-        google.maps.event.removeListener(listener);
+      
+      // Don't zoom in too far
+      google.maps.event.addListenerOnce(map, 'idle', function() {
+        if (map.getZoom() > 15) map.setZoom(15);
       });
-    } catch (error) {
-      console.error("Error fitting bounds:", error);
+      
+      console.log("Map bounds adjusted to fit all markers");
+    } catch (e) {
+      console.error("Error fitting bounds:", e);
     }
-  } else {
-    console.warn("No markers to fit bounds");
   }
 }
 
@@ -1177,7 +1310,7 @@ function filterNearbyCars() {
         map: map,
         title: "Your Location",
         icon: {
-          url: "../static/assets/images/user-marker.png",
+          url: "../static/images/assets/user-marker.png",
           scaledSize: new google.maps.Size(32, 32),
         },
         zIndex: 1000,
@@ -1201,7 +1334,7 @@ function filterNearbyCars() {
           map: map,
           title: `${car.make} ${car.modelName}`,
           icon: {
-            url: "../static/assets/images/car-marker.png",
+            url: "../static/images/assets/car-marker.png",
             scaledSize: new google.maps.Size(32, 32),
           },
         });
