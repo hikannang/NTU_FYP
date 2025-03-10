@@ -186,6 +186,7 @@ function setupPriceRangeSlider() {
 
 // Load search results
 async function loadSearchResults() {
+    await debugDatabase();
     try {
         showLoading(true);
         
@@ -206,65 +207,81 @@ async function loadSearchResults() {
         
         for (const carDoc of carsSnapshot.docs) {
             const carData = carDoc.data();
+            console.log(`Processing car ${carDoc.id}:`, JSON.stringify(carData));
             
-            // Skip if car is not available
-            if (carData.status !== 'available') continue;
-            
-            // Check if car has valid location data
-            if (!carData.current_location || 
-                typeof carData.current_location.latitude !== 'number' || 
-                typeof carData.current_location.longitude !== 'number') {
-                continue;
-            }
-            
-            // Check if car is available during the requested time
-            const isAvailable = await isCarAvailableForBooking(
-                carDoc.id, 
-                requestedStart,
-                requestedEnd
-            );
-            
-            if (!isAvailable) continue;
-            
-            // Get model details
-            let modelData = {};
-            if (carData.model_id) {
-                try {
-                    const modelDoc = await getDoc(doc(db, 'models', carData.model_id));
-                    if (modelDoc.exists()) {
-                        modelData = modelDoc.data();
+            // Add more defensive status check (case insensitive)
+            if (carData.status && carData.status.toLowerCase() === 'available') {
+                
+                // Add more detailed location validation
+                if (carData.current_location && 
+                    typeof carData.current_location.latitude === 'number' && 
+                    typeof carData.current_location.longitude === 'number' &&
+                    !isNaN(carData.current_location.latitude) && 
+                    !isNaN(carData.current_location.longitude)) {
+                    
+                    // Use car_type for model lookup instead of model_id
+                    let modelData = {};
+                    if (carData.car_type) {
+                        try {
+                            // Try both potential collections
+                            let modelDoc = await getDoc(doc(db, 'models', carData.car_type));
+                            
+                            if (!modelDoc.exists()) {
+                                modelDoc = await getDoc(doc(db, 'car_models', carData.car_type));
+                            }
+                            
+                            if (modelDoc.exists()) {
+                                modelData = modelDoc.data();
+                                console.log(`Found model data for ${carData.car_type}:`, modelData);
+                            } else {
+                                console.log(`No model data found for ${carData.car_type}`);
+                            }
+                        } catch (e) {
+                            console.error(`Error fetching model data for ${carData.car_type}:`, e);
+                        }
                     }
-                } catch (e) {
-                    console.error("Error fetching model data:", e);
+                    
+                    // Calculate distance if user position is available
+                    let distance = null;
+                    if (userPosition) {
+                        distance = calculateDistance(
+                            userPosition.lat,
+                            userPosition.lng,
+                            carData.current_location.latitude,
+                            carData.current_location.longitude
+                        );
+                    }
+                    
+                    // Add default price_per_hour if missing
+                    if (!carData.price_per_hour) {
+                        carData.price_per_hour = 15; // Default hourly price
+                        console.log(`No price_per_hour for car ${carDoc.id}, using default:`, carData.price_per_hour);
+                    }
+                    
+                    // Calculate total price for the booking
+                    const totalHours = searchParams.totalDurationMinutes / 60;
+                    const totalPrice = carData.price_per_hour * totalHours;
+                    
+                    // Add to results with correct attributes
+                    carResults.push({
+                        id: carDoc.id,
+                        ...carData,
+                        make: modelData.make || carData.car_type || 'Unknown',
+                        modelName: modelData.name || modelData.model || carData.car_type || 'Unknown',
+                        image: modelData.image_url || 
+                               `../static/assets/images/${(carData.car_type || 'sedan').toLowerCase()}.jpg`,
+                        distance: distance,
+                        totalPrice: totalPrice,
+                        price_per_hour: carData.price_per_hour
+                    });
+                    
+                    console.log(`Added car ${carDoc.id} to results`);
+                } else {
+                    console.log(`Car ${carDoc.id} has invalid location data:`, carData.current_location);
                 }
+            } else {
+                console.log(`Car ${carDoc.id} is not available. Status:`, carData.status);
             }
-            
-            // Calculate distance if user position is available
-            let distance = null;
-            if (userPosition) {
-                distance = calculateDistance(
-                    userPosition.lat,
-                    userPosition.lng,
-                    carData.current_location.latitude,
-                    carData.current_location.longitude
-                );
-            }
-            
-            // Calculate total price for the booking
-            const totalHours = searchParams.totalDurationMinutes / 60;
-            const totalPrice = carData.price_per_hour ? carData.price_per_hour * totalHours : 0;
-            
-            // Add to results
-            carResults.push({
-                id: carDoc.id,
-                ...carData,
-                make: modelData.make || carData.make || 'Unknown',
-                modelName: modelData.model || carData.car_type || 'Unknown',
-                image: modelData.image_url || 
-                       `../static/assets/images/${(carData.car_type || 'sedan').toLowerCase()}.jpg`,
-                distance: distance,
-                totalPrice: totalPrice
-            });
         }
         
         // Store original results for filtering
@@ -767,3 +784,60 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 function deg2rad(deg) {
     return deg * (Math.PI/180);
 }
+
+// Add this function at the beginning of loadSearchResults
+async function debugDatabase() {
+    console.log("==== DATABASE DEBUG INFO ====");
+    
+    // 1. Check cars collection
+    try {
+        const carsSnapshot = await getDocs(collection(db, 'cars'));
+        console.log(`Found ${carsSnapshot.size} total cars`);
+        
+        if (carsSnapshot.size > 0) {
+            // Sample the first car
+            const firstCar = carsSnapshot.docs[0].data();
+            console.log("Sample car:", JSON.stringify(firstCar, null, 2));
+            
+            // Count available cars
+            let availableCount = 0;
+            let validLocationCount = 0;
+            
+            carsSnapshot.docs.forEach(doc => {
+                const car = doc.data();
+                if (car.status && car.status.toLowerCase() === 'available') availableCount++;
+                if (car.current_location && 
+                    typeof car.current_location.latitude === 'number' && 
+                    typeof car.current_location.longitude === 'number') {
+                    validLocationCount++;
+                }
+            });
+            
+            console.log(`Available cars: ${availableCount}`);
+            console.log(`Cars with valid location: ${validLocationCount}`);
+        }
+    } catch (e) {
+        console.error("Error checking cars collection:", e);
+    }
+    
+    // 2. Check models collection
+    try {
+        const modelsSnapshot = await getDocs(collection(db, 'models'));
+        console.log(`Found ${modelsSnapshot.size} models in 'models' collection`);
+    } catch (e) {
+        console.log("Error or no 'models' collection:", e.message);
+    }
+    
+    // 3. Check car_models collection
+    try {
+        const carModelsSnapshot = await getDocs(collection(db, 'car_models'));
+        console.log(`Found ${carModelsSnapshot.size} models in 'car_models' collection`);
+    } catch (e) {
+        console.log("Error or no 'car_models' collection:", e.message);
+    }
+    
+    console.log("==== END DEBUG INFO ====");
+}
+
+// Call this at the beginning of loadSearchResults
+await debugDatabase();

@@ -763,14 +763,23 @@ async function loadNearbyCars() {
                     
                     // Get model details if available
                     let modelData = {};
-                    if (carData.model_id) {
+                    if (carData.car_type) {  // Using car_type as the model identifier
                         try {
-                            const modelDoc = await getDoc(doc(db, 'models', carData.model_id));
+                            // Try both collections
+                            let modelDoc = await getDoc(doc(db, 'models', carData.car_type));
+                            
+                            if (!modelDoc.exists()) {
+                                // Try car_models if models doesn't have it
+                                modelDoc = await getDoc(doc(db, 'car_models', carData.car_type));
+                            }
+                            
                             if (modelDoc.exists()) {
                                 modelData = modelDoc.data();
+                            } else {
+                                console.log(`No model data found for ${carData.car_type}`);
                             }
                         } catch (e) {
-                            console.error("Error fetching model data:", e);
+                            console.error(`Error fetching model data for ${carData.car_type}:`, e);
                         }
                     }
                     
@@ -789,10 +798,13 @@ async function loadNearbyCars() {
                     nearbyCarsList.push({
                         id: carDoc.id,
                         ...carData,
-                        make: modelData.make || 'Unknown',
-                        modelName: modelData.model || carData.car_type || 'Unknown',
-                        image: modelData.image_url || `../static/assets/images/${carData.car_type?.toLowerCase() || 'car'}.jpg`,
-                        distance: distance
+                        make: modelData.make || carData.car_type || 'Unknown',
+                        modelName: modelData.name || modelData.model || carData.car_type || 'Unknown',
+                        image: modelData.image_url || 
+                               `../static/assets/images/${(carData.car_type || 'sedan').toLowerCase()}.jpg`,
+                        distance: distance,
+                        // Add missing price_per_hour if it doesn't exist in your database
+                        price_per_hour: carData.price_per_hour || 15 // Default hourly price
                     });
                 } else {
                     console.log(`Car ${carDoc.id} is missing location data!`);
