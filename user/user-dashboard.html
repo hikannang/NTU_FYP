@@ -36,17 +36,19 @@
                             <input type="date" id="pickup-date">
                         </div>
                         <div class="input-group">
-                            <label for="pickup-time">Pickup Time</label>
-                            <select id="pickup-time-hours" class="time-select">
-                                <!-- Will be populated with hours dynamically -->
-                            </select>
-                            <span class="time-separator">:</span>
-                            <select id="pickup-time-minutes" class="time-select">
-                                <option value="0">00</option>
-                                <option value="15">15</option>
-                                <option value="30">30</option>
-                                <option value="45">45</option>
-                            </select>
+                            <label for="pickup-time-hours">Pickup Time</label>
+                            <div class="time-select-container">
+                                <select id="pickup-time-hours" class="time-select">
+                                    <!-- Will be populated with hours dynamically -->
+                                </select>
+                                <span class="time-separator">:</span>
+                                <select id="pickup-time-minutes" class="time-select">
+                                    <option value="0">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="input-group">

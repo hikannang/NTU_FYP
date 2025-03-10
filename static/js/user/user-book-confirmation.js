@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('header').innerHTML = await fetch('../static/headerFooter/user-header.html').then(response => response.text());
     document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/user-footer.html').then(response => response.text());
     
+    // Setup logout button
+    setupLogoutButton();
+    
     // Check authentication
     onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -47,6 +50,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 });
+
+function setupLogoutButton() {
+    setTimeout(() => {
+        const logoutButton = document.getElementById('logout-button');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', async (event) => {
+                event.preventDefault();
+                try {
+                    await signOut(auth);
+                    window.location.href = "../index.html";
+                } catch (error) {
+                    console.error("Error during logout:", error);
+                    alert("Logout failed: " + error.message);
+                }
+            });
+        }
+    }, 300);
+}
 
 // Load car data from Firestore
 async function loadCarData() {
