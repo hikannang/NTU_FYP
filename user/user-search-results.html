@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results | BaoCarLiao</title>
+    <link rel="stylesheet" href="../static/css/users/user.css">
+    <link rel="stylesheet" href="../static/css/users/user-search-results.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places"></script>
+</head>
+<body>
+    <div id="header"></div>
+    
+    <main>
+        <!-- Search Summary Bar -->
+        <section id="search-summary">
+            <div class="summary-container">
+                <div class="search-details">
+                    <div class="location-time">
+                        <h1 id="search-location">Loading location...</h1>
+                        <div class="search-time">
+                            <span id="search-date">Loading date...</span> • 
+                            <span id="search-time">Loading time...</span> • 
+                            <span id="search-duration">Loading duration...</span>
+                        </div>
+                    </div>
+                    <button id="modify-search-btn" class="secondary-btn">
+                        <i class="bi bi-pencil"></i> Modify Search
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Main Content -->
+        <div class="content-container">
+            <!-- Left Side: Filters and Cars -->
+            <div class="results-container">
+                <!-- Filters Section -->
+                <section id="filters-section">
+                    <div class="filters-header">
+                        <h2>Filters</h2>
+                        <button id="clear-filters" class="text-btn">Clear All</button>
+                    </div>
+                    <div class="filter-options">
+                        <div class="filter-group">
+                            <label>Car Type</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="car-type" value="sedan"> Sedan
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="car-type" value="suv"> SUV
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="car-type" value="compact"> Compact
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>Price Range</label>
+                            <div class="range-slider">
+                                <div class="range-values">
+                                    <span>$<span id="price-min">0</span></span>
+                                    <span>$<span id="price-max">100</span></span>
+                                </div>
+                                <input type="range" id="price-range" min="0" max="100" step="5" value="100">
+                            </div>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>Features</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="features" value="bluetooth"> Bluetooth
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="features" value="gps"> GPS Navigation
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="features" value="camera"> Backup Camera
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label>Sort By</label>
+                            <select id="sort-select">
+                                <option value="nearest">Nearest First</option>
+                                <option value="price-asc">Price: Low to High</option>
+                                <option value="price-desc">Price: High to Low</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Search Results -->
+                <section id="search-results">
+                    <h2>Available Cars</h2>
+                    
+                    <!-- Loading State -->
+                    <div id="loading-indicator" class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Finding the perfect car for you...</p>
+                    </div>
+                    
+                    <!-- Error State -->
+                    <div id="error-state" class="error-state" style="display: none;">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <h3>Oops! Something went wrong</h3>
+                        <p>We couldn't load the search results. Please try again.</p>
+                        <button id="retry-btn" class="primary-btn">Retry</button>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="empty-state" class="empty-state" style="display: none;">
+                        <i class="bi bi-car-front"></i>
+                        <h3>No cars available</h3>
+                        <p>We couldn't find any cars matching your criteria. Try adjusting your filters or search parameters.</p>
+                        <button id="modify-search-btn-empty" class="primary-btn">Modify Search</button>
+                    </div>
+                    
+                    <!-- Results Grid -->
+                    <div id="results-grid" class="results-grid"></div>
+                </section>
+            </div>
+            
+            <!-- Right Side: Map -->
+            <section id="map-section">
+                <div class="toggle-view-buttons mobile-only">
+                    <button id="toggle-list" class="view-btn active">
+                        <i class="bi bi-list-ul"></i> List View
+                    </button>
+                    <button id="toggle-map" class="view-btn">
+                        <i class="bi bi-map"></i> Map View
+                    </button>
+                </div>
+                <div id="map"></div>
+            </section>
+        </div>
+    </main>
+    
+    <div id="footer"></div>
+    
+    <!-- Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
+    <script src="../static/js/user/user-search-results.js" type="module"></script>
+</body>
+</html>
