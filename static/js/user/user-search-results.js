@@ -186,7 +186,6 @@ function setupPriceRangeSlider() {
 
 // Load search results
 async function loadSearchResults() {
-    await debugDatabase();
     try {
         showLoading(true);
         
@@ -784,60 +783,3 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 function deg2rad(deg) {
     return deg * (Math.PI/180);
 }
-
-// Add this function at the beginning of loadSearchResults
-async function debugDatabase() {
-    console.log("==== DATABASE DEBUG INFO ====");
-    
-    // 1. Check cars collection
-    try {
-        const carsSnapshot = await getDocs(collection(db, 'cars'));
-        console.log(`Found ${carsSnapshot.size} total cars`);
-        
-        if (carsSnapshot.size > 0) {
-            // Sample the first car
-            const firstCar = carsSnapshot.docs[0].data();
-            console.log("Sample car:", JSON.stringify(firstCar, null, 2));
-            
-            // Count available cars
-            let availableCount = 0;
-            let validLocationCount = 0;
-            
-            carsSnapshot.docs.forEach(doc => {
-                const car = doc.data();
-                if (car.status && car.status.toLowerCase() === 'available') availableCount++;
-                if (car.current_location && 
-                    typeof car.current_location.latitude === 'number' && 
-                    typeof car.current_location.longitude === 'number') {
-                    validLocationCount++;
-                }
-            });
-            
-            console.log(`Available cars: ${availableCount}`);
-            console.log(`Cars with valid location: ${validLocationCount}`);
-        }
-    } catch (e) {
-        console.error("Error checking cars collection:", e);
-    }
-    
-    // 2. Check models collection
-    try {
-        const modelsSnapshot = await getDocs(collection(db, 'models'));
-        console.log(`Found ${modelsSnapshot.size} models in 'models' collection`);
-    } catch (e) {
-        console.log("Error or no 'models' collection:", e.message);
-    }
-    
-    // 3. Check car_models collection
-    try {
-        const carModelsSnapshot = await getDocs(collection(db, 'car_models'));
-        console.log(`Found ${carModelsSnapshot.size} models in 'car_models' collection`);
-    } catch (e) {
-        console.log("Error or no 'car_models' collection:", e.message);
-    }
-    
-    console.log("==== END DEBUG INFO ====");
-}
-
-// Call this at the beginning of loadSearchResults
-await debugDatabase();
