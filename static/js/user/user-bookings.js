@@ -1,7 +1,7 @@
 // user-bookings.js
 import { db, auth } from '../common/firebase-config.js';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 
 // Initialize variables
 let userId;

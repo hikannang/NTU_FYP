@@ -1,7 +1,7 @@
 // user-car-details.js
 import { db, auth } from '../common/firebase-config.js';
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 
 // Initialize global variables
 let carId;
