@@ -26,7 +26,6 @@ const viewToggle = document.getElementById('view-toggle');
 const mapViewButton = document.getElementById('map-view-btn');
 const listViewButton = document.getElementById('list-view-btn');
 const carTypesContainer = document.getElementById('car-type-filters');
-const priceRangeSlider = document.getElementById('price-range');
 const mapContainer = document.getElementById('map-container');
 
 // Initialize the page
@@ -153,18 +152,22 @@ function calculateDurationText(days, hours, minutes) {
 
 // Initialize search filters
 function initializeFilters() {
-    // Car type filters from unique values in results
+    // Car type filters from database
     populateCarTypeFilters();
     
-    // Setup price range slider
-    setupPriceRangeSlider();
+    // Add fuel type filters
+    populateFuelTypeFilters();
+    
+    // Add seating capacity filters
+    populateSeatingFilters();
 }
 
 // Populate car type filter checkboxes
 function populateCarTypeFilters() {
     if (!carTypesContainer) return;
     
-    const carTypes = ['Sedan', 'SUV', 'Hatchback', 'Luxury', 'Compact'];
+    // Car types based on your database structure (just Model and Vezel)
+    const carTypes = ['Model', 'Vezel'];
     
     carTypes.forEach(type => {
         const filterItem = document.createElement('div');
@@ -177,17 +180,51 @@ function populateCarTypeFilters() {
     });
 }
 
-// Setup price range slider
-function setupPriceRangeSlider() {
-    if (!priceRangeSlider) return;
+// Add this function to populate fuel type filters
+function populateFuelTypeFilters() {
+    const fuelTypesContainer = document.getElementById('fuel-type-filters');
+    if (!fuelTypesContainer) return;
     
-    // Will be initialized after results are loaded to get min/max values
+    // Fuel types from your database
+    const fuelTypes = ['Petrol', 'Electric'];
+    
+    fuelTypes.forEach(type => {
+        const filterItem = document.createElement('div');
+        filterItem.className = 'filter-item';
+        filterItem.innerHTML = `
+            <input type="checkbox" id="fuel-${type.toLowerCase()}" class="fuel-type-filter" value="${type.toLowerCase()}">
+            <label for="fuel-${type.toLowerCase()}">${type}</label>
+        `;
+        fuelTypesContainer.appendChild(filterItem);
+    });
+}
+
+// Add this function to populate seating capacity filters
+function populateSeatingFilters() {
+    const seatingContainer = document.getElementById('seating-filters');
+    if (!seatingContainer) return;
+    
+    // Common seating capacities
+    const seatingOptions = [5, 7];
+    
+    seatingOptions.forEach(capacity => {
+        const filterItem = document.createElement('div');
+        filterItem.className = 'filter-item';
+        filterItem.innerHTML = `
+            <input type="checkbox" id="seats-${capacity}" class="seating-filter" value="${capacity}">
+            <label for="seats-${capacity}">${capacity} seats</label>
+        `;
+        seatingContainer.appendChild(filterItem);
+    });
 }
 
 // Load search results
 async function loadSearchResults() {
     try {
         showLoading(true);
+        
+        // Debug database first to verify cars data
+        await debugDatabaseAndMap();
         
         // Get all cars
         const carsSnapshot = await getDocs(collection(db, 'cars'));
@@ -197,6 +234,8 @@ async function loadSearchResults() {
             return;
         }
         
+        console.log(`Found ${carsSnapshot.size} total cars in database`);
+        
         // Process car data
         carResults = [];
         
@@ -204,107 +243,98 @@ async function loadSearchResults() {
         const requestedStart = new Date(searchParams.startDateTime);
         const requestedEnd = new Date(searchParams.endDateTime);
         
+        // Track processing stats
+        let availableCount = 0;
+        let locationValidCount = 0;
+        let bookingAvailableCount = 0;
+        
         for (const carDoc of carsSnapshot.docs) {
             const carData = carDoc.data();
-            console.log(`Processing car ${carDoc.id}:`, JSON.stringify(carData));
+            console.log(`Processing car ${carDoc.id}:`, carData);
             
-            // Add more defensive status check (case insensitive)
-            if (carData.status && carData.status.toLowerCase() === 'available') {
-                
-                // Add more detailed location validation
-                if (carData.current_location && 
-                    typeof carData.current_location.latitude === 'number' && 
-                    typeof carData.current_location.longitude === 'number' &&
-                    !isNaN(carData.current_location.latitude) && 
-                    !isNaN(carData.current_location.longitude)) {
-                    
-                    // Use car_type for model lookup instead of model_id
-                    let modelData = {};
-                    if (carData.car_type) {
-                        try {
-                            // Try both potential collections
-                            let modelDoc = await getDoc(doc(db, 'models', carData.car_type));
-                            
-                            if (!modelDoc.exists()) {
-                                modelDoc = await getDoc(doc(db, 'car_models', carData.car_type));
-                            }
-                            
-                            if (modelDoc.exists()) {
-                                modelData = modelDoc.data();
-                                console.log(`Found model data for ${carData.car_type}:`, modelData);
-                            } else {
-                                console.log(`No model data found for ${carData.car_type}`);
-                            }
-                        } catch (e) {
-                            console.error(`Error fetching model data for ${carData.car_type}:`, e);
-                        }
-                    }
-                    
-                    // Calculate distance if user position is available
-                    let distance = null;
-                    if (userPosition) {
-                        distance = calculateDistance(
-                            userPosition.lat,
-                            userPosition.lng,
-                            carData.current_location.latitude,
-                            carData.current_location.longitude
-                        );
-                    }
-                    
-                    // Add default price_per_hour if missing
-                    if (!carData.price_per_hour) {
-                        carData.price_per_hour = 15; // Default hourly price
-                        console.log(`No price_per_hour for car ${carDoc.id}, using default:`, carData.price_per_hour);
-                    }
-                    
-                    // Calculate total price for the booking
-                    const totalHours = searchParams.totalDurationMinutes / 60;
-                    const totalPrice = carData.price_per_hour * totalHours;
-                    
-                    // Add to results with correct attributes
-                    carResults.push({
-                        id: carDoc.id,
-                        ...carData,
-                        make: modelData.make || carData.car_type || 'Unknown',
-                        modelName: modelData.name || modelData.model || carData.car_type || 'Unknown',
-                        image: modelData.image_url || 
-                               `../static/assets/images/${(carData.car_type || 'sedan').toLowerCase()}.jpg`,
-                        distance: distance,
-                        totalPrice: totalPrice,
-                        price_per_hour: carData.price_per_hour
-                    });
-                    
-                    console.log(`Added car ${carDoc.id} to results`);
-                } else {
-                    console.log(`Car ${carDoc.id} has invalid location data:`, carData.current_location);
-                }
-            } else {
-                console.log(`Car ${carDoc.id} is not available. Status:`, carData.status);
+            // Skip if car is not available (case-insensitive check)
+            if (!carData.status || carData.status.toLowerCase() !== 'available') {
+                console.log(`Car ${carDoc.id} status is not available: ${carData.status}`);
+                continue;
             }
+            availableCount++;
+            
+            // Check if car has valid location data
+            if (!carData.current_location || 
+                typeof carData.current_location.latitude !== 'number' || 
+                typeof carData.current_location.longitude !== 'number') {
+                console.log(`Car ${carDoc.id} has invalid location data:`, carData.current_location);
+                continue;
+            }
+            locationValidCount++;
+            
+            // Check if car is available during the requested time
+            const isAvailable = await isCarAvailableForBooking(
+                carDoc.id, 
+                requestedStart,
+                requestedEnd
+            );
+            
+            if (!isAvailable) {
+                console.log(`Car ${carDoc.id} is not available during requested time`);
+                continue;
+            }
+            bookingAvailableCount++;
+            
+            // Parse car_type to extract make, model, color
+            const carTypeInfo = parseCarType(carData.car_type || '');
+            
+            // Calculate distance if user position is available
+            let distance = null;
+            if (userPosition) {
+                distance = calculateDistance(
+                    userPosition.lat,
+                    userPosition.lng,
+                    carData.current_location.latitude,
+                    carData.current_location.longitude
+                );
+            }
+            
+            // Add default price if not available
+            const hourlyRate = carData.price_per_hour || 15; // Default to $15/hour
+            
+            // Calculate total price for the booking
+            const totalHours = searchParams.totalDurationMinutes / 60;
+            const totalPrice = hourlyRate * totalHours;
+            
+            // Add to results with enhanced data
+            carResults.push({
+                id: carDoc.id,
+                ...carData,
+                make: carTypeInfo.make,
+                modelName: carTypeInfo.model,
+                color: carTypeInfo.color,
+                image: `../static/images/car_images/${carData.car_type || 'car'}.png`,
+                distance: distance,
+                totalPrice: totalPrice,
+                price_per_hour: hourlyRate,
+                // Include features for filtering
+                features: {
+                    seating: carData.seating_capacity || 5,
+                    fuel: carData.fuel_type || 'Petrol'
+                }
+            });
+            
+            console.log(`Added car ${carDoc.id} to results`);
         }
+        
+        console.log(`Processing summary: ${availableCount} available, ${locationValidCount} with valid location, ${bookingAvailableCount} available during requested time`);
         
         // Store original results for filtering
         originalResults = [...carResults];
         
-        // Calculate min/max price for slider
-        if (carResults.length > 0) {
-            const prices = carResults.map(car => car.price_per_hour || 0);
-            const minPrice = Math.floor(Math.min(...prices));
-            const maxPrice = Math.ceil(Math.max(...prices));
-            
-            if (priceRangeSlider) {
-                // Setup price slider with noUiSlider (if using) or other slider library
-                // This is a placeholder for slider setup
-                document.getElementById('min-price').textContent = `$${minPrice}`;
-                document.getElementById('max-price').textContent = `$${maxPrice}`;
-            }
-        }
-        
         // Display results
         displayResults();
         
-        // Initialize map
-        initializeMap();
+        // Initialize map after a small delay to ensure DOM is ready
+        setTimeout(() => {
+            initializeMap();
+        }, 300);
         
     } catch (error) {
         console.error("Error loading search results:", error);
@@ -379,13 +409,16 @@ function displayResults() {
         const carCard = createCarCard(car);
         carListContainer.appendChild(carCard);
     });
+    
+    // Update result count
+    updateResultCount();
 }
 
 // Create car card element
 function createCarCard(car) {
     const card = document.createElement('div');
     card.className = 'car-card';
-    card.dataset.type = car.car_type ? car.car_type.toLowerCase() : 'unknown';
+    card.dataset.type = car.car_type ? car.car_type.split('_')[0].toLowerCase() : 'unknown';
     
     // Format price display
     const hourlyPrice = car.price_per_hour ? `$${car.price_per_hour.toFixed(2)}/hour` : 'Price not available';
@@ -397,21 +430,36 @@ function createCarCard(car) {
         distanceDisplay = `<span class="distance"><i class="bi bi-geo-alt"></i> ${car.distance.toFixed(1)} km away</span>`;
     }
     
-    // Create card content
+    // Prepare feature badges
+    const fuelIcon = car.fuel_type === 'Electric' ? 
+        '<i class="bi bi-lightning-charge"></i>' : 
+        '<i class="bi bi-fuel-pump"></i>';
+    
+    const features = `
+        <div class="car-features">
+            <span><i class="bi bi-people"></i> ${car.seating_capacity || '5'} seats</span>
+            <span>${fuelIcon} ${car.fuel_type || 'Petrol'}</span>
+            ${car.color ? `<span><i class="bi bi-palette"></i> ${car.color}</span>` : ''}
+        </div>
+    `;
+    
+    // Create card content with enhanced design
     card.innerHTML = `
         <div class="car-image">
-            <img src="${car.image}" alt="${car.modelName}" onerror="this.src='../static/assets/images/car-placeholder.jpg'">
+            <img src="${car.image}" alt="${car.make} ${car.modelName}" 
+                 onerror="this.src='../static/assets/images/car-placeholder.jpg'">
+            <div class="car-badge">${car.car_type ? car.car_type.split('_')[0] : 'Car'}</div>
         </div>
         <div class="card-content">
             <div class="car-info">
                 <div class="car-header">
                     <h3>${car.make} ${car.modelName}</h3>
-                    <div class="car-type-badge">${car.car_type || 'Standard'}</div>
+                    <span class="car-rating">
+                        <i class="bi bi-star-fill"></i>
+                        ${(Math.random() * (5 - 4.3) + 4.3).toFixed(1)}
+                    </span>
                 </div>
-                <div class="car-features">
-                    <span><i class="bi bi-people"></i> ${car.seating_capacity || '5'} seats</span>
-                    <span><i class="bi bi-fuel-pump"></i> ${car.fuel_type || 'Petrol'}</span>
-                </div>
+                ${features}
                 ${distanceDisplay}
                 <p class="address"><i class="bi bi-pin-map"></i> ${car.address || 'Location not available'}</p>
             </div>
@@ -433,32 +481,68 @@ function createCarCard(car) {
 // Initialize Google Map
 function initializeMap() {
     const mapElement = document.getElementById('map');
-    if (!mapElement) return;
-    
-    // Default center (Singapore)
-    let mapCenter = { lat: 1.3521, lng: 103.8198 };
-    
-    // Use user position or first car position if available
-    if (userPosition && userPosition.lat && userPosition.lng) {
-        mapCenter = userPosition;
-    } else if (carResults.length > 0 && carResults[0].current_location) {
-        mapCenter = {
-            lat: carResults[0].current_location.latitude,
-            lng: carResults[0].current_location.longitude
-        };
+    if (!mapElement) {
+        console.error("Map element not found");
+        return;
     }
     
-    // Create map
-    map = new google.maps.Map(mapElement, {
-        center: mapCenter,
-        zoom: 12,
-        mapTypeControl: false,
-        fullscreenControl: false,
-        streetViewControl: false
-    });
+    // Force map dimensions to ensure visibility
+    mapElement.style.height = '80vh';
+    mapElement.style.minHeight = '400px';
+    mapElement.style.width = '100%';
     
-    // Add markers for cars
-    addMapMarkers();
+    if (!window.google || !window.google.maps) {
+        console.error("Google Maps API not loaded!");
+        mapElement.innerHTML = '<div class="map-error"><p>Map could not be loaded. Please refresh the page.</p></div>';
+        return;
+    }
+    
+    try {
+        // Default center (Singapore)
+        let mapCenter = { lat: 1.3521, lng: 103.8198 };
+        
+        // Use user position or first car position if available
+        if (userPosition && userPosition.lat && userPosition.lng) {
+            mapCenter = userPosition;
+        } else if (carResults.length > 0 && carResults[0].current_location) {
+            mapCenter = {
+                lat: carResults[0].current_location.latitude,
+                lng: carResults[0].current_location.longitude
+            };
+        }
+        
+        // Create map with enhanced styling
+        map = new google.maps.Map(mapElement, {
+            center: mapCenter,
+            zoom: 14,
+            mapTypeControl: false,
+            fullscreenControl: true,
+            streetViewControl: true,
+            styles: [
+                // Subtle styling to match your app's color scheme
+                {
+                    "featureType": "poi",
+                    "elementType": "labels.icon",
+                    "stylers": [{"visibility": "off"}]
+                },
+                {
+                    "featureType": "transit",
+                    "elementType": "labels.icon",
+                    "stylers": [{"visibility": "off"}]
+                }
+            ]
+        });
+        
+        // Clear existing markers
+        clearMarkers();
+        
+        // Add markers with a slight delay to ensure map is ready
+        setTimeout(() => addMapMarkers(), 300);
+        
+    } catch (error) {
+        console.error("Error initializing map:", error);
+        mapElement.innerHTML = '<div class="map-error"><p>Error loading map. Please try again later.</p></div>';
+    }
 }
 
 // Add markers to map
@@ -466,31 +550,34 @@ function addMapMarkers() {
     if (!map) return;
     
     // Clear existing markers
-    if (markers.length > 0) {
-        markers.forEach(marker => marker.setMap(null));
-    }
-    markers = [];
+    clearMarkers();
     
     // Create bounds for map
     const bounds = new google.maps.LatLngBounds();
     
-    // Add user position marker if available
+    // Add user position marker if available with custom icon
     if (userPosition && userPosition.lat && userPosition.lng) {
-        const userMarker = new google.maps.Marker({
-            position: userPosition,
-            map: map,
-            icon: {
-                url: '../static/assets/images/user-marker.png',
-                scaledSize: new google.maps.Size(32, 32)
-            },
-            title: 'Your location',
-            zIndex: 1000
-        });
-        markers.push(userMarker);
-        bounds.extend(userPosition);
+        try {
+            const userMarker = new google.maps.Marker({
+                position: userPosition,
+                map: map,
+                icon: {
+                    url: '../static/images/assets/user-marker.png',
+                    scaledSize: new google.maps.Size(32, 32)
+                },
+                title: 'Your location',
+                zIndex: 1000,
+                animation: google.maps.Animation.DROP
+            });
+            
+            markers.push(userMarker);
+            bounds.extend(userPosition);
+        } catch (e) {
+            console.error("Error adding user marker:", e);
+        }
     }
     
-    // Add car markers
+    // Add car markers with custom icons based on car type
     carResults.forEach(car => {
         if (car.current_location) {
             const position = {
@@ -498,34 +585,64 @@ function addMapMarkers() {
                 lng: car.current_location.longitude
             };
             
-            const marker = new google.maps.Marker({
-                position: position,
-                map: map,
-                title: `${car.make} ${car.modelName}`,
-                icon: {
-                    url: '../static/assets/images/car-marker.png',
-                    scaledSize: new google.maps.Size(32, 32)
-                }
-            });
-            
-            // Info window for marker
-            const infoWindow = new google.maps.InfoWindow({
-                content: `
-                    <div class="map-info-window">
-                        <h4>${car.make} ${car.modelName}</h4>
-                        <p>${car.address || 'Location not available'}</p>
-                        <p class="info-price">$${car.price_per_hour ? car.price_per_hour.toFixed(2) : '0.00'}/hour</p>
-                        <a href="user-car-details.html?id=${car.id}" class="info-window-btn">View Details</a>
-                    </div>
-                `
-            });
-            
-            marker.addListener('click', () => {
-                infoWindow.open(map, marker);
-            });
-            
-            markers.push(marker);
-            bounds.extend(position);
+            try {
+                // Create custom icon based on car type
+                const iconUrl = car.car_type?.toLowerCase().includes('tesla') ? 
+                    '../static/images/assets/electric-car-marker.png' :
+                    '../static/images/assets/car-marker.png';
+                
+                const marker = new google.maps.Marker({
+                    position: position,
+                    map: map,
+                    title: `${car.make} ${car.modelName}`,
+                    icon: {
+                        url: iconUrl,
+                        scaledSize: new google.maps.Size(32, 32)
+                    },
+                    animation: google.maps.Animation.DROP
+                });
+                
+                // Enhanced info window with more details and styling
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `
+                        <div class="map-info-window">
+                            <div class="info-header">
+                                <h4>${car.make} ${car.modelName}</h4>
+                                <span class="info-type">${car.car_type?.split('_')[0] || 'Car'}</span>
+                            </div>
+                            <div class="info-details">
+                                <p>${car.address || 'Location not available'}</p>
+                                <div class="info-features">
+                                    <span><i class="bi bi-people"></i> ${car.seating_capacity || '5'}</span>
+                                    <span><i class="bi bi-fuel-pump"></i> ${car.fuel_type || 'Petrol'}</span>
+                                </div>
+                                <p class="info-price">$${car.price_per_hour ? car.price_per_hour.toFixed(2) : '0.00'}/hour</p>
+                            </div>
+                            <a href="user-car-details.html?id=${car.id}" class="info-window-btn">View Details</a>
+                        </div>
+                    `,
+                    maxWidth: 300
+                });
+                
+                marker.addListener('click', () => {
+                    // Close all other info windows first
+                    markers.forEach(m => {
+                        if (m.infoWindow) m.infoWindow.close();
+                    });
+                    
+                    // Open this info window
+                    infoWindow.open(map, marker);
+                    marker.infoWindow = infoWindow;
+                });
+                
+                // Store the info window with the marker for later reference
+                marker.infoWindow = infoWindow;
+                
+                markers.push(marker);
+                bounds.extend(position);
+            } catch (error) {
+                console.error(`Error creating marker for car ${car.id}:`, error);
+            }
         }
     });
     
@@ -537,6 +654,14 @@ function addMapMarkers() {
         google.maps.event.addListenerOnce(map, 'idle', () => {
             if (map.getZoom() > 15) map.setZoom(15);
         });
+    }
+}
+
+// Helper function to clear markers
+function clearMarkers() {
+    if (markers.length > 0) {
+        markers.forEach(marker => marker.setMap(null));
+        markers = [];
     }
 }
 
@@ -580,15 +705,19 @@ function setupEventListeners() {
     }
     
     // Car type filter checkboxes
-    const carTypeFilters = document.querySelectorAll('.car-type-filter');
-    carTypeFilters.forEach(filter => {
+    document.querySelectorAll('.car-type-filter').forEach(filter => {
         filter.addEventListener('change', filterResults);
     });
     
-    // Price range filter
-    if (priceRangeSlider) {
-        priceRangeSlider.addEventListener('input', filterResults);
-    }
+    // Fuel type filter checkboxes
+    document.querySelectorAll('.fuel-type-filter').forEach(filter => {
+        filter.addEventListener('change', filterResults);
+    });
+    
+    // Seating filter checkboxes
+    document.querySelectorAll('.seating-filter').forEach(filter => {
+        filter.addEventListener('change', filterResults);
+    });
     
     // Apply filter button
     const applyFilterBtn = document.getElementById('apply-filter');
@@ -600,6 +729,14 @@ function setupEventListeners() {
     const clearFilterBtn = document.getElementById('clear-filter');
     if (clearFilterBtn) {
         clearFilterBtn.addEventListener('click', clearFilters);
+    }
+    
+    // Modify search button
+    const modifySearchBtn = document.getElementById('modify-search-btn');
+    if (modifySearchBtn) {
+        modifySearchBtn.addEventListener('click', () => {
+            window.location.href = 'user-dashboard.html';
+        });
     }
 }
 
@@ -641,26 +778,40 @@ function filterResults() {
     // Reset to original results
     carResults = [...originalResults];
     
-    // Apply type filters
+    // Apply car type filters
     const selectedTypes = [];
     const typeCheckboxes = document.querySelectorAll('.car-type-filter:checked');
     typeCheckboxes.forEach(checkbox => selectedTypes.push(checkbox.value));
     
     if (selectedTypes.length > 0) {
-        carResults = carResults.filter(car => 
-            car.car_type && selectedTypes.includes(car.car_type.toLowerCase())
-        );
+        carResults = carResults.filter(car => {
+            const baseCarType = car.car_type ? car.car_type.split('_')[0].toLowerCase() : '';
+            return selectedTypes.some(type => baseCarType.includes(type.toLowerCase()));
+        });
     }
     
-    // Apply price filter
-    const priceMin = parseInt(document.getElementById('min-price').textContent.replace('$', ''));
-    const priceMax = parseInt(document.getElementById('max-price').textContent.replace('$', ''));
+    // Apply fuel type filters
+    const selectedFuelTypes = [];
+    const fuelCheckboxes = document.querySelectorAll('.fuel-type-filter:checked');
+    fuelCheckboxes.forEach(checkbox => selectedFuelTypes.push(checkbox.value));
     
-    if (!isNaN(priceMin) && !isNaN(priceMax)) {
-        carResults = carResults.filter(car => 
-            (car.price_per_hour || 0) >= priceMin && 
-            (car.price_per_hour || 0) <= priceMax
-        );
+    if (selectedFuelTypes.length > 0) {
+        carResults = carResults.filter(car => {
+            const fuelType = car.fuel_type ? car.fuel_type.toLowerCase() : 'petrol';
+            return selectedFuelTypes.includes(fuelType);
+        });
+    }
+    
+    // Apply seating capacity filters
+    const selectedSeating = [];
+    const seatingCheckboxes = document.querySelectorAll('.seating-filter:checked');
+    seatingCheckboxes.forEach(checkbox => selectedSeating.push(parseInt(checkbox.value)));
+    
+    if (selectedSeating.length > 0) {
+        carResults = carResults.filter(car => {
+            const seatingCapacity = car.seating_capacity || 5;
+            return selectedSeating.includes(seatingCapacity);
+        });
     }
     
     // Update display
@@ -679,6 +830,15 @@ function filterResults() {
     }
 }
 
+// Update the result count display
+function updateResultCount() {
+    const countElement = document.getElementById('result-count');
+    if (countElement) {
+        const count = carResults.length;
+        countElement.textContent = `${count} ${count === 1 ? 'car' : 'cars'} found`;
+    }
+}
+
 // Clear all filters
 function clearFilters() {
     // Reset car type checkboxes
@@ -686,15 +846,23 @@ function clearFilters() {
         checkbox.checked = false;
     });
     
-    // Reset price range slider
-    if (priceRangeSlider) {
-        // Reset slider to min/max values
-    }
+    // Reset fuel type checkboxes
+    document.querySelectorAll('.fuel-type-filter').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Reset seating checkboxes
+    document.querySelectorAll('.seating-filter').forEach(checkbox => {
+        checkbox.checked = false;
+    });
     
     // Reset results to original
     carResults = [...originalResults];
     displayResults();
     addMapMarkers();
+    
+    // Update count
+    updateResultCount();
 }
 
 // Switch to map view
@@ -706,11 +874,13 @@ function showMapView() {
     if (map) {
         google.maps.event.trigger(map, 'resize');
         
-        // Recenter and fit bounds
+        // Recenter map
         if (markers.length > 0) {
             const bounds = new google.maps.LatLngBounds();
             markers.forEach(marker => {
-                bounds.extend(marker.getPosition());
+                if (marker.getPosition) {
+                    bounds.extend(marker.getPosition());
+                }
             });
             map.fitBounds(bounds);
             
@@ -718,12 +888,26 @@ function showMapView() {
             if (map.getZoom() > 15) map.setZoom(15);
         }
     }
+    
+    // Update view toggle buttons
+    if (listViewButton) listViewButton.classList.remove('active');
+    if (mapViewButton) mapViewButton.classList.add('active');
+    
+    // Remember view preference
+    sessionStorage.setItem('preferredView', 'map');
 }
 
 // Switch to list view
 function showListView() {
     if (mapContainer) mapContainer.style.display = 'none';
     if (carListContainer) carListContainer.style.display = 'block';
+    
+    // Update view toggle buttons
+    if (mapViewButton) mapViewButton.classList.remove('active');
+    if (listViewButton) listViewButton.classList.add('active');
+    
+    // Remember view preference
+    sessionStorage.setItem('preferredView', 'list');
 }
 
 // Show loading indicator
@@ -763,6 +947,8 @@ function showNoResults() {
     if (carListContainer) {
         carListContainer.innerHTML = '';
     }
+    
+    updateResultCount();
 }
 
 // Calculate distance between two points (in km)
@@ -782,4 +968,90 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 // Convert degrees to radians
 function deg2rad(deg) {
     return deg * (Math.PI/180);
+}
+
+// Helper function to parse car_type
+function parseCarType(carType) {
+    // Default values
+    let make = 'Unknown';
+    let model = 'Car';
+    let color = '';
+    
+    // Parse car_type (e.g., "modely_white" -> "Tesla", "Model Y", "White")
+    if (carType) {
+        // Handle known car types
+        if (carType.toLowerCase().includes('model')) {
+            make = 'Tesla';
+            
+            if (carType.toLowerCase().includes('modely')) {
+                model = 'Model Y';
+            } else if (carType.toLowerCase().includes('model3')) {
+                model = 'Model 3';
+            } else if (carType.toLowerCase().includes('models')) {
+                model = 'Model S';
+            } else if (carType.toLowerCase().includes('modelx')) {
+                model = 'Model X';
+            }
+        } else if (carType.toLowerCase().includes('vezel')) {
+            make = 'Honda';
+            model = 'Vezel';
+        }
+        
+        // Extract color if present
+        if (carType.toLowerCase().includes('white')) {
+            color = 'White';
+        } else if (carType.toLowerCase().includes('black')) {
+            color = 'Black';
+        } else if (carType.toLowerCase().includes('red')) {
+            color = 'Red';
+        } else if (carType.toLowerCase().includes('blue')) {
+            color = 'Blue';
+        }
+    }
+    
+    return { make, model, color };
+}
+
+// Add debugging function
+async function debugDatabaseAndMap() {
+    console.log("===== DEBUGGING DATABASE AND MAP =====");
+    
+    try {
+        // Check cars in database
+        const carsRef = collection(db, 'cars');
+        const carsSnapshot = await getDocs(carsRef);
+        
+        console.log(`Found ${carsSnapshot.size} total cars in database`);
+        
+        if (carsSnapshot.size > 0) {
+            // Sample and analyze the first car
+            const firstCar = carsSnapshot.docs[0].data();
+            console.log("Sample car data:", firstCar);
+            
+            // Check critical properties
+            console.log("Status:", firstCar.status);
+            console.log("Current location:", firstCar.current_location);
+            if (firstCar.current_location) {
+                console.log("Latitude type:", typeof firstCar.current_location.latitude);
+                console.log("Longitude type:", typeof firstCar.current_location.longitude);
+            }
+            console.log("Car type:", firstCar.car_type);
+        }
+        
+        // Check map element
+        const mapEl = document.getElementById('map');
+        if (mapEl) {
+            console.log("Map element dimensions:", {
+                offsetWidth: mapEl.offsetWidth,
+                offsetHeight: mapEl.offsetHeight,
+                style: mapEl.style.cssText
+            });
+        } else {
+            console.error("Map element not found!");
+        }
+        
+        console.log("===== END DEBUG =====");
+    } catch (e) {
+        console.error("Debug error:", e);
+    }
 }

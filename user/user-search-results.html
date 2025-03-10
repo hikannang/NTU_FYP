@@ -1,17 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Search Results | BaoCarLiao</title>
-    <link rel="stylesheet" href="../static/css/users/user.css">
-    <link rel="stylesheet" href="../static/css/users/user-search-results.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../static/css/users/user.css" />
+    <link rel="stylesheet" href="../static/css/users/user-search-results.css" />
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+    />
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places"></script>
+    <style>
+        #map {
+            height: 80vh !important;
+            width: 100% !important;
+            min-height: 400px !important;
+        }
+    </style>
 </head>
 <body>
     <div id="header"></div>
-    
+
     <main>
         <!-- Search Summary Bar -->
         <section id="search-summary">
@@ -20,8 +30,8 @@
                     <div class="location-time">
                         <h1 id="search-location">Loading location...</h1>
                         <div class="search-time">
-                            <span id="search-date">Loading date...</span> • 
-                            <span id="search-time">Loading time...</span> • 
+                            <span id="search-date">Loading date...</span> •
+                            <span id="search-time">Loading time...</span> •
                             <span id="search-duration">Loading duration...</span>
                         </div>
                     </div>
@@ -31,11 +41,17 @@
                 </div>
             </div>
         </section>
-        
+
         <!-- Main Content -->
         <div class="content-container">
             <!-- Left Side: Filters and Cars -->
             <div class="results-container">
+                <!-- Mobile Filters Toggle -->
+                <div class="filters-toggle" id="filter-toggle">
+                    <i class="bi bi-sliders"></i>
+                    <span>Filters</span>
+                </div>
+
                 <!-- Filters Section -->
                 <section id="filters-section">
                     <div class="filters-header">
@@ -43,96 +59,94 @@
                         <button id="clear-filters" class="text-btn">Clear All</button>
                     </div>
                     <div class="filter-options">
+                        <!-- Car Type Filter -->
                         <div class="filter-group">
-                            <label>Car Type</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="car-type" value="sedan"> Sedan
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="car-type" value="suv"> SUV
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="car-type" value="compact"> Compact
-                                </label>
+                            <h3>Car Type</h3>
+                            <div id="car-type-filters" class="checkbox-group">
+                                <!-- Will be populated dynamically -->
                             </div>
                         </div>
                         
+                        <!-- Fuel Type Filter -->
                         <div class="filter-group">
-                            <label>Price Range</label>
-                            <div class="range-slider">
-                                <div class="range-values">
-                                    <span>$<span id="price-min">0</span></span>
-                                    <span>$<span id="price-max">100</span></span>
-                                </div>
-                                <input type="range" id="price-range" min="0" max="100" step="5" value="100">
+                            <h3>Fuel Type</h3>
+                            <div id="fuel-type-filters" class="checkbox-group">
+                                <!-- Will be populated dynamically -->
                             </div>
                         </div>
                         
+                        <!-- Seating Capacity Filter -->
                         <div class="filter-group">
-                            <label>Features</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="features" value="bluetooth"> Bluetooth
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="features" value="gps"> GPS Navigation
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" name="features" value="camera"> Backup Camera
-                                </label>
+                            <h3>Seating Capacity</h3>
+                            <div id="seating-filters" class="checkbox-group">
+                                <!-- Will be populated dynamically -->
                             </div>
                         </div>
                         
-                        <div class="filter-group">
-                            <label>Sort By</label>
-                            <select id="sort-select">
-                                <option value="nearest">Nearest First</option>
-                                <option value="price-asc">Price: Low to High</option>
-                                <option value="price-desc">Price: High to Low</option>
-                            </select>
-                        </div>
+                        <!-- Apply Filters Button (Mobile) -->
+                        <button id="apply-filter" class="primary-btn mobile-only">Apply Filters</button>
                     </div>
                 </section>
-                
-                <!-- Search Results -->
-                <section id="search-results">
-                    <h2>Available Cars</h2>
-                    
+
+                <!-- Results Section -->
+                <section id="results-section">
+                    <!-- Results Header -->
+                    <div class="results-header">
+                        <div class="results-count">
+                            <h2>Search Results</h2>
+                            <p id="result-count">Loading cars...</p>
+                        </div>
+                        <div class="results-actions">
+                            <select id="sort-select">
+                                <option value="distance">Sort by Distance</option>
+                                <option value="price-asc">Price: Low to High</option>
+                                <option value="price-desc">Price: High to Low</option>
+                                <option value="name-asc">Name: A to Z</option>
+                            </select>
+                            <div class="toggle-view-buttons mobile-only">
+                                <button id="list-view-btn" class="view-btn active">
+                                    <i class="bi bi-list-ul"></i> List
+                                </button>
+                                <button id="map-view-btn" class="view-btn">
+                                    <i class="bi bi-map"></i> Map
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Loading State -->
                     <div id="loading-indicator" class="loading-state">
                         <div class="spinner"></div>
-                        <p>Finding the perfect car for you...</p>
+                        <p>Finding available cars...</p>
                     </div>
-                    
+
                     <!-- Error State -->
-                    <div id="error-state" class="error-state" style="display: none;">
+                    <div id="error-message" class="error-state" style="display: none;">
                         <i class="bi bi-exclamation-triangle"></i>
-                        <h3>Oops! Something went wrong</h3>
                         <p>We couldn't load the search results. Please try again.</p>
                         <button id="retry-btn" class="primary-btn">Retry</button>
                     </div>
                     
                     <!-- Empty State -->
-                    <div id="empty-state" class="empty-state" style="display: none;">
+                    <div id="no-results" class="empty-state" style="display: none;">
                         <i class="bi bi-car-front"></i>
                         <h3>No cars available</h3>
                         <p>We couldn't find any cars matching your criteria. Try adjusting your filters or search parameters.</p>
                         <button id="modify-search-btn-empty" class="primary-btn">Modify Search</button>
                     </div>
                     
-                    <!-- Results Grid -->
-                    <div id="results-grid" class="results-grid"></div>
+                    <!-- Car List Container -->
+                    <div id="car-list" class="car-list-container"></div>
                 </section>
             </div>
-            
+
             <!-- Right Side: Map -->
-            <section id="map-section">
-                <div class="toggle-view-buttons mobile-only">
-                    <button id="toggle-list" class="view-btn active">
+            <section id="map-container" class="map-section">
+                <div class="desktop-view-controls">
+                    <button id="list-view-btn-desktop" class="view-btn active">
                         <i class="bi bi-list-ul"></i> List View
                     </button>
-                    <button id="toggle-map" class="view-btn">
+                    <button id="map-view-btn-desktop" class="view-btn">
                         <i class="bi bi-map"></i> Map View
                     </button>
                 </div>

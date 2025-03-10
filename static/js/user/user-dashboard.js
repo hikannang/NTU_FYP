@@ -618,46 +618,69 @@ async function getCarDetails(carId) {
 
 // Initialize search functionality
 function initializeSearch() {
-  // Initialize Google Places Autocomplete
-  const input = document.getElementById("location-input");
-  const autocomplete = new google.maps.places.Autocomplete(input, {
-    componentRestrictions: { country: "sg" },
-    fields: ["address_components", "geometry", "name"],
-    types: ["geocode"],
-  });
-
-  // Prevent form submission on Enter key
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-    }
-  });
-
-  // Store location when place is selected
-  autocomplete.addListener("place_changed", () => {
-    const place = autocomplete.getPlace();
-
-    if (!place.geometry) {
-      input.placeholder = "Enter a location";
-      return;
-    }
-
-    // Store the selected position
-    userPosition = {
-      lat: place.geometry.location.lat(),
-      lng: place.geometry.location.lng(),
+    // Initialize Google Places Autocomplete with expanded options
+    const input = document.getElementById("location-input");
+    
+    // Create a more inclusive autocomplete that shows more detailed results
+    const autocompleteOptions = {
+      componentRestrictions: { country: "sg" }, // Keep Singapore restriction
+      fields: ["address_components", "geometry", "name", "formatted_address"],
+      types: ["establishment", "geocode"], // Include both establishments and geocodes
+      strictBounds: false, // Don't restrict to viewport
+      bounds: new google.maps.LatLngBounds(
+        new google.maps.LatLng(1.1304, 103.6020), // SW bounds of Singapore
+        new google.maps.LatLng(1.4504, 104.0200)  // NE bounds of Singapore
+      )
     };
-
-    // Center map on the selected location and update nearby cars
-    if (map) {
-      map.setCenter(userPosition);
-      loadNearbyCars();
-    }
-  });
-
-  // Setup form validation
-  setupFormValidation();
-}
+    
+    const autocomplete = new google.maps.places.Autocomplete(
+      input, 
+      autocompleteOptions
+    );
+  
+    // Prevent form submission on Enter key (keep this)
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+      }
+    });
+  
+    // Store location when place is selected (improved version)
+    autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
+      console.log("Selected place:", place);
+  
+      if (!place.geometry) {
+        input.placeholder = "Enter a location";
+        return;
+      }
+  
+      // Store the selected position with more details
+      userPosition = {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+        name: place.name || '',
+        address: place.formatted_address || ''
+      };
+      
+      console.log("Set user position:", userPosition);
+  
+      // Update location input with full formatted address if available
+      if (place.formatted_address) {
+        input.value = place.formatted_address;
+      }
+  
+      // Center map on the selected location and update nearby cars
+      if (map) {
+        map.setCenter(userPosition);
+        map.setZoom(15); // Closer zoom for better detail
+        loadNearbyCars();
+      }
+    });
+  
+    // Setup form validation (keep this part)
+    setupFormValidation();
+  }
 
 // Setup validation for the search form
 function setupFormValidation() {
