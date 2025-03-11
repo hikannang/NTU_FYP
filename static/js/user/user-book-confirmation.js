@@ -1,7 +1,14 @@
-// user-book-confirmation.js
-import { db, auth } from '../common/firebase-config.js';
-import { doc, getDoc, setDoc, collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import { db, auth } from "../common/firebase-config.js";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  Timestamp,
+} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+import {
+  onAuthStateChanged,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 
 // Initialize global variables
 let bookingDetails;
@@ -9,197 +16,493 @@ let carData;
 let userId;
 
 // DOM Elements
-const loadingOverlay = document.getElementById('loading-overlay');
-const confirmButton = document.getElementById('confirm-btn');
-const modifyButton = document.getElementById('modify-btn');
-const termsCheckbox = document.getElementById('terms-checkbox');
-const termsError = document.getElementById('terms-error');
+const loadingOverlay = document.getElementById("loading-overlay");
+const confirmButton = document.getElementById("confirm-btn");
+const modifyButton = document.getElementById("modify-btn");
+const termsCheckbox = document.getElementById("terms-checkbox");
+const termsError = document.getElementById("terms-error");
+const bookingSummary = document.getElementById("booking-summary");
+const errorMessage = document.getElementById("error-message");
 
 // Initialize page
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("Booking confirmation page loaded");
+  
+  try {
     // Load header and footer
-    document.getElementById('header').innerHTML = await fetch('../static/headerFooter/user-header.html').then(response => response.text());
-    document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/user-footer.html').then(response => response.text());
+    await loadHeaderFooter();
+    
+    // Show loading state
+    showLoading(true);
+    
+    // Check authentication
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        userId = user.uid;
+        console.log("User authenticated:", userId);
+        
+        try {
+          // Get booking details from session storage that were set by user-car-details.js
+          const bookingDetailsString = sessionStorage.getItem("bookingDetails");
+          if (!bookingDetailsString) {
+            throw new Error("Booking details not found. Please try booking again.");
+          }
+          
+          // Parse booking details
+          bookingDetails = JSON.parse(bookingDetailsString);
+          console.log("Retrieved booking details:", bookingDetails);
+          
+          // Load car details to display additional information
+          await loadCarDetails(bookingDetails.carId);
+          
+          // Display booking summary
+          displayBookingSummary();
+          
+          // Setup event listeners
+          setupEventListeners();
+          
+          // Hide loading overlay
+          showLoading(false);
+        } catch (error) {
+          console.error("Error loading booking confirmation:", error);
+          showError("Failed to load booking details: " + error.message);
+        }
+      } else {
+        console.log("User not authenticated, redirecting to login");
+        // Redirect to login if not authenticated
+        window.location.href = "../index.html";
+      }
+    });
+  } catch (error) {
+    console.error("General initialization error:", error);
+    showError("An error occurred while initializing the page: " + error.message);
+  }
+});
+
+// Load header and footer
+async function loadHeaderFooter() {
+  try {
+    // Load header
+    const headerResponse = await fetch("../static/headerFooter/user-header.html");
+    if (!headerResponse.ok) {
+      throw new Error(`Failed to load header: ${headerResponse.status}`);
+    }
+    document.getElementById("header").innerHTML = await headerResponse.text();
+    
+    // Load footer
+    const footerResponse = await fetch("../static/headerFooter/user-footer.html");
+    if (!footerResponse.ok) {
+      throw new Error(`Failed to load footer: ${footerResponse.status}`);
+    }
+    document.getElementById("footer").innerHTML = await footerResponse.text();
     
     // Setup logout button
     setupLogoutButton();
     
-    // Check authentication
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            userId = user.uid;
-            
-            // Get booking details from session storage
-            const storedDetails = sessionStorage.getItem('bookingDetails');
-            if (!storedDetails) {
-                // No booking details found
-                alert('No booking details found. Please start again.');
-                window.location.href = 'user-dashboard.html';
-                return;
-            }
-            
-            bookingDetails = JSON.parse(storedDetails);
-            await loadCarData();
-            populateBookingDetails();
-            
-            // Set up event listeners
-            setupEventListeners();
-        } else {
-            // Redirect to login if not authenticated
-            window.location.href = '../index.html';
-        }
-    });
-});
+  } catch (error) {
+    console.error("Error loading header/footer:", error);
+    // Don't fail completely, just log the error
+  }
+}
 
+// Setup logout button
 function setupLogoutButton() {
-    setTimeout(() => {
-        const logoutButton = document.getElementById('logout-button');
-        if (logoutButton) {
-            logoutButton.addEventListener('click', async (event) => {
-                event.preventDefault();
-                try {
-                    await signOut(auth);
-                    window.location.href = "../index.html";
-                } catch (error) {
-                    console.error("Error during logout:", error);
-                    alert("Logout failed: " + error.message);
-                }
-            });
+  setTimeout(() => {
+    const logoutButton = document.getElementById("logout-button");
+    if (logoutButton) {
+      logoutButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        try {
+          await signOut(auth);
+          window.location.href = "../index.html";
+        } catch (error) {
+          console.error("Error during logout:", error);
+          alert("Logout failed: " + error.message);
         }
-    }, 300);
-}
-
-// Load car data from Firestore
-async function loadCarData() {
-    try {
-        const carDoc = await getDoc(doc(db, 'cars', bookingDetails.carId));
-        
-        if (!carDoc.exists()) {
-            alert("Car not found. It may have been removed.");
-            window.location.href = 'user-dashboard.html';
-            return;
-        }
-        
-        carData = carDoc.data();
-    } catch (error) {
-        console.error('Error loading car data:', error);
-        alert('Failed to load car data. Please try again.');
-        window.location.href = 'user-dashboard.html';
+      });
+    } else {
+      console.warn("Logout button not found in the DOM");
     }
+  }, 300);
 }
 
-// Populate booking details in the UI
-function populateBookingDetails() {
-    // Set car image
-    const carImage = document.getElementById('car-image');
-    const imagePath = `../static/assets/images/${carData.car_type.toLowerCase()}.jpg`;
-    carImage.src = imagePath;
-    carImage.onerror = () => {
-        carImage.src = '../static/assets/images/car-placeholder.jpg';
+// Load car details (just additional info, not to recreate booking details)
+async function loadCarDetails(carId) {
+  try {
+    console.log("Loading car details for ID:", carId);
+    
+    // Get car document
+    const carDoc = await getDoc(doc(db, "cars", carId));
+    
+    if (!carDoc.exists()) {
+      throw new Error("Car not found in database");
+    }
+    
+    // Store car data
+    carData = carDoc.data();
+    carData.id = carId;
+    console.log("Car data loaded:", carData);
+    
+    // Parse car type for display
+    const carInfo = parseCarType(carData.car_type || "");
+    carData.make = carInfo.make;
+    carData.model = carInfo.model;
+    
+    return carData;
+  } catch (error) {
+    console.error("Error loading car details:", error);
+    throw error;
+  }
+}
+
+// Helper function to parse car_type
+function parseCarType(carType) {
+  // Default values
+  let make = "Unknown";
+  let model = "Car";
+  
+  // Parse car_type (e.g., "modely_white" -> "Tesla", "Model Y")
+  if (carType) {
+    if (carType.toLowerCase().includes("model")) {
+      make = "Tesla";
+      
+      if (carType.toLowerCase().includes("modely")) {
+        model = "Model Y";
+      } else if (carType.toLowerCase().includes("model3")) {
+        model = "Model 3";
+      } else if (carType.toLowerCase().includes("models")) {
+        model = "Model S";
+      } else if (carType.toLowerCase().includes("modelx")) {
+        model = "Model X";
+      }
+    } else if (carType.toLowerCase().includes("vezel")) {
+      make = "Honda";
+      model = "Vezel";
+    }
+  }
+  
+  return { make, model };
+}
+
+// Display booking summary using the details from user-car-details.js
+function displayBookingSummary() {
+  if (!bookingSummary) {
+    console.error("Booking summary container not found in the DOM");
+    return;
+  }
+  
+  try {
+    // Car details
+    const carNameElement = document.getElementById("car-name");
+    if (carNameElement) {
+      carNameElement.textContent = `${carData.make} ${carData.model}`;
+    }
+    
+    // Car license plate
+    const carPlateElement = document.getElementById("car-plate");
+    if (carPlateElement && carData.license_plate) {
+      carPlateElement.textContent = carData.license_plate;
+    }
+    
+    // Car image
+    const carImageElement = document.getElementById("car-image");
+    if (carImageElement) {
+      carImageElement.src = `../static/images/car_images/${carData.car_type || "car"}.png`;
+      carImageElement.onerror = () => {
+        // First fallback
+        carImageElement.src = `../static/images/assets/${carData.car_type || "car"}.png`;
+        carImageElement.onerror = () => {
+          // Second fallback
+          carImageElement.src = "../static/images/assets/car-placeholder.jpg";
+        };
+      };
+    }
+    
+    // Car address
+    const addressElement = document.getElementById("car-address");
+    if (addressElement) {
+      addressElement.textContent = carData.address || "Location not available";
+    }
+    
+    // Format booking dates from the passed booking details
+    const startTime = new Date(bookingDetails.startDateTime);
+    const endTime = new Date(bookingDetails.endDateTime);
+    
+    const options = { 
+      weekday: "short", 
+      month: "short", 
+      day: "numeric", 
+      hour: "2-digit", 
+      minute: "2-digit" 
     };
     
-    // Set car details
-    document.getElementById('car-model').textContent = carData.car_type;
-    document.getElementById('car-type').textContent = carData.car_type;
-    document.getElementById('car-seats').textContent = `${carData.seating_capacity} seats`;
-    document.getElementById('car-luggage').textContent = `${carData.large_luggage || 0} large, ${carData.small_luggage || 0} small`;
+    const startFormatted = startTime.toLocaleString("en-US", options);
+    const endFormatted = endTime.toLocaleString("en-US", options);
     
-    // Set booking details
-    document.getElementById('booking-location').textContent = carData.address;
+    // Set pickup and return times
+    const pickupElement = document.getElementById("pickup-time");
+    const returnElement = document.getElementById("return-time");
     
-    const pickupDate = new Date(`${bookingDetails.pickupDate}T${bookingDetails.pickupTime}`);
-    const formattedDate = pickupDate.toLocaleDateString('en-US', { 
-        weekday: 'short',
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    });
-    const formattedTime = pickupDate.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit'
-    });
+    if (pickupElement) pickupElement.textContent = startFormatted;
+    if (returnElement) returnElement.textContent = endFormatted;
     
-    document.getElementById('booking-date').textContent = formattedDate;
-    document.getElementById('booking-time').textContent = formattedTime;
-    
-    const duration = parseInt(bookingDetails.duration);
-    const durationText = duration === 1 ? '1 hour' : `${duration} hours`;
-    document.getElementById('booking-duration').textContent = durationText;
-    
-    // Set price details
-    document.getElementById('hourly-rate').textContent = bookingDetails.hourlyRate;
-    document.getElementById('duration-hours').textContent = duration;
-    document.getElementById('subtotal').textContent = bookingDetails.totalPrice;
-    document.getElementById('total-price').textContent = bookingDetails.totalPrice;
-}
-
-// Set up event listeners
-function setupEventListeners() {
-    // Modify booking button
-    modifyButton.addEventListener('click', () => {
-        history.back();
-    });
-    
-    // Terms checkbox
-    termsCheckbox.addEventListener('change', () => {
-        if (termsCheckbox.checked) {
-            termsError.style.display = 'none';
-        }
-    });
-    
-    // Confirm booking button
-    confirmButton.addEventListener('click', async () => {
-        if (!termsCheckbox.checked) {
-            termsError.style.display = 'flex';
-            return;
-        }
-        
-        await createBooking();
-    });
-}
-
-// Create booking in Firestore
-async function createBooking() {
-    try {
-        loadingOverlay.style.display = 'flex';
-        
-        // Calculate start and end times
-        const startTime = new Date(`${bookingDetails.pickupDate}T${bookingDetails.pickupTime}`);
-        const duration = parseInt(bookingDetails.duration);
-        const endTime = new Date(startTime);
-        endTime.setHours(endTime.getHours() + duration);
-        
-        // Create booking object
-        const booking = {
-            user_id: userId,
-            car_id: bookingDetails.carId,
-            start_time: Timestamp.fromDate(startTime),
-            end_time: Timestamp.fromDate(endTime),
-            duration_hours: duration,
-            price: parseFloat(bookingDetails.totalPrice),
-            status: 'confirmed',
-            created_at: Timestamp.now()
-        };
-        
-        // Add to timesheet bookings collection
-        const bookingRef = await addDoc(
-            collection(db, 'timesheets', bookingDetails.carId, 'bookings'), 
-            booking
-        );
-        
-        // Store booking ID and redirect to success page
-        sessionStorage.setItem('lastBookingId', bookingRef.id);
-        sessionStorage.setItem('lastCarId', bookingDetails.carId);
-        
-        // Clear booking details from session storage
-        sessionStorage.removeItem('bookingDetails');
-        
-        // Redirect to booking success page
-        window.location.href = 'user-booking-success.html';
-        
-    } catch (error) {
-        console.error('Error creating booking:', error);
-        loadingOverlay.style.display = 'none';
-        alert('Failed to create booking. Please try again.');
+    // Format duration text from the existing booking details
+    let durationText = "";
+    if (bookingDetails.durationDays > 0) {
+      durationText += `${bookingDetails.durationDays} day${bookingDetails.durationDays > 1 ? "s" : ""} `;
     }
+    if (bookingDetails.durationHours > 0) {
+      durationText += `${bookingDetails.durationHours} hour${bookingDetails.durationHours > 1 ? "s" : ""} `;
+    }
+    if (bookingDetails.durationMinutes > 0) {
+      durationText += `${bookingDetails.durationMinutes} minute${bookingDetails.durationMinutes > 1 ? "s" : ""}`;
+    }
+    
+    const durationElement = document.getElementById("booking-duration");
+    if (durationElement) {
+      durationElement.textContent = durationText.trim() || "0 minutes";
+    }
+    
+    // Set price details from the existing booking details
+    const rateElement = document.getElementById("hourly-rate");
+    const totalElement = document.getElementById("total-price");
+    
+    if (rateElement) {
+      rateElement.textContent = `$${parseFloat(bookingDetails.hourlyRate).toFixed(2)}`;
+    }
+    
+    if (totalElement) {
+      totalElement.textContent = `$${parseFloat(bookingDetails.totalPrice).toFixed(2)}`;
+    }
+    
+    // Show booking summary
+    bookingSummary.style.display = "block";
+    
+    // Set confirm button initial state
+    if (confirmButton && termsCheckbox) {
+      confirmButton.disabled = !termsCheckbox.checked;
+    }
+    
+    console.log("Booking summary displayed successfully");
+  } catch (error) {
+    console.error("Error displaying booking summary:", error);
+    showError("Failed to display booking details: " + error.message);
+  }
+}
+
+// Setup event listeners
+function setupEventListeners() {
+  // Confirm booking button
+  if (confirmButton) {
+    // Remove any previous listeners
+    const newConfirmBtn = confirmButton.cloneNode(true);
+    confirmButton.parentNode.replaceChild(newConfirmBtn, confirmButton);
+    
+    // Add event listener to the fresh button
+    newConfirmBtn.addEventListener("click", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      handleConfirmBooking(event);
+    });
+    console.log("Confirm button event listener attached");
+  } else {
+    console.warn("Confirm button not found in the DOM");
+  }
+  
+  // Modify button - go back to car details
+  if (modifyButton) {
+    modifyButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      console.log("Returning to car details page");
+      history.back();
+    });
+    console.log("Modify button event listener attached");
+  } else {
+    console.warn("Modify button not found in the DOM");
+  }
+  
+  // Terms checkbox
+  if (termsCheckbox) {
+    termsCheckbox.addEventListener("change", () => {
+      if (confirmButton) {
+        confirmButton.disabled = !termsCheckbox.checked;
+      }
+      
+      if (termsError) {
+        termsError.style.display = "none";
+      }
+    });
+    console.log("Terms checkbox event listener attached");
+  } else {
+    console.warn("Terms checkbox not found in the DOM");
+  }
+  
+  console.log("All event listeners set up");
+}
+
+// Handle confirm booking button click
+async function handleConfirmBooking(event) {
+  // Prevent default behavior
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  console.log("Confirm booking process started");
+  
+  // Check terms checkbox
+  if (termsCheckbox && !termsCheckbox.checked) {
+    if (termsError) {
+      termsError.style.display = "block";
+      termsError.textContent = "Please accept the terms and conditions";
+    }
+    return false;
+  }
+  
+  // Disable the confirm button to prevent double-clicking
+  if (confirmButton) {
+    confirmButton.disabled = true;
+    confirmButton.textContent = "Processing...";
+  }
+  
+  // Show loading
+  showLoading(true);
+  
+  try {
+    // Create the booking using the details from user-car-details.js
+    const bookingId = await createBooking();
+    console.log("Booking created successfully, redirecting to success page");
+    
+    // Redirect to success page
+    try {
+      window.location.href = `user-booking-success.html?id=${bookingId}`;
+      
+      // Fallback navigation methods if the first one fails
+      setTimeout(() => {
+        try {
+          console.log("Using fallback navigation method");
+          window.location.assign(`user-booking-success.html?id=${bookingId}`);
+          
+          // Final fallback
+          setTimeout(() => {
+            window.open(`user-booking-success.html?id=${bookingId}`, "_self");
+          }, 300);
+        } catch (navError) {
+          console.error("Navigation error:", navError);
+        }
+      }, 300);
+    } catch (navError) {
+      console.error("Error navigating to success page:", navError);
+      alert(`Booking was successful, but navigation failed. Please go to Your Bookings to see your booking.`);
+    }
+  } catch (error) {
+    console.error("Error creating booking:", error);
+    showError(`Failed to create booking: ${error.message}`);
+    
+    // Re-enable button
+    if (confirmButton) {
+      confirmButton.disabled = false;
+      confirmButton.textContent = "Confirm Booking";
+    }
+    
+    showLoading(false);
+  }
+  
+  return false;
+}
+
+// Create booking using details passed from user-car-details.js
+async function createBooking() {
+  try {
+    console.log("Creating booking in database");
+    
+    // Format dates for Firestore
+    const startTime = new Date(bookingDetails.startDateTime);
+    const endTime = new Date(bookingDetails.endDateTime);
+    
+    // Generate booking ID with expected format
+    const bookingId = `booking_${Date.now()}`;
+    console.log("Generated booking ID:", bookingId);
+    
+    // Create booking data with exact required structure for timesheet
+    const timesheetBookingData = {
+      user_id: userId,
+      start_time: Timestamp.fromDate(startTime),
+      end_time: Timestamp.fromDate(endTime),
+      duration_minutes: bookingDetails.totalDurationMinutes,
+      hourly_rate: parseFloat(bookingDetails.hourlyRate),
+      total_price: parseFloat(bookingDetails.totalPrice),
+      status: "upcoming",
+      created_at: Timestamp.now(),
+      car_type: bookingDetails.carType
+    };
+    
+    console.log("Saving booking to timesheet with data:", timesheetBookingData);
+    
+    // Save to car's timesheet collection
+    await setDoc(
+      doc(db, "timesheets", bookingDetails.carId, "bookings", bookingId),
+      timesheetBookingData
+    );
+    
+    console.log("Booking saved to timesheet collection");
+    
+    // Save to user's bookings with the required structure
+    const userBookingData = {
+      car_id: bookingDetails.carId,
+      booking_id: bookingId,
+      user_id: userId,
+      start_time: Timestamp.fromDate(startTime),
+      end_time: Timestamp.fromDate(endTime),
+      duration_minutes: bookingDetails.totalDurationMinutes,
+      hourly_rate: parseFloat(bookingDetails.hourlyRate),
+      total_price: parseFloat(bookingDetails.totalPrice),
+      status: "upcoming",
+      created_at: Timestamp.now(),
+      car_type: bookingDetails.carType
+    };
+    
+    console.log("Saving booking to user's bookings with data:", userBookingData);
+    
+    // Save to user's bookings collection
+    await setDoc(
+      doc(db, "users", userId, "bookings", bookingId),
+      userBookingData
+    );
+    
+    console.log("Booking saved to user's bookings collection");
+    
+    // Clear booking details from session storage
+    sessionStorage.removeItem("bookingDetails");
+    console.log("Booking details cleared from session storage");
+    
+    return bookingId;
+  } catch (error) {
+    console.error("Error creating booking in database:", error);
+    throw error;
+  }
+}
+
+// Show/hide loading overlay
+function showLoading(show) {
+  if (loadingOverlay) {
+    loadingOverlay.style.display = show ? "flex" : "none";
+  }
+}
+
+// Show error message
+function showError(message) {
+  console.error("ERROR:", message);
+  
+  if (errorMessage) {
+    const errorText = errorMessage.querySelector("p") || errorMessage;
+    errorText.textContent = message;
+    errorMessage.style.display = "block";
+  }
+  
+  if (bookingSummary) {
+    bookingSummary.style.display = "none";
+  }
+  
+  showLoading(false);
 }

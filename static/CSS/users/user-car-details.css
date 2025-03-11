@@ -87,6 +87,24 @@
     object-fit: cover;
 }
 
+.car-plate {
+    font-size: 1.8rem;
+    font-weight: 700;
+    padding: 6px 16px;
+    background-color: #f2f7fd;
+    color: #1e88e5;
+    border: 2px solid #1e88e5;
+    border-radius: 8px;
+    display: inline-block;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+}
+
+.car-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 1.6rem;
+}
+
 .car-summary {
     padding: 20px;
 }
@@ -374,6 +392,11 @@
 @media (max-width: 767px) {
     .container {
         padding: 15px;
+    }
+    
+    .car-plate {
+        font-size: 1.4rem;
+        padding: 4px 12px;
     }
     
     .car-summary h1 {
