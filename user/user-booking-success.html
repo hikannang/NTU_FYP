@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Booking Successful | CarShare</title>
+    <title>Booking Successful | BaoCarLiao</title>
     <link rel="stylesheet" href="../static/css/users/user.css">
     <link rel="stylesheet" href="../static/css/users/user-booking-success.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
@@ -27,27 +27,48 @@
                 
                 <div class="booking-reference">
                     <span>Booking Reference:</span>
-                    <span id="booking-id">Loading...</span>
+                    <strong id="booking-id">Loading...</strong>
                     <button id="copy-btn" class="icon-btn" aria-label="Copy booking reference">
                         <i class="bi bi-clipboard"></i>
                     </button>
                 </div>
             </div>
             
-            <!-- Booking Summary -->
+            <!-- Booking Summary (Revised) -->
             <div class="summary-card">
-                <h2>Booking Summary</h2>
+                <h2 class="card-title">Booking Summary</h2>
                 
-                <div class="car-overview">
-                    <div class="car-image">
-                        <img id="car-image" src="../static/assets/images/car-placeholder.jpg" alt="Car image">
-                    </div>
-                    <div class="car-info">
-                        <h3 id="car-model">Car Model</h3>
-                        <div class="car-tag" id="car-type">Sedan</div>
+                <!-- Car Image - Full width -->
+                <div class="car-image-full">
+                    <img id="car-image" src="../static/images/assets/car-placeholder.jpg" alt="Car image">
+                </div>
+                
+                <!-- Car Details Below Image -->
+                <div class="car-details">
+                    <!-- License Plate -->
+                    <div class="car-plate" id="car-plate">PLATE NA</div>
+                    <h3 id="car-model">Car Model</h3>
+                    
+                    <!-- Car Specs -->
+                    <div class="car-specs">
+                        <div class="spec-item">
+                            <i class="bi bi-people-fill"></i>
+                            <span id="car-seats">5 seats</span>
+                        </div>
+                        <div class="spec-item">
+                            <i class="bi bi-briefcase-fill"></i>
+                            <span>Small Luggage: <span id="small-luggage">0</span></span>
+                        </div>
+                        <div class="spec-item">
+                            <i class="bi bi-suitcase-fill"></i>
+                            <span>Big Luggage: <span id="big-luggage">0</span></span>
+                        </div>
                     </div>
                 </div>
                 
+                <hr class="divider">
+                
+                <!-- Booking Details -->
                 <div class="details-grid">
                     <div class="detail-item">
                         <div class="detail-icon">
@@ -55,7 +76,7 @@
                         </div>
                         <div class="detail-content">
                             <div class="detail-label">Pickup Location</div>
-                            <div class="detail-value" id="pickup-location">123 Main Street, Singapore</div>
+                            <div class="detail-value" id="pickup-location">Loading...</div>
                         </div>
                     </div>
                     
@@ -64,18 +85,18 @@
                             <i class="bi bi-calendar-event"></i>
                         </div>
                         <div class="detail-content">
-                            <div class="detail-label">Pickup Date</div>
-                            <div class="detail-value" id="pickup-date">June 1, 2023</div>
+                            <div class="detail-label">Pickup</div>
+                            <div class="detail-value" id="pickup-datetime">Loading...</div>
                         </div>
                     </div>
                     
                     <div class="detail-item">
                         <div class="detail-icon">
-                            <i class="bi bi-clock"></i>
+                            <i class="bi bi-calendar-check"></i>
                         </div>
                         <div class="detail-content">
-                            <div class="detail-label">Pickup Time</div>
-                            <div class="detail-value" id="pickup-time">2:00 PM</div>
+                            <div class="detail-label">Return</div>
+                            <div class="detail-value" id="return-datetime">Loading...</div>
                         </div>
                     </div>
                     
@@ -85,31 +106,33 @@
                         </div>
                         <div class="detail-content">
                             <div class="detail-label">Duration</div>
-                            <div class="detail-value" id="booking-duration">2 hours</div>
+                            <div class="detail-value" id="booking-duration">Loading...</div>
                         </div>
+                    </div>
+                </div>
+                
+                <hr class="divider">
+                
+                <!-- Price Summary -->
+                <div class="price-summary">
+                    <div class="price-row">
+                        <span>Rate</span>
+                        <span>$<span id="hourly-rate">0.00</span>/hour</span>
+                    </div>
+                    <div class="price-row total">
+                        <span>Total</span>
+                        <span>$<span id="total-price">0.00</span></span>
                     </div>
                 </div>
             </div>
             
-            <!-- Next Steps -->
-            <div class="next-steps-card">
-                <h2>Next Steps</h2>
+            <!-- Next Steps (Revised) -->
+            <div class="steps-card">
+                <h2 class="card-title">Next Steps</h2>
                 
                 <div class="steps-list">
                     <div class="step-item">
-                        <div class="step-icon">
-                            <i class="bi bi-1-circle-fill"></i>
-                        </div>
-                        <div class="step-content">
-                            <h3>Check Your Email</h3>
-                            <p>We've sent a confirmation to your registered email with all your booking details.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="step-item">
-                        <div class="step-icon">
-                            <i class="bi bi-2-circle-fill"></i>
-                        </div>
+                        <div class="step-number">1</div>
                         <div class="step-content">
                             <h3>Arrive at the Pickup Location</h3>
                             <p>Be at the car's location 5-10 minutes before your booking starts.</p>
@@ -117,19 +140,15 @@
                     </div>
                     
                     <div class="step-item">
-                        <div class="step-icon">
-                            <i class="bi bi-3-circle-fill"></i>
-                        </div>
+                        <div class="step-number">2</div>
                         <div class="step-content">
-                            <h3>Use the App to Locate Your Car</h3>
-                            <p>Within 30 minutes of your booking start time, you'll be able to use our AR feature to locate your car.</p>
+                            <h3>Find Your Car</h3>
+                            <p>Use the license plate number to locate your specific vehicle.</p>
                         </div>
                     </div>
                     
                     <div class="step-item">
-                        <div class="step-icon">
-                            <i class="bi bi-4-circle-fill"></i>
-                        </div>
+                        <div class="step-number">3</div>
                         <div class="step-content">
                             <h3>Return the Car</h3>
                             <p>Return the car to the same location by the end of your booking period.</p>

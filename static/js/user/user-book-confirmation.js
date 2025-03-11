@@ -3,6 +3,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  writeBatch,
   Timestamp,
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 import {
@@ -339,79 +340,70 @@ function updateConfirmButtonState() {
 
 // Setup event listeners
 function setupEventListeners() {
-
-console.log("Setting up event listeners");
+    console.log("Setting up event listeners");
   
-  // Terms checkbox - update button state when changed
-  if (termsCheckbox) {
-    console.log("Setting up terms checkbox listener");
-    termsCheckbox.addEventListener("change", () => {
-      console.log("Terms checkbox changed:", termsCheckbox.checked);
-      
-      // Update button state
-      if (confirmButton) {
-        confirmButton.disabled = !termsCheckbox.checked;
-        if (termsCheckbox.checked) {
-          confirmButton.classList.remove("disabled");
-        } else {
-          confirmButton.classList.add("disabled");
+    // 1. Set up terms checkbox listener ONCE
+    if (termsCheckbox) {
+      console.log("Setting up terms checkbox listener");
+      termsCheckbox.addEventListener("change", () => {
+        console.log("Terms checkbox changed:", termsCheckbox.checked);
+        
+        // Update the button state directly here
+        const currentConfirmBtn = document.getElementById("confirm-btn"); // Get fresh reference
+        if (currentConfirmBtn) {
+          currentConfirmBtn.disabled = !termsCheckbox.checked;
+          if (termsCheckbox.checked) {
+            currentConfirmBtn.classList.remove("disabled");
+          } else {
+            currentConfirmBtn.classList.add("disabled");
+          }
+          console.log("Confirm button disabled state:", currentConfirmBtn.disabled);
         }
-        console.log("Confirm button disabled state:", confirmButton.disabled);
-      }
-      
-      if (termsError) {
-        termsError.style.display = "none";
-      }
-    });
-  } else {
-    console.warn("Terms checkbox not found");
-  }
-  
-  // Confirm booking button
-  if (confirmButton) {
-    // Remove any previous listeners
-    const newConfirmBtn = confirmButton.cloneNode(true);
-    confirmButton.parentNode.replaceChild(newConfirmBtn, confirmButton);
+        
+        if (termsError) {
+          termsError.style.display = "none";
+        }
+      });
+    } else {
+      console.warn("Terms checkbox not found");
+    }
     
-    // Add event listener to the fresh button
-    newConfirmBtn.addEventListener("click", function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      handleConfirmBooking(event);
-    });
-    console.log("Confirm button event listener attached");
-  } else {
-    console.warn("Confirm button not found in the DOM");
-  }
-  
-  // Modify button - go back to car details
-  if (modifyButton) {
-    modifyButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      console.log("Returning to car details page");
-      history.back();
-    });
-    console.log("Modify button event listener attached");
-  } else {
-    console.warn("Modify button not found in the DOM");
-  }
-  
-  // Terms checkbox - update button state when changed
-  if (termsCheckbox) {
-    termsCheckbox.addEventListener("change", () => {
-      updateConfirmButtonState();
-      
-      if (termsError) {
-        termsError.style.display = "none";
+    // 2. Confirm booking button - use direct reference without cloning
+    const currentConfirmBtn = document.getElementById("confirm-btn"); // Get fresh reference
+    if (currentConfirmBtn) {
+      console.log("Setting up confirm button listener");
+      currentConfirmBtn.addEventListener("click", function(event) {
+        console.log("Confirm button clicked!");
+        event.preventDefault();
+        event.stopPropagation();
+        handleConfirmBooking(event);
+      });
+    } else {
+      console.warn("Confirm button not found in the DOM");
+    }
+    
+    // 3. Modify button - go back to car details
+    if (modifyButton) {
+      modifyButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        console.log("Returning to car details page");
+        history.back();
+      });
+    }
+    
+    // 4. Set initial button state based on checkbox
+    const initialBtn = document.getElementById("confirm-btn");
+    if (initialBtn && termsCheckbox) {      
+      initialBtn.disabled = !termsCheckbox.checked;
+      if (termsCheckbox.checked) {
+        initialBtn.classList.remove("disabled");
+      } else {
+        initialBtn.classList.add("disabled");
       }
-    });
-    console.log("Terms checkbox event listener attached");
-  } else {
-    console.warn("Terms checkbox not found in the DOM");
+    }
+    
+    console.log("All event listeners set up");
   }
-  
-  console.log("All event listeners set up");
-}
 
 // Handle confirm booking button click
 async function handleConfirmBooking(event) {
@@ -501,34 +493,11 @@ async function createBooking() {
     const bookingId = `booking_${Date.now()}`;
     console.log("Generated booking ID:", bookingId);
     
-    // Create booking data with exact required structure for timesheet
-    const timesheetBookingData = {
+    // Create a consistent booking data object to use everywhere
+    const bookingData = {
+      id: bookingId,
       user_id: userId,
-      start_time: Timestamp.fromDate(startTime),
-      end_time: Timestamp.fromDate(endTime),
-      duration_minutes: bookingDetails.totalDurationMinutes,
-      hourly_rate: parseFloat(bookingDetails.hourlyRate),
-      total_price: parseFloat(bookingDetails.totalPrice),
-      status: "upcoming",
-      created_at: Timestamp.now(),
-      car_type: bookingDetails.carType
-    };
-    
-    console.log("Saving booking to timesheet with data:", timesheetBookingData);
-    
-    // Save to car's timesheet collection
-    await setDoc(
-      doc(db, "timesheets", bookingDetails.carId, "bookings", bookingId),
-      timesheetBookingData
-    );
-    
-    console.log("Booking saved to timesheet collection");
-    
-    // Save to user's bookings with the required structure
-    const userBookingData = {
       car_id: bookingDetails.carId,
-      booking_id: bookingId,
-      user_id: userId,
       start_time: Timestamp.fromDate(startTime),
       end_time: Timestamp.fromDate(endTime),
       duration_minutes: bookingDetails.totalDurationMinutes,
@@ -539,23 +508,53 @@ async function createBooking() {
       car_type: bookingDetails.carType
     };
     
-    console.log("Saving booking to user's bookings with data:", userBookingData);
+    console.log("Creating booking with data:", bookingData);
     
-    // Save to user's bookings collection
-    await setDoc(
-      doc(db, "users", userId, "bookings", bookingId),
-      userBookingData
-    );
+    // Import writeBatch if not imported already
+    // import { writeBatch } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
     
-    console.log("Booking saved to user's bookings collection");
+    try {
+      // Use batch write for atomicity
+      const batch = writeBatch(db);
+      
+      // 1. Create main bookings collection if it doesn't exist and add this booking
+      batch.set(doc(db, "bookings", bookingId), bookingData);
+      
+      // 2. Save to car's timesheet collection (this is already working)
+      batch.set(doc(db, "timesheets", bookingDetails.carId, "bookings", bookingId), bookingData);
+      
+      // 3. Save to user's bookings collection
+      batch.set(doc(db, "users", userId, "bookings", bookingId), bookingData);
+      
+      // Commit all writes atomically
+      await batch.commit();
+      
+      console.log("Booking successfully saved to all collections");
+    } catch (batchError) {
+      console.error("Error with batch write:", batchError);
+      
+      // Fallback: try individual writes if batch fails
+      console.log("Attempting individual writes as fallback");
+      
+      // 1. Main bookings collection
+      await setDoc(doc(db, "bookings", bookingId), bookingData);
+      console.log("Saved to main bookings collection");
+      
+      // 2. Car's timesheet collection
+      await setDoc(doc(db, "timesheets", bookingDetails.carId, "bookings", bookingId), bookingData);
+      console.log("Saved to timesheet collection");
+      
+      // 3. User's bookings collection
+      await setDoc(doc(db, "users", userId, "bookings", bookingId), bookingData);
+      console.log("Saved to user's bookings collection");
+    }
     
     // Clear booking details from session storage
     sessionStorage.removeItem("bookingDetails");
-    console.log("Booking details cleared from session storage");
     
     return bookingId;
   } catch (error) {
-    console.error("Error creating booking in database:", error);
+    console.error("Error creating booking:", error);
     throw error;
   }
 }
