@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Tools | BaoCarLiao</title>
+    <link rel="stylesheet" href="../static/css/admin/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <h1>Admin Tools</h1>
+        <div class="admin-card">
+            <h2>Database Migrations</h2>
+            <p>Run these tools to repair or update database structures</p>
+            <div class="admin-actions">
+                <button id="run-migration" class="admin-btn">Migrate Bookings Data</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/admin/migrate-bookings.js" type="module"></script>
+</body>
+</html>

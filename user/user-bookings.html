@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Bookings | CarShare</title>
+    <title>My Bookings | BaoCarLiao</title>
     <link rel="stylesheet" href="../static/css/users/user.css">
     <link rel="stylesheet" href="../static/css/users/user-bookings.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
@@ -13,112 +13,226 @@
     
     <main>
         <div class="container">
-            <!-- Page Header -->
-            <div class="page-header">
-                <h1>My Bookings</h1>
-                <a href="user-dashboard.html" class="back-link">
-                    <i class="bi bi-arrow-left"></i> Back to Dashboard
-                </a>
-            </div>
-            
-            <!-- Booking Tabs -->
-            <div class="tabs-container">
-                <div class="tabs">
-                    <button class="tab-btn active" data-tab="active">Active & Upcoming</button>
-                    <button class="tab-btn" data-tab="past">Past Bookings</button>
-                    <button class="tab-btn" data-tab="cancelled">Cancelled</button>
+            <!-- Page Header with Stats-->
+            <div class="page-header-wrapper">
+                <div class="page-header">
+                    <h1>My Bookings</h1>
+                    <p class="subtitle">Manage and track all your car rentals in one place</p>
+                </div>
+                
+                <div class="booking-stats">
+                    <div class="stat-item active-stats">
+                        <i class="bi bi-car-front"></i>
+                        <div class="stat-info">
+                            <span class="stat-count" id="active-count">0</span>
+                            <span class="stat-label">Active</span>
+                        </div>
+                    </div>
+                    <div class="stat-item upcoming-stats">
+                        <i class="bi bi-calendar-check"></i>
+                        <div class="stat-info">
+                            <span class="stat-count" id="upcoming-count">0</span>
+                            <span class="stat-label">Upcoming</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <!-- Filter Controls -->
-            <div class="filter-controls">
+            <!-- Search & Filter Bar -->
+            <div class="search-filter-bar">
                 <div class="search-box">
                     <i class="bi bi-search"></i>
-                    <input type="text" id="search-input" placeholder="Search bookings...">
+                    <input type="text" id="search-input" placeholder="Search by car model, date, or location...">
                 </div>
-                <div class="sort-controls">
-                    <label for="sort-select">Sort by:</label>
-                    <select id="sort-select">
-                        <option value="date-desc">Newest First</option>
-                        <option value="date-asc">Oldest First</option>
-                    </select>
+                
+                <button class="filter-button" id="show-filters">
+                    <i class="bi bi-sliders"></i>
+                    <span>Filters</span>
+                </button>
+            </div>
+            
+            <!-- Filter Panel (Hidden by Default) -->
+            <div class="filter-panel" id="filter-panel" style="display: none;">
+                <div class="filter-section">
+                    <h4>Sort By</h4>
+                    <div class="radio-options">
+                        <label class="radio-option">
+                            <input type="radio" name="sort" value="date-desc" checked>
+                            <span>Newest First</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="sort" value="date-asc">
+                            <span>Oldest First</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="sort" value="price-high">
+                            <span>Price: High to Low</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="sort" value="price-low">
+                            <span>Price: Low to High</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h4>Car Type</h4>
+                    <div class="checkbox-options">
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="car-type" value="sedan">
+                            <span>Sedan</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="car-type" value="suv">
+                            <span>SUV</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="car-type" value="electric">
+                            <span>Electric</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="filter-actions">
+                    <button class="secondary-btn" id="reset-filters">Reset</button>
+                    <button class="primary-btn" id="apply-filters">Apply Filters</button>
+                </div>
+            </div>
+            
+            <!-- Booking Tabs - Redesigned -->
+            <div class="booking-tabs-wrapper">
+                <div class="booking-tabs">
+                    <button class="tab-item active" data-tab="upcoming-tab">
+                        <i class="bi bi-clock"></i> Upcoming
+                    </button>
+                    <button class="tab-item" data-tab="active-tab">
+                        <i class="bi bi-play-fill"></i> Active
+                    </button>
+                    <button class="tab-item" data-tab="past-tab">
+                        <i class="bi bi-check-lg"></i> Past
+                    </button>
+                    <button class="tab-item" data-tab="cancelled-tab">
+                        <i class="bi bi-x-lg"></i> Cancelled
+                    </button>
+                </div>
+                
+                <div class="view-switcher">
+                    <button class="view-btn active" data-view="card"><i class="bi bi-grid"></i></button>
+                    <button class="view-btn" data-view="list"><i class="bi bi-list"></i></button>
                 </div>
             </div>
             
             <!-- Loading State -->
-            <div id="loading-state" class="loading-state">
+            <div id="loading-indicator" class="loading-state">
                 <div class="loading-spinner"></div>
                 <p>Loading your bookings...</p>
             </div>
             
             <!-- No Bookings State -->
-            <div id="no-bookings" class="no-bookings" style="display: none;">
+            <div id="no-bookings-message" class="no-bookings" style="display: none;">
                 <div class="empty-state">
-                    <i class="bi bi-calendar-x"></i>
+                    <div class="empty-illustration">
+                        <i class="bi bi-calendar-x"></i>
+                    </div>
                     <h2>No bookings found</h2>
-                    <p id="empty-state-message">You don't have any bookings in this category.</p>
-                    <a href="user-dashboard.html" class="primary-btn">Find a Car</a>
+                    <p id="empty-state-message">You don't have any bookings yet.</p>
+                    <a href="user-dashboard.html" class="primary-btn">
+                        <i class="bi bi-search"></i> Find a Car
+                    </a>
                 </div>
             </div>
             
-            <!-- Active & Upcoming Bookings -->
-            <div id="active-tab" class="tab-content">
-                <div class="bookings-list" id="active-bookings-list"></div>
+            <!-- Upcoming Bookings Tab -->
+            <div id="upcoming-tab" class="tab-content">
+                <div class="bookings-list" id="upcoming-bookings"></div>
             </div>
             
-            <!-- Past Bookings -->
+            <!-- Active Bookings Tab -->
+            <div id="active-tab" class="tab-content" style="display: none;">
+                <div class="bookings-list" id="active-bookings"></div>
+            </div>
+            
+            <!-- Past Bookings Tab -->
             <div id="past-tab" class="tab-content" style="display: none;">
-                <div class="bookings-list" id="past-bookings-list"></div>
+                <div class="bookings-list" id="past-bookings"></div>
             </div>
             
-            <!-- Cancelled Bookings -->
+            <!-- Cancelled Bookings Tab -->
             <div id="cancelled-tab" class="tab-content" style="display: none;">
-                <div class="bookings-list" id="cancelled-bookings-list"></div>
+                <div class="bookings-list" id="cancelled-bookings"></div>
+            </div>
+            
+            <!-- Quick Actions Floating Button -->
+            <div class="floating-action-btn" id="quick-actions">
+                <button class="action-btn">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                <div class="action-menu">
+                    <a href="user-dashboard.html" class="action-item">
+                        <i class="bi bi-car-front-fill"></i>
+                        <span>New Booking</span>
+                    </a>
+                    <a href="#" class="action-item" id="scroll-to-top">
+                        <i class="bi bi-arrow-up"></i>
+                        <span>Back to Top</span>
+                    </a>
+                </div>
             </div>
         </div>
     </main>
     
     <div id="footer"></div>
     
-    <!-- Booking Card Template -->
+    <!-- Booking Card Template (Hidden) - For JavaScript to use -->
     <template id="booking-card-template">
         <div class="booking-card">
-            <div class="booking-status">
-                <span class="status-indicator"></span>
-                <span class="status-text"></span>
-            </div>
+            <div class="status-badge"></div>
             
-            <div class="booking-content">
-                <div class="car-image">
-                    <img src="../static/assets/images/car-placeholder.jpg" alt="Car image">
+            <div class="card-content">
+                <div class="car-image-container">
+                    <img class="car-image" src="" alt="Car image">
                 </div>
                 
                 <div class="booking-details">
-                    <div class="booking-header">
-                        <h3 class="car-model">Car Model</h3>
-                        <div class="booking-id">Booking #<span class="id-text">12345</span></div>
+                    <div class="car-info">
+                        <div class="car-name-status">
+                            <h3 class="car-model"></h3>
+                            <span class="booking-status"></span>
+                        </div>
+                        <p class="car-address"><i class="bi bi-geo-alt"></i> <span class="address-text"></span></p>
                     </div>
                     
-                    <div class="booking-time">
-                        <div class="time-icon"><i class="bi bi-calendar-event"></i></div>
-                        <div class="time-text">June 1, 2023 • 2:00 PM - 4:00 PM</div>
+                    <div class="booking-time-info">
+                        <div class="date-time">
+                            <div class="info-item">
+                                <i class="bi bi-calendar-event"></i>
+                                <span class="pickup-date"></span>
+                            </div>
+                            <div class="info-item">
+                                <i class="bi bi-clock"></i>
+                                <span class="pickup-time"></span> - <span class="return-time"></span>
+                            </div>
+                        </div>
+                        <div class="time-badge"></div>
                     </div>
                     
-                    <div class="booking-location">
-                        <div class="location-icon"><i class="bi bi-geo-alt"></i></div>
-                        <div class="location-text">123 Main Street, Singapore</div>
-                    </div>
-                    
-                    <div class="booking-action">
-                        <a href="#" class="view-details-btn">View Details</a>
-                        <button class="cancel-btn">Cancel Booking</button>
+                    <div class="booking-actions">
+                        <div class="booking-id">
+                            <i class="bi bi-tag"></i>
+                            <span class="id-text"></span>
+                        </div>
+                        <div class="action-buttons">
+                            <a href="#" class="view-btn">View Details</a>
+                            <button class="cancel-btn">Cancel</button>
+                            <button class="find-car-btn"><i class="bi bi-pin-map-fill"></i> Find Car</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </template>
     
-    <!-- Confirmation Modal -->
+    <!-- Confirmation Modal (for cancel bookings) -->
     <div class="modal" id="cancel-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -126,8 +240,21 @@
                 <button class="close-modal"><i class="bi bi-x-lg"></i></button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to cancel this booking?</p>
-                <p class="warning-text">This action cannot be undone.</p>
+                <div class="warning-icon">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <h4>Are you sure you want to cancel this booking?</h4>
+                <p class="warning-text">This action cannot be undone and may be subject to cancellation fees.</p>
+                <div class="booking-summary">
+                    <div class="summary-item">
+                        <span class="label">Car:</span>
+                        <span class="value" id="modal-car-name">Tesla Model Y</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Date:</span>
+                        <span class="value" id="modal-date">June 15, 2023</span>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="secondary-btn" id="cancel-no">No, Keep Booking</button>
