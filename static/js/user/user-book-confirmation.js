@@ -204,7 +204,13 @@ function displayBookingSummary() {
       carPlateElement.textContent = carData.license_plate;
     }
     
-    // Car image
+    // Remove car type tag - not needed as per requirement
+    const carTypeElement = document.getElementById("car-type");
+    if (carTypeElement) {
+      carTypeElement.style.display = "none";
+    }
+    
+    // Car image - full size
     const carImageElement = document.getElementById("car-image");
     if (carImageElement) {
       carImageElement.src = `../static/images/car_images/${carData.car_type || "car"}.png`;
@@ -216,6 +222,24 @@ function displayBookingSummary() {
           carImageElement.src = "../static/images/assets/car-placeholder.jpg";
         };
       };
+    }
+    
+    // Car seats - dynamic based on car data
+    const carSeatsElement = document.getElementById("car-seats");
+    if (carSeatsElement && carData.seating_capacity) {
+      carSeatsElement.textContent = `${carData.seating_capacity} seats`;
+    }
+    
+    // Small luggage - from database
+    const smallLuggageElement = document.getElementById("small-luggage");
+    if (smallLuggageElement && carData.small_luggage !== undefined) {
+      smallLuggageElement.textContent = carData.small_luggage || "0";
+    }
+    
+    // Big luggage - from database
+    const bigLuggageElement = document.getElementById("big-luggage");
+    if (bigLuggageElement && carData.big_luggage !== undefined) {
+      bigLuggageElement.textContent = carData.big_luggage || "0";
     }
     
     // Car address
@@ -263,25 +287,34 @@ function displayBookingSummary() {
       durationElement.textContent = durationText.trim() || "0 minutes";
     }
     
+    // Also update duration text in price summary
+    const durationTextElement = document.getElementById("duration-text");
+    if (durationTextElement) {
+      durationTextElement.textContent = durationText.trim() || "0 minutes";
+    }
+    
     // Set price details from the existing booking details
     const rateElement = document.getElementById("hourly-rate");
+    const subtotalElement = document.getElementById("subtotal");
     const totalElement = document.getElementById("total-price");
     
     if (rateElement) {
-      rateElement.textContent = `$${parseFloat(bookingDetails.hourlyRate).toFixed(2)}`;
+      rateElement.textContent = parseFloat(bookingDetails.hourlyRate).toFixed(2);
+    }
+    
+    if (subtotalElement) {
+      subtotalElement.textContent = parseFloat(bookingDetails.totalPrice).toFixed(2);
     }
     
     if (totalElement) {
-      totalElement.textContent = `$${parseFloat(bookingDetails.totalPrice).toFixed(2)}`;
+      totalElement.textContent = parseFloat(bookingDetails.totalPrice).toFixed(2);
     }
     
     // Show booking summary
     bookingSummary.style.display = "block";
     
-    // Set confirm button initial state
-    if (confirmButton && termsCheckbox) {
-      confirmButton.disabled = !termsCheckbox.checked;
-    }
+    // Set confirm button initial state based on terms checkbox
+    updateConfirmButtonState();
     
     console.log("Booking summary displayed successfully");
   } catch (error) {
@@ -290,8 +323,50 @@ function displayBookingSummary() {
   }
 }
 
+// Update confirm button state based on terms checkbox
+function updateConfirmButtonState() {
+  if (confirmButton && termsCheckbox) {
+    confirmButton.disabled = !termsCheckbox.checked;
+    
+    // Apply appropriate styling based on disabled state
+    if (confirmButton.disabled) {
+      confirmButton.classList.add("disabled");
+    } else {
+      confirmButton.classList.remove("disabled");
+    }
+  }
+}
+
 // Setup event listeners
 function setupEventListeners() {
+
+console.log("Setting up event listeners");
+  
+  // Terms checkbox - update button state when changed
+  if (termsCheckbox) {
+    console.log("Setting up terms checkbox listener");
+    termsCheckbox.addEventListener("change", () => {
+      console.log("Terms checkbox changed:", termsCheckbox.checked);
+      
+      // Update button state
+      if (confirmButton) {
+        confirmButton.disabled = !termsCheckbox.checked;
+        if (termsCheckbox.checked) {
+          confirmButton.classList.remove("disabled");
+        } else {
+          confirmButton.classList.add("disabled");
+        }
+        console.log("Confirm button disabled state:", confirmButton.disabled);
+      }
+      
+      if (termsError) {
+        termsError.style.display = "none";
+      }
+    });
+  } else {
+    console.warn("Terms checkbox not found");
+  }
+  
   // Confirm booking button
   if (confirmButton) {
     // Remove any previous listeners
@@ -321,12 +396,10 @@ function setupEventListeners() {
     console.warn("Modify button not found in the DOM");
   }
   
-  // Terms checkbox
+  // Terms checkbox - update button state when changed
   if (termsCheckbox) {
     termsCheckbox.addEventListener("change", () => {
-      if (confirmButton) {
-        confirmButton.disabled = !termsCheckbox.checked;
-      }
+      updateConfirmButtonState();
       
       if (termsError) {
         termsError.style.display = "none";
@@ -359,10 +432,11 @@ async function handleConfirmBooking(event) {
     return false;
   }
   
-  // Disable the confirm button to prevent double-clicking
+  // Visual feedback - disable button and update text
   if (confirmButton) {
     confirmButton.disabled = true;
-    confirmButton.textContent = "Processing...";
+    confirmButton.classList.add("disabled");
+    confirmButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
   }
   
   // Show loading
@@ -371,10 +445,11 @@ async function handleConfirmBooking(event) {
   try {
     // Create the booking using the details from user-car-details.js
     const bookingId = await createBooking();
-    console.log("Booking created successfully, redirecting to success page");
+    console.log("Booking created successfully with ID:", bookingId);
     
     // Redirect to success page
     try {
+      console.log("Redirecting to success page");
       window.location.href = `user-booking-success.html?id=${bookingId}`;
       
       // Fallback navigation methods if the first one fails
@@ -385,6 +460,7 @@ async function handleConfirmBooking(event) {
           
           // Final fallback
           setTimeout(() => {
+            console.log("Using final fallback navigation method");
             window.open(`user-booking-success.html?id=${bookingId}`, "_self");
           }, 300);
         } catch (navError) {
@@ -402,7 +478,8 @@ async function handleConfirmBooking(event) {
     // Re-enable button
     if (confirmButton) {
       confirmButton.disabled = false;
-      confirmButton.textContent = "Confirm Booking";
+      confirmButton.classList.remove("disabled");
+      confirmButton.innerHTML = '<i class="bi bi-check-lg"></i> Confirm Booking';
     }
     
     showLoading(false);
