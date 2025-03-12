@@ -476,7 +476,10 @@
 }
 
 .car-address {
-    display: flex;
+    display: -webkit-box; /* Use flex or -webkit-box, not both */
+    -webkit-box-orient: vertical; /* Ensure vendor prefix is correct */
+    -webkit-line-clamp: 2; /* Ensure vendor prefix is correct */
+    line-clamp: 2; /* Standard property for compatibility */
     align-items: flex-start;
     gap: 6px;
     margin: 0;
@@ -485,9 +488,10 @@
     max-height: 3em;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    /* Fallback for non-WebKit browsers */
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap;
 }
 
 .car-address i {
