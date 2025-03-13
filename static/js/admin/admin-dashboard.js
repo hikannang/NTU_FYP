@@ -1,7 +1,9 @@
 import { db } from "../common/firebase-config.js";
 import { 
   collection, 
-  getDocs, 
+  getDocs,
+  getDoc,
+  doc,
   query, 
   where, 
   orderBy, 
@@ -197,64 +199,75 @@ async function loadStatistics(dateRange) {
 
 // Load recent bookings
 async function loadRecentBookings() {
-  try {
-    const recentBookingsQuery = query(
-      collection(db, 'bookings'),
-      orderBy('created_at', 'desc'),
-      limit(5)
-    );
-    
-    const bookingsSnapshot = await getDocs(recentBookingsQuery);
-    const bookings = [];
-    
-    for (const bookingDoc of bookingsSnapshot.docs) {
-      const bookingData = bookingDoc.data();
+    try {
+      const recentBookingsQuery = query(
+        collection(db, 'bookings'),
+        orderBy('created_at', 'desc'),
+        limit(5)
+      );
       
-      // Get user name
-      let userName = 'Unknown User';
-      if (bookingData.user_id) {
-        try {
-          const userDoc = await getDocs(doc(db, 'users', bookingData.user_id));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+      const bookingsSnapshot = await getDocs(recentBookingsQuery);
+      const bookings = [];
+      
+      for (const bookingDoc of bookingsSnapshot.docs) {
+        const bookingData = bookingDoc.data();
+        
+        // Get user name
+        let userName = 'Unknown User';
+        if (bookingData.user_id) {
+          try {
+            // Fixed: Use getDoc instead of getDocs for a single document
+            const userDoc = await getDoc(doc(db, 'users', bookingData.user_id));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+              if (!userName) {
+                // Fallback to email if name isn't available
+                userName = userData.email || 'Unknown User';
+              }
+            }
+          } catch (e) {
+            console.error('Error fetching user data:', e);
           }
-        } catch (e) {
-          console.error('Error fetching user data:', e);
         }
+        
+        // Get car details
+        let carDetails = 'Unknown Car';
+        if (bookingData.car_id) {
+          try {
+            // Fixed: Use getDoc instead of getDocs for a single document
+            const carDoc = await getDoc(doc(db, 'cars', bookingData.car_id));
+            if (carDoc.exists()) {
+              const carData = carDoc.data();
+              // If car_type exists, use it with license plate, otherwise just license plate
+              if (carData.car_type) {
+                carDetails = `${carData.car_type} (${carData.license_plate || 'No Plate'})`;
+              } else if (carData.license_plate) {
+                carDetails = carData.license_plate;
+              }
+            }
+          } catch (e) {
+            console.error('Error fetching car data:', e);
+          }
+        }
+        
+        bookings.push({
+          id: bookingDoc.id,
+          user: userName,
+          car: carDetails,
+          date: bookingData.start_time,
+          status: bookingData.status || 'unknown',
+          car_id: bookingData.car_id
+        });
       }
       
-      // Get car details
-      let carDetails = 'Unknown Car';
-      if (bookingData.car_id) {
-        try {
-          const carDoc = await getDocs(doc(db, 'cars', bookingData.car_id));
-          if (carDoc.exists()) {
-            const carData = carDoc.data();
-            carDetails = `${carData.car_type || ''} (${carData.license_plate || ''})`.trim();
-          }
-        } catch (e) {
-          console.error('Error fetching car data:', e);
-        }
-      }
+      dashboardData.recentBookings = bookings;
       
-      bookings.push({
-        id: bookingDoc.id,
-        user: userName,
-        car: carDetails,
-        date: bookingData.start_time,
-        status: bookingData.status,
-        car_id: bookingData.car_id
-      });
+    } catch (error) {
+      console.error('Error loading recent bookings:', error);
+      throw error;
     }
-    
-    dashboardData.recentBookings = bookings;
-    
-  } catch (error) {
-    console.error('Error loading recent bookings:', error);
-    throw error;
   }
-}
 
 // Load car status data
 async function loadCarStatusData() {
