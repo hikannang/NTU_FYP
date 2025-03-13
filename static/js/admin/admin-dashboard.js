@@ -1,4 +1,3 @@
-// admin-dashboard.js - Part 1
 import { db, auth } from "../common/firebase-config.js";
 import {
   collection,
@@ -37,7 +36,9 @@ let dashboardData = {
 
 // Initialize the page
 document.addEventListener("DOMContentLoaded", async () => {
-  // Check if logout was requested
+  console.log("DOM loaded, starting initialization");
+  
+  // Check if logout was requested first
   if (sessionStorage.getItem("performLogout") === "true") {
     sessionStorage.removeItem("performLogout");
     try {
@@ -51,60 +52,84 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // Load header and footer
-  document.getElementById("header").innerHTML = await fetch(
-    "../static/headerFooter/admin-header.html"
-  ).then((response) => response.text());
-  
-  document.getElementById("footer").innerHTML = await fetch(
-    "../static/headerFooter/admin-footer.html"
-  ).then((response) => response.text());
-
-  // Check authentication
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      // Load admin data and check admin status
-      try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          
-          if (userData.role === "admin") {
-            // Update the welcome message
-            const welcomeMessage = document.getElementById("welcome-message");
-            if (welcomeMessage) {
-              welcomeMessage.textContent = userData.firstName || "Admin";
+  try {
+    console.log("Loading header and footer");
+    // Load header and footer
+    document.getElementById("header").innerHTML = await fetch(
+      "../static/headerFooter/admin-header.html"
+    ).then((response) => response.text());
+    
+    document.getElementById("footer").innerHTML = await fetch(
+      "../static/headerFooter/admin-footer.html"
+    ).then((response) => response.text());
+    
+    console.log("Header and footer loaded, checking auth state");
+    
+    // Give header time to initialize
+    setTimeout(() => {
+      // Check for logout button after header is loaded
+      const logoutBtn = document.getElementById("logout-btn");
+      if (logoutBtn) {
+        console.log("Setting up logout button");
+        logoutBtn.addEventListener('click', function(event) {
+          event.preventDefault();
+          sessionStorage.setItem('performLogout', 'true');
+          window.location.reload();
+        });
+      } else {
+        console.warn("Logout button not found in header");
+      }
+    }, 500);
+    
+    // Continue with auth check and data loading
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Load admin data and check admin status
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            
+            if (userData.role === "admin") {
+              // Update the welcome message
+              const welcomeMessage = document.getElementById("welcome-message");
+              if (welcomeMessage) {
+                welcomeMessage.textContent = userData.firstName || "Admin";
+              }
+              
+              // Set up date filter buttons
+              setupDateFilters();
+              
+              // Load initial data
+              await loadDashboardData("day");
+              
+              // Render all dashboard components
+              renderDashboard();
+            } else {
+              // Not an admin, redirect to user dashboard
+              alert("You don't have permission to access the admin area.");
+              window.location.href = "../user/user-dashboard.html";
             }
-            
-            // Set up date filter buttons
-            setupDateFilters();
-            
-            // Load initial data
-            await loadDashboardData("day");
-            
-            // Render all dashboard components
-            renderDashboard();
           } else {
-            // Not an admin, redirect to user dashboard
-            alert("You don't have permission to access the admin area.");
-            window.location.href = "../user/user-dashboard.html";
+            // User document doesn't exist
+            alert("User profile not found.");
+            await signOut(auth);
+            window.location.href = "../index.html";
           }
-        } else {
-          // User document doesn't exist
-          alert("User profile not found.");
-          await signOut(auth);
+        } catch (error) {
+          console.error("Error verifying admin:", error);
+          alert("Error accessing admin area: " + error.message);
           window.location.href = "../index.html";
         }
-      } catch (error) {
-        console.error("Error verifying admin:", error);
-        alert("Error accessing admin area: " + error.message);
+      } else {
+        // User is signed out, redirect to login
         window.location.href = "../index.html";
       }
-    } else {
-      // User is signed out, redirect to login
-      window.location.href = "../index.html";
-    }
-  });
+    });
+  } catch (error) {
+    console.error("Initialization error:", error);
+    alert("Failed to initialize: " + error.message);
+  }
 });
 
 // Date helpers

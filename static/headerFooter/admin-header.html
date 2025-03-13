@@ -1,14 +1,20 @@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+/>
+<link
+  href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+  rel="stylesheet"
+/>
 
 <style>
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
+    font-family: "Poppins", sans-serif;
   }
-  
+
   :root {
     --primary-color: #1e88e5;
     --secondary-color: #1976d2;
@@ -22,7 +28,7 @@
     --header-height: 70px;
     --sidebar-width: 250px;
   }
-  
+
   .admin-header {
     position: fixed;
     top: 0;
@@ -37,45 +43,45 @@
     padding: 0 20px;
     z-index: 1000;
   }
-  
+
   .header-left {
     display: flex;
     align-items: center;
   }
-  
+
   .logo-container {
     display: flex;
     align-items: center;
     cursor: pointer;
   }
-  
+
   .logo {
     height: 40px;
     margin-right: 15px;
   }
-  
+
   .logo-text {
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--text-color);
   }
-  
+
   .header-right {
     display: flex;
     align-items: center;
     gap: 20px;
   }
-  
+
   .notification {
     position: relative;
     cursor: pointer;
   }
-  
+
   .notification i {
     font-size: 1.25rem;
     color: var(--light-text);
   }
-  
+
   .notification .badge {
     position: absolute;
     top: -5px;
@@ -90,7 +96,7 @@
     align-items: center;
     justify-content: center;
   }
-  
+
   .admin-profile {
     display: flex;
     align-items: center;
@@ -98,7 +104,7 @@
     cursor: pointer;
     padding: 10px 0; /* Add padding for better hover area */
   }
-  
+
   .profile-image {
     width: 40px;
     height: 40px;
@@ -111,29 +117,29 @@
     color: var(--primary-color);
     font-weight: 600;
   }
-  
+
   .profile-info {
     display: flex;
     flex-direction: column;
   }
-  
+
   .profile-name {
     font-weight: 500;
     font-size: 0.9rem;
     color: var(--text-color);
   }
-  
+
   .profile-role {
     font-size: 0.75rem;
     color: var(--light-text);
   }
-  
+
   .dropdown-toggle {
     margin-left: 5px;
     color: var(--light-text);
     transition: transform 0.2s;
   }
-  
+
   /* Dropdown Menu - Return to hover behavior but extend hover area */
   .profile-dropdown {
     position: absolute;
@@ -151,7 +157,7 @@
     transition: opacity 0.2s, visibility 0.2s;
     z-index: 1001;
   }
-  
+
   /* Create a hover extension area to prevent dropdown from closing */
   .profile-dropdown::before {
     content: "";
@@ -161,17 +167,17 @@
     right: 0;
     height: 15px;
   }
-  
+
   .admin-profile:hover .profile-dropdown {
     display: block;
     opacity: 1;
     visibility: visible;
   }
-  
+
   .admin-profile:hover .dropdown-toggle {
     transform: rotate(180deg);
   }
-  
+
   .dropdown-item {
     padding: 10px 20px;
     display: flex;
@@ -181,17 +187,17 @@
     font-size: 0.9rem;
     transition: background-color 0.2s;
   }
-  
+
   .dropdown-item i {
     margin-right: 10px;
     color: var(--light-text);
     font-size: 1rem;
   }
-  
+
   .dropdown-item:hover {
     background-color: var(--background-color);
   }
-  
+
   /* Sidebar */
   .admin-sidebar {
     position: fixed;
@@ -205,11 +211,11 @@
     transition: transform 0.3s ease;
     z-index: 999;
   }
-  
+
   .sidebar-menu {
     padding: 20px 0;
   }
-  
+
   .menu-item {
     padding: 12px 20px;
     display: flex;
@@ -219,68 +225,68 @@
     transition: background-color 0.2s;
     font-size: 0.9rem;
   }
-  
+
   .menu-item i {
     margin-right: 15px;
     font-size: 1.1rem;
     width: 20px;
     text-align: center;
   }
-  
+
   .menu-item:hover {
     background-color: var(--background-color);
   }
-  
+
   .menu-item.active {
     background-color: rgba(30, 136, 229, 0.1);
     color: var(--primary-color);
     font-weight: 500;
     border-left: 3px solid var(--primary-color);
   }
-  
+
   .menu-item.active i {
     color: var(--primary-color);
   }
-  
+
   /* Responsive */
   @media (max-width: 992px) {
     .admin-sidebar {
       transform: translateX(-100%);
     }
-    
+
     .admin-sidebar.active {
       transform: translateX(0);
     }
-    
+
     .admin-content {
       margin-left: 0 !important;
     }
   }
-  
+
   @media (max-width: 768px) {
     .admin-header {
       padding: 0 15px;
     }
-    
+
     .logo-text {
       display: none;
     }
-    
+
     .profile-info {
       display: none;
     }
-    
+
     .profile-dropdown {
       right: -10px;
     }
   }
-  
+
   @media (max-width: 480px) {
     .notification span {
       display: none;
     }
   }
-  
+
   /* Mobile sidebar overlay */
   .sidebar-overlay {
     display: none;
@@ -292,7 +298,7 @@
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 998;
   }
-  
+
   /* Show overlay when sidebar is active on mobile */
   @media (max-width: 992px) {
     .sidebar-overlay.active {
@@ -304,7 +310,7 @@
 <div class="admin-header">
   <div class="header-left">
     <div class="logo-container">
-      <img src="../static/images/logo.png" alt="BaoCarLiao Logo" class="logo">
+      <img src="../static/images/logo.png" alt="BaoCarLiao Logo" class="logo" />
       <span class="logo-text">Admin Portal</span>
     </div>
   </div>
@@ -322,7 +328,7 @@
         <span class="profile-role">Administrator</span>
       </div>
       <i class="bi bi-chevron-down dropdown-toggle"></i>
-      
+
       <div class="profile-dropdown">
         <a href="#" class="dropdown-item">
           <i class="bi bi-person-circle"></i>
@@ -377,65 +383,77 @@
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const adminSidebar = document.getElementById('adminSidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const logoutBtn = document.getElementById('logout-btn');
-    
+  document.addEventListener("DOMContentLoaded", function () {
+    const adminSidebar = document.getElementById("adminSidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+    const logoutBtn = document.getElementById("logout-btn");
+
     // Set active menu item based on current page
-    const currentPage = window.location.pathname.split('/').pop();
-    const menuItems = document.querySelectorAll('.menu-item');
-    
-    menuItems.forEach(item => {
-      item.classList.remove('active');
-      const href = item.getAttribute('href');
-      if (href && currentPage.includes(href.split('/').pop())) {
-        item.classList.add('active');
+    const currentPage = window.location.pathname.split("/").pop();
+    const menuItems = document.querySelectorAll(".menu-item");
+
+    menuItems.forEach((item) => {
+      item.classList.remove("active");
+      const href = item.getAttribute("href");
+      if (href && currentPage.includes(href.split("/").pop())) {
+        item.classList.add("active");
       }
     });
-    
+
     // If no active item found, default to dashboard if we're on the admin home page
-    if (!document.querySelector('.menu-item.active') && 
-        (currentPage === '' || currentPage === 'admin-dashboard.html')) {
-      document.querySelector('.menu-item').classList.add('active');
+    if (
+      !document.querySelector(".menu-item.active") &&
+      (currentPage === "" || currentPage === "admin-dashboard.html")
+    ) {
+      document.querySelector(".menu-item").classList.add("active");
     }
-    
+
     // Close sidebar when clicking outside on mobile
     if (sidebarOverlay) {
-      sidebarOverlay.addEventListener('click', () => {
-        adminSidebar.classList.remove('active');
-        sidebarOverlay.classList.remove('active');
+      sidebarOverlay.addEventListener("click", () => {
+        adminSidebar.classList.remove("active");
+        sidebarOverlay.classList.remove("active");
       });
     }
-    
-    // SIMPLE LOGOUT BUTTON - matching user-header.html implementation exactly
+
+    // In admin-header.html
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', function(event) {
+      logoutBtn.addEventListener("click", function (event) {
         event.preventDefault();
-        // Set a flag that the main JS file will check for
-        sessionStorage.setItem('performLogout', 'true');
-        window.location.reload(); // Reload to trigger the logout in main JS
+
+        // Direct implementation that doesn't rely on the main JS
+        const auth = firebase.auth();
+        auth
+          .signOut()
+          .then(() => {
+            console.log("Signed out successfully");
+            window.location.href = "../index.html";
+          })
+          .catch((error) => {
+            console.error("Error during logout:", error);
+            alert("Logout failed: " + error.message);
+          });
       });
     }
-    
+
     // Add "More" button functionality from footer
-    const moreOptionsBtn = document.getElementById('moreOptions');
+    const moreOptionsBtn = document.getElementById("moreOptions");
     if (moreOptionsBtn) {
-      moreOptionsBtn.addEventListener('click', (e) => {
+      moreOptionsBtn.addEventListener("click", (e) => {
         e.preventDefault();
         // Show sidebar when More is clicked in mobile footer
         if (adminSidebar && sidebarOverlay) {
-          adminSidebar.classList.add('active');
-          sidebarOverlay.classList.add('active');
+          adminSidebar.classList.add("active");
+          sidebarOverlay.classList.add("active");
         }
       });
     }
-    
+
     // Make logo clickable to go to dashboard
-    const logoContainer = document.querySelector('.logo-container');
+    const logoContainer = document.querySelector(".logo-container");
     if (logoContainer) {
-      logoContainer.addEventListener('click', function() {
-        window.location.href = 'admin-dashboard.html';
+      logoContainer.addEventListener("click", function () {
+        window.location.href = "admin-dashboard.html";
       });
     }
   });
