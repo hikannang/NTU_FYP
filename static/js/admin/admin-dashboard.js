@@ -9,6 +9,7 @@ import {
   orderBy,
   limit,
   Timestamp,
+  updateDoc,
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 import {
   onAuthStateChanged,
@@ -36,24 +37,29 @@ let dashboardData = {
 
 // Initialize the page with improved sequence
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("DOM loaded, starting initialization");
-  
-  // Then load UI components
-  try {
-    document.getElementById("header").innerHTML = await fetch(
-      "../static/headerFooter/admin-header.html"
-    ).then((response) => response.text());
+    console.log("DOM loaded, starting initialization");
     
-    document.getElementById("footer").innerHTML = await fetch(
-      "../static/headerFooter/admin-footer.html"
-    ).then((response) => response.text());
-    
-    // Only proceed with auth check after UI is loaded
-    setTimeout(() => checkAuthAndLoadData(), 100);
-  } catch (error) {
-    console.error("Error loading UI components:", error);
-  }
-});
+    // Then load UI components
+    try {
+      document.getElementById("header").innerHTML = await fetch(
+        "../static/headerFooter/admin-header.html"
+      ).then((response) => response.text());
+      
+      document.getElementById("footer").innerHTML = await fetch(
+        "../static/headerFooter/admin-footer.html"
+      ).then((response) => response.text());
+      
+      // Start background status update with a delay to prioritize UI loading
+      setTimeout(() => {
+        updateAllBookingStatuses();
+      }, 2000); // 2 second delay
+      
+      // Only proceed with auth check after UI is loaded
+      setTimeout(() => checkAuthAndLoadData(), 100);
+    } catch (error) {
+      console.error("Error loading UI components:", error);
+    }
+  });
 
 // Separate function to check auth and load data
 async function checkAuthAndLoadData() {
@@ -265,110 +271,289 @@ async function loadStatistics(dateRange) {
     // Initialize revenue
     let totalRevenue = 0;
     
-    // Collect completed bookings across all cars
-    const revenuePromises = carsSnapshot.docs.map(async (carDoc) => {
-      const carId = carDoc.id;
-      const bookingsRef = collection(db, "timesheets", carId, "bookings");
-      const completedBookingsQuery = query(
-        bookingsRef,
-        where("status", "==", "completed"),
-        where("end_time", ">=", startTimestamp),
-        where("end_time", "<=", endTimestamp)
-      );
+    // Query completed bookings directly from root bookings collection
+    const bookingsQuery = query(
+      collection(db, "bookings"),
+      where("status", "==", "completed"),
+      where("end_time", ">=", startTimestamp),
+      where("end_time", "<=", endTimestamp)
+    );
+    
+    const bookingsSnapshot = await getDocs(bookingsQuery);
+    
+    // Process each booking
+    bookingsSnapshot.forEach(doc => {
+      const booking = doc.data();
       
-      const bookingsSnapshot = await getDocs(completedBookingsQuery);
-      let carRevenue = 0;
-      
-      bookingsSnapshot.forEach(doc => {
-        const booking = doc.data();
-        if (booking.price) {
-          carRevenue += parseFloat(booking.price);
+      // Use total_price field as per your database structure
+      if (booking.total_price !== undefined && booking.total_price !== null) {
+        // Remove currency symbols and commas if present
+        const priceString = String(booking.total_price).replace(/[^0-9.-]+/g, "");
+        const price = parseFloat(priceString);
+        
+        // Only add if it's a valid number
+        if (!isNaN(price)) {
+          totalRevenue += price;
+          console.log(`Added booking ${doc.id} with price ${price}`); // Debug logging
+        } else {
+          console.warn(`Invalid price format in booking ${doc.id}: ${booking.total_price}`);
         }
-      });
-      
-      return carRevenue;
+      } else if (booking.price !== undefined && booking.price !== null) {
+        // Fall back to price field if total_price doesn't exist
+        const priceString = String(booking.price).replace(/[^0-9.-]+/g, "");
+        const price = parseFloat(priceString);
+        
+        if (!isNaN(price)) {
+          totalRevenue += price;
+          console.log(`Added booking ${doc.id} with price ${price} (from price field)`);
+        }
+      } else {
+        console.warn(`Missing price fields in booking ${doc.id}`);
+      }
     });
     
-    // Sum up all revenue
-    const revenues = await Promise.all(revenuePromises);
-    totalRevenue = revenues.reduce((sum, rev) => sum + rev, 0);
-    dashboardData.totalRevenue = totalRevenue;
+    // Format for display with 2 decimal places
+    dashboardData.totalRevenue = Math.round(totalRevenue * 100) / 100;
+    
   } catch (error) {
     console.error("Error loading statistics:", error);
     throw error;
   }
 }
 
-// Load recent bookings
+// Load and display recent bookings efficiently
 async function loadRecentBookings() {
   try {
-    const carsSnapshot = await getDocs(collection(db, "cars"));
-    let allRecentBookings = [];
+    const allBookings = [];
+    const bookingsToUpdate = [];
+    const processedCarIds = new Set(); // Track cars we've already processed
     
-    // Get bookings from each car
-    for (const carDoc of carsSnapshot.docs) {
+    // Step 1: Quickly get the 10 most recent bookings across all cars
+    const carsSnapshot = await getDocs(collection(db, "cars"));
+    
+    // Create an array of promises to query bookings from each car
+    const bookingPromises = carsSnapshot.docs.map(async (carDoc) => {
       const carId = carDoc.id;
       const carData = carDoc.data();
       
-      // Query recent bookings for this car
+      if (processedCarIds.has(carId)) return []; // Skip if already processed
+      processedCarIds.add(carId);
+      
       const bookingsRef = collection(db, "timesheets", carId, "bookings");
       const recentBookingsQuery = query(
         bookingsRef,
         orderBy("created_at", "desc"),
-        limit(10)
+        limit(3) // Get slightly more than needed per car
       );
       
-      const bookingsSnapshot = await getDocs(recentBookingsQuery);
-      
-      // Process each booking
-      for (const bookingDoc of bookingsSnapshot.docs) {
-        const bookingData = bookingDoc.data();
-        
-        // Get user name
-        let userName = 'Unknown User';
-        if (bookingData.user_id) {
-          try {
-            const userDoc = await getDoc(doc(db, 'users', bookingData.user_id));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
-              if (!userName) {
-                // Fallback to email if name isn't available
-                userName = userData.email || 'Unknown User';
-              }
-            }
-          } catch (e) {
-            console.error('Error fetching user data:', e);
-          }
-        }
-        
-        // Add booking to list with car details
-        allRecentBookings.push({
-          id: bookingDoc.id,
-          user: userName,
-          car: `${carData.car_type || ''} (${carData.license_plate || 'No Plate'})`,
-          date: bookingData.start_time,
-          status: bookingData.status || 'unknown',
-          car_id: carId
-        });
-      }
-    }
+      const snapshot = await getDocs(recentBookingsQuery);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        carId: carId,
+        carData: carData,
+        bookingData: doc.data()
+      }));
+    });
     
-    // Sort by date (newest first) and take top 5
-    allRecentBookings.sort((a, b) => {
-      const dateA = a.date instanceof Timestamp ? a.date.seconds : a.date;
-      const dateB = b.date instanceof Timestamp ? b.date.seconds : b.date;
+    // Wait for all queries to complete
+    const results = await Promise.all(bookingPromises);
+    
+    // Flatten the results
+    const allBookingData = results.flat();
+    
+    // Sort by creation date and take top 5
+    allBookingData.sort((a, b) => {
+      const dateA = a.bookingData.created_at instanceof Timestamp ? 
+        a.bookingData.created_at.seconds : 
+        (a.bookingData.created_at?.seconds || 0);
+      const dateB = b.bookingData.created_at instanceof Timestamp ? 
+        b.bookingData.created_at.seconds : 
+        (b.bookingData.created_at?.seconds || 0);
       return dateB - dateA;
     });
     
-    // Set dashboard data
-    dashboardData.recentBookings = allRecentBookings.slice(0, 5);
+    // Take only the 5 most recent for display
+    const top5Bookings = allBookingData.slice(0, 5);
+    
+    // Step 2: Process these 5 bookings for display (much faster than processing all)
+    for (const item of top5Bookings) {
+      const { id, carId, carData, bookingData } = item;
+      
+      // Update booking status for display
+      const updatedBookingData = updateBookingStatus({...bookingData});
+      
+      // Track if the status needs database update
+      if (updatedBookingData.status !== bookingData.status) {
+        bookingsToUpdate.push({
+          carId,
+          bookingId: id,
+          newStatus: updatedBookingData.status
+        });
+      }
+      
+      // Get user name - can be done in parallel
+      let userName = 'Unknown User';
+      if (bookingData.user_id) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', bookingData.user_id));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            userName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+            if (!userName) {
+              userName = userData.email || 'Unknown User';
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching user data:', e);
+        }
+      }
+      
+      // Format car display as carId(license_plate)
+      const carDisplay = `${carId}(${carData.license_plate || 'No Plate'})`;
+      
+      // Add to final display array
+      allBookings.push({
+        id: id,
+        user: userName,
+        car: carDisplay,
+        date: bookingData.start_time,
+        status: updatedBookingData.status || 'unknown',
+        car_id: carId
+      });
+    }
+    
+    // Step 3: Update dashboard display immediately
+    dashboardData.recentBookings = allBookings;
+    renderRecentBookings(); // Update UI right away
+    
+    // Step 4: Update database status in background (non-blocking)
+    setTimeout(() => {
+      updateBookingStatusesInDatabase(bookingsToUpdate);
+    }, 100);
     
   } catch (error) {
     console.error('Error loading recent bookings:', error);
-    throw error;
   }
 }
+
+// Update booking statuses in database without blocking UI
+async function updateBookingStatusesInDatabase(bookingsToUpdate) {
+    try {
+      for (const booking of bookingsToUpdate) {
+        if (booking.newStatus && booking.newStatus !== 'unknown') {
+          try {
+            // Update status in timesheets collection
+            await updateDoc(doc(db, "timesheets", booking.carId, "bookings", booking.bookingId), {
+              status: booking.newStatus
+            });
+            console.log(`Updated booking ${booking.bookingId} status to ${booking.newStatus} in timesheets`);
+          } catch (e) {
+            console.error(`Error updating booking ${booking.bookingId} in timesheets:`, e);
+          }
+        } else {
+          console.warn(`Skipping update for booking ${booking.bookingId} in timesheets due to invalid status: ${booking.newStatus}`);
+        }
+      }
+  
+      for (const booking of bookingsToUpdate) {
+        if (booking.newStatus && booking.newStatus !== 'unknown') {
+          try {
+            // Update status in root bookings collection
+            await updateDoc(doc(db, "bookings", booking.bookingId), {
+              status: booking.newStatus
+            });
+            console.log(`Updated booking ${booking.bookingId} status to ${booking.newStatus} in bookings`);
+          } catch (e) {
+            console.error(`Error updating booking ${booking.bookingId} in bookings:`, e);
+          }
+        } else {
+          console.warn(`Skipping update for booking ${booking.bookingId} in bookings due to invalid status: ${booking.newStatus}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error in batch update:', error);
+    }
+  }
+  
+  // Update booking status based on current time
+function updateBookingStatus(booking) {
+    // If already cancelled, don't change the status
+    if (booking.status === 'cancelled') {
+      return booking.status;
+    }
+    
+    const now = new Date();
+    let startTime, endTime;
+    
+    // Handle Timestamp objects from Firestore
+    if (booking.start_time instanceof Timestamp) {
+      startTime = new Date(booking.start_time.seconds * 1000);
+    } else if (booking.start_time && typeof booking.start_time === 'object' && booking.start_time.seconds) {
+      // Handle plain object with seconds property
+      startTime = new Date(booking.start_time.seconds * 1000);
+    } else {
+      // Handle string or date
+      startTime = new Date(booking.start_time);
+    }
+    
+    if (booking.end_time instanceof Timestamp) {
+      endTime = new Date(booking.end_time.seconds * 1000);
+    } else if (booking.end_time && typeof booking.end_time === 'object' && booking.end_time.seconds) {
+      endTime = new Date(booking.end_time.seconds * 1000);
+    } else {
+      endTime = new Date(booking.end_time);
+    }
+    
+    // Check if dates are valid
+    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+      console.error('Invalid dates in booking:', booking);
+      return booking.status; // Return existing status if dates are invalid
+    }
+    
+    // Compare dates to determine status
+    if (now < startTime) {
+      return 'upcoming';
+    } else if (now >= startTime && now <= endTime) {
+      return 'active';
+    } else if (now > endTime) {
+      return 'completed';
+    }
+    
+    return booking.status; // Return existing status if logic fails
+  }
+
+  // Background function to update booking statuses
+async function updateAllBookingStatuses() {
+    try {
+      console.log("Fetching all bookings...");
+      const bookingsSnapshot = await getDocs(collection(db, "bookings"));
+      const bookingsToUpdate = [];
+  
+      bookingsSnapshot.forEach(doc => {
+        const booking = doc.data();
+        const newStatus = updateBookingStatus(booking);
+  
+        console.log(`Booking ${doc.id}: current status=${booking.status}, new status=${newStatus}`);
+  
+        if (newStatus !== booking.status) {
+          bookingsToUpdate.push({
+            carId: booking.carID, // Assuming carID is stored in the booking document
+            bookingId: doc.id,
+            newStatus: newStatus
+          });
+        }
+      });
+  
+      if (bookingsToUpdate.length > 0) {
+        console.log(`Updating ${bookingsToUpdate.length} bookings...`);
+        await updateBookingStatusesInDatabase(bookingsToUpdate);
+      } else {
+        console.log("No bookings to update.");
+      }
+    } catch (error) {
+      console.error('Error updating all booking statuses:', error);
+    }
+  }
 
 // Load car status data
 async function loadCarStatusData() {
