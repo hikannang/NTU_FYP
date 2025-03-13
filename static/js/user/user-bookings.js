@@ -671,5 +671,5 @@ async function loadUserBookings() {
       console.log(`Launching AR wayfinding for booking ${bookingId}, car ${carId}`);
     
       // Redirect to the AR wayfinding page
-      window.location.href = "user-ar-wayfinding.html";
+      window.location.href = '../AR/user-ar-wayfinding.html';
     }
