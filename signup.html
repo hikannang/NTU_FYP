@@ -3,32 +3,276 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign Up</title>
+  <title>Sign Up | BaoCarLiao</title>
   <link rel="stylesheet" href="./static/css/common/signup.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="signup-container">
-    <h1>Create an Account</h1>
-    <form id="signup-form">
-      <input type="email" id="email" placeholder="Email" required>
-      <input type="password" id="password" placeholder="Password" required>
-      <input type="password" id="confirm-password" placeholder="Confirm Password" required>
-      <input type="text" id="first-name" placeholder="First Name" required>
-      <input type="text" id="last-name" placeholder="Last Name" required>
-      <input type="tel" id="phone" placeholder="Phone Number (8 digits)" required>
-      <textarea id="address" placeholder="Address" rows="3" required></textarea>
-      <input type="text" id="license-number" placeholder="License Number" required>
-      <input type="date" id="license-issue-date" placeholder="Date of License Issue" required>
-      <input type="text" id="card-number" placeholder="Card Number (16 digits)" required>
-      <button type="submit">Sign Up</button>
-    </form>
-    <p>Already have an account? <a href="./index.html">Click here to sign in!</a></p>
+  <div class="container">
+    <div class="signup-wrapper">
+      <div class="signup-card">
+        <div class="logo-container">
+          <img src="./static/images/logo.png" alt="BaoCarLiao Logo" class="logo">
+        </div>
+
+        <h1>Create Account</h1>
+        <p class="subtitle">Join us to start booking cars</p>
+
+        <!-- Form Progress Indicator -->
+        <div class="progress-container">
+          <div class="progress-step active" data-step="1">1</div>
+          <div class="progress-line"></div>
+          <div class="progress-step" data-step="2">2</div>
+          <div class="progress-line"></div>
+          <div class="progress-step" data-step="3">3</div>
+        </div>
+
+        <form id="signup-form">
+          <!-- Step 1: Account Information -->
+          <div class="step active" id="step1">
+            <h2 class="step-title">Account Information</h2>
+            
+            <div class="input-group">
+              <i class="bi bi-envelope"></i>
+              <input type="email" id="email" placeholder="Email Address" required>
+            </div>
+            <div class="input-group">
+              <i class="bi bi-lock"></i>
+              <input type="password" id="password" placeholder="Password" required>
+              <span class="password-toggle" id="password-toggle">
+                <i class="bi bi-eye-slash"></i>
+              </span>
+            </div>
+            <div class="input-group">
+              <i class="bi bi-lock-fill"></i>
+              <input type="password" id="confirm-password" placeholder="Confirm Password" required>
+            </div>
+            <div class="error" id="password-error"></div>
+
+            <button type="button" class="next-btn" id="step1-next">Next</button>
+          </div>
+
+          <!-- Step 2: Personal Information -->
+          <div class="step" id="step2">
+            <h2 class="step-title">Personal Information</h2>
+            
+            <div class="name-row">
+              <div class="input-group half">
+                <i class="bi bi-person"></i>
+                <input type="text" id="first-name" placeholder="First Name" required>
+              </div>
+              <div class="input-group half">
+                <input type="text" id="last-name" placeholder="Last Name" required>
+              </div>
+            </div>
+            
+            <div class="input-group">
+              <i class="bi bi-telephone"></i>
+              <input type="tel" id="phone" placeholder="Phone Number (8 digits)" required>
+            </div>
+            <div class="input-group">
+              <i class="bi bi-geo-alt"></i>
+              <textarea id="address" placeholder="Address" rows="3" required></textarea>
+            </div>
+
+            <div class="form-buttons">
+              <button type="button" class="back-btn" id="step2-back">Back</button>
+              <button type="button" class="next-btn" id="step2-next">Next</button>
+            </div>
+          </div>
+
+          <!-- Step 3: License & Payment -->
+          <div class="step" id="step3">
+            <h2 class="step-title">License & Payment</h2>
+            
+            <div class="input-group">
+              <i class="bi bi-card-heading"></i>
+              <input type="text" id="license-number" placeholder="License Number" required>
+            </div>
+            <div class="input-group">
+              <i class="bi bi-calendar"></i>
+              <input type="date" id="license-issue-date" placeholder="Date of License Issue" required>
+            </div>
+            <div class="input-group">
+              <i class="bi bi-credit-card"></i>
+              <input type="text" id="card-number" placeholder="Card Number (16 digits)" required>
+            </div>
+            <div class="card-row">
+              <div class="input-group half">
+                <i class="bi bi-calendar-event"></i>
+                <input type="text" id="expiry-date" placeholder="MM/YY" required>
+              </div>
+              <div class="input-group half">
+                <i class="bi bi-shield"></i>
+                <input type="text" id="cvv" placeholder="CVV" required maxlength="3">
+              </div>
+            </div>
+
+            <div class="terms-checkbox">
+              <input type="checkbox" id="terms" required>
+              <label for="terms">I agree to the <a href="#">Terms and Conditions</a></label>
+            </div>
+
+            <div class="form-buttons">
+              <button type="button" class="back-btn" id="step3-back">Back</button>
+              <button type="submit" class="submit-btn">Create Account</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="signin-link">
+          <p>Already have an account? <a href="./index.html">Sign In</a></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="image-side">
+      <div class="overlay"></div>
+      <div class="content">
+        <h2>Join Our<br>Community</h2>
+        <p>Unlock access to premium vehicles at your fingertips</p>
+      </div>
+    </div>
   </div>
 
+  <!-- Firebase Scripts -->
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
   <script src="./static/js/common/firebase-config.js" type="module"></script>
   <script src="./static/js/common/auth.js" type="module"></script>
+
+  <!-- Form Navigation Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Form step navigation
+      const step1 = document.getElementById('step1');
+      const step2 = document.getElementById('step2');
+      const step3 = document.getElementById('step3');
+      const progressSteps = document.querySelectorAll('.progress-step');
+
+      // Password toggle functionality
+      const passwordToggle = document.getElementById('password-toggle');
+      const passwordInput = document.getElementById('password');
+      
+      passwordToggle.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // Toggle eye icon
+        const icon = passwordToggle.querySelector('i');
+        icon.classList.toggle('bi-eye');
+        icon.classList.toggle('bi-eye-slash');
+      });
+      
+      // Next button handlers
+      document.getElementById('step1-next').addEventListener('click', function() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        const passwordError = document.getElementById('password-error');
+        
+        // Basic validation
+        if (!email || !password || !confirmPassword) {
+          passwordError.textContent = "Please fill all fields";
+          return;
+        }
+        
+        if (password !== confirmPassword) {
+          passwordError.textContent = "Passwords do not match";
+          return;
+        }
+        
+        if (password.length < 6) {
+          passwordError.textContent = "Password must be at least 6 characters";
+          return;
+        }
+        
+        // Clear errors and proceed
+        passwordError.textContent = "";
+        step1.classList.remove('active');
+        step2.classList.add('active');
+        progressSteps[0].classList.add('completed');
+        progressSteps[1].classList.add('active');
+      });
+
+      document.getElementById('step2-next').addEventListener('click', function() {
+        const firstName = document.getElementById('first-name').value;
+        const lastName = document.getElementById('last-name').value;
+        const phone = document.getElementById('phone').value;
+        const address = document.getElementById('address').value;
+        
+        // Basic validation
+        if (!firstName || !lastName || !phone || !address) {
+          alert("Please fill all fields");
+          return;
+        }
+        
+        if (phone.length !== 8 || !/^\d+$/.test(phone)) {
+          alert("Phone number must be exactly 8 digits");
+          return;
+        }
+        
+        // Proceed
+        step2.classList.remove('active');
+        step3.classList.add('active');
+        progressSteps[1].classList.add('completed');
+        progressSteps[2].classList.add('active');
+      });
+
+      // Back button handlers
+      document.getElementById('step2-back').addEventListener('click', function() {
+        step2.classList.remove('active');
+        step1.classList.add('active');
+        progressSteps[1].classList.remove('active');
+      });
+
+      document.getElementById('step3-back').addEventListener('click', function() {
+        step3.classList.remove('active');
+        step2.classList.add('active');
+        progressSteps[2].classList.remove('active');
+      });
+
+      // Format card number input
+      document.getElementById('card-number').addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '').substring(0, 16);
+        e.target.value = value;
+      });
+
+      // Format expiry date
+      document.getElementById('expiry-date').addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 2) {
+          value = value.substring(0, 2) + '/' + value.substring(2, 4);
+        }
+        e.target.value = value;
+      });
+
+      // Form submission
+      document.getElementById('signup-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // You would integrate with your existing auth.js here
+        // For now, we'll just show a success message
+        alert('Account creation successful! Redirecting to login...');
+        
+        // In a real implementation, you would call your Firebase signup function
+        // and handle the authentication process
+        
+        // Example:
+        // const userData = {
+        //   email: document.getElementById('email').value,
+        //   firstName: document.getElementById('first-name').value,
+        //   lastName: document.getElementById('last-name').value,
+        //   phone: document.getElementById('phone').value,
+        //   address: document.getElementById('address').value,
+        //   licenseNumber: document.getElementById('license-number').value,
+        //   licenseIssueDate: document.getElementById('license-issue-date').value
+        // };
+        // signUp(userData);
+      });
+    });
+  </script>
 </body>
 </html>
