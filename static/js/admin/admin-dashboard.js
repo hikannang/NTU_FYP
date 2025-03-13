@@ -10,6 +10,7 @@ import {
   limit,
   Timestamp,
   updateDoc,
+  writeBatch,
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 import {
   onAuthStateChanged,
@@ -37,29 +38,29 @@ let dashboardData = {
 
 // Initialize the page with improved sequence
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("DOM loaded, starting initialization");
+  console.log("DOM loaded, starting initialization");
+  
+  // Then load UI components
+  try {
+    document.getElementById("header").innerHTML = await fetch(
+      "../static/headerFooter/admin-header.html"
+    ).then((response) => response.text());
     
-    // Then load UI components
-    try {
-      document.getElementById("header").innerHTML = await fetch(
-        "../static/headerFooter/admin-header.html"
-      ).then((response) => response.text());
-      
-      document.getElementById("footer").innerHTML = await fetch(
-        "../static/headerFooter/admin-footer.html"
-      ).then((response) => response.text());
-      
-      // Start background status update with a delay to prioritize UI loading
-      setTimeout(() => {
-        updateAllBookingStatuses();
-      }, 2000); // 2 second delay
-      
-      // Only proceed with auth check after UI is loaded
-      setTimeout(() => checkAuthAndLoadData(), 100);
-    } catch (error) {
-      console.error("Error loading UI components:", error);
-    }
-  });
+    document.getElementById("footer").innerHTML = await fetch(
+      "../static/headerFooter/admin-footer.html"
+    ).then((response) => response.text());
+    
+    // Start background status update with a delay to prioritize UI loading
+    setTimeout(() => {
+      updateAllBookingStatuses();
+    }, 2000); // 2 second delay
+    
+    // Only proceed with auth check after UI is loaded
+    setTimeout(() => checkAuthAndLoadData(), 100);
+  } catch (error) {
+    console.error("Error loading UI components:", error);
+  }
+});
 
 // Separate function to check auth and load data
 async function checkAuthAndLoadData() {
@@ -182,7 +183,7 @@ async function loadDashboardData(period) {
   try {
     const dateRange = getDateRange(period);
     
-    // handle each operation separately
+    // Handle each operation separately
     try {
       await loadStatistics(dateRange);
     } catch (error) {
@@ -227,7 +228,7 @@ async function loadDashboardData(period) {
   }
 }
 
-// Load statistics
+// Load statistics with improved revenue calculation
 async function loadStatistics(dateRange) {
   try {
     // Active bookings count - across all cars
@@ -270,6 +271,7 @@ async function loadStatistics(dateRange) {
 
     // Initialize revenue
     let totalRevenue = 0;
+    let totalBookings = 0;
     
     // Query completed bookings directly from root bookings collection
     const bookingsQuery = query(
@@ -280,6 +282,7 @@ async function loadStatistics(dateRange) {
     );
     
     const bookingsSnapshot = await getDocs(bookingsQuery);
+    totalBookings = bookingsSnapshot.size;
     
     // Process each booking
     bookingsSnapshot.forEach(doc => {
@@ -314,6 +317,7 @@ async function loadStatistics(dateRange) {
     
     // Format for display with 2 decimal places
     dashboardData.totalRevenue = Math.round(totalRevenue * 100) / 100;
+    console.log(`Total revenue for period: ${dashboardData.totalRevenue} (${totalBookings} bookings)`);
     
   } catch (error) {
     console.error("Error loading statistics:", error);
@@ -321,77 +325,44 @@ async function loadStatistics(dateRange) {
   }
 }
 
-// Load and display recent bookings efficiently
+// Load recent bookings with proper status handling
 async function loadRecentBookings() {
   try {
     const allBookings = [];
-    const bookingsToUpdate = [];
     const processedCarIds = new Set(); // Track cars we've already processed
     
-    // Step 1: Quickly get the 10 most recent bookings across all cars
-    const carsSnapshot = await getDocs(collection(db, "cars"));
+    // Step 1: Quickly get bookings from root bookings collection
+    const bookingsQuery = query(
+      collection(db, "bookings"),
+      orderBy("created_at", "desc"),
+      limit(10)
+    );
     
-    // Create an array of promises to query bookings from each car
-    const bookingPromises = carsSnapshot.docs.map(async (carDoc) => {
-      const carId = carDoc.id;
-      const carData = carDoc.data();
+    const bookingsSnapshot = await getDocs(bookingsQuery);
+    const bookings = [];
+    
+    for (const bookingDoc of bookingsSnapshot.docs) {
+      const bookingData = bookingDoc.data();
       
-      if (processedCarIds.has(carId)) return []; // Skip if already processed
-      processedCarIds.add(carId);
+      // Get car details
+      let carDisplay = 'Unknown Car';
+      let carId = bookingData.carID || '';
       
-      const bookingsRef = collection(db, "timesheets", carId, "bookings");
-      const recentBookingsQuery = query(
-        bookingsRef,
-        orderBy("created_at", "desc"),
-        limit(3) // Get slightly more than needed per car
-      );
-      
-      const snapshot = await getDocs(recentBookingsQuery);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        carId: carId,
-        carData: carData,
-        bookingData: doc.data()
-      }));
-    });
-    
-    // Wait for all queries to complete
-    const results = await Promise.all(bookingPromises);
-    
-    // Flatten the results
-    const allBookingData = results.flat();
-    
-    // Sort by creation date and take top 5
-    allBookingData.sort((a, b) => {
-      const dateA = a.bookingData.created_at instanceof Timestamp ? 
-        a.bookingData.created_at.seconds : 
-        (a.bookingData.created_at?.seconds || 0);
-      const dateB = b.bookingData.created_at instanceof Timestamp ? 
-        b.bookingData.created_at.seconds : 
-        (b.bookingData.created_at?.seconds || 0);
-      return dateB - dateA;
-    });
-    
-    // Take only the 5 most recent for display
-    const top5Bookings = allBookingData.slice(0, 5);
-    
-    // Step 2: Process these 5 bookings for display (much faster than processing all)
-    for (const item of top5Bookings) {
-      const { id, carId, carData, bookingData } = item;
-      
-      // Update booking status for display
-      const updatedBookingData = updateBookingStatus({...bookingData});
-      
-      // Track if the status needs database update
-      if (updatedBookingData.status !== bookingData.status) {
-        bookingsToUpdate.push({
-          carId,
-          bookingId: id,
-          newStatus: updatedBookingData.status
-        });
+      if (carId) {
+        try {
+          const carDoc = await getDoc(doc(db, 'cars', carId));
+          if (carDoc.exists()) {
+            const carData = carDoc.data();
+            carDisplay = `${carId}(${carData.license_plate || 'No Plate'})`;
+          } else {
+            carDisplay = `${carId}(Unknown)`;
+          }
+        } catch (e) {
+          console.error('Error fetching car data:', e);
+        }
       }
       
-      // Get user name - can be done in parallel
+      // Get user name
       let userName = 'Unknown User';
       if (bookingData.user_id) {
         try {
@@ -408,152 +379,37 @@ async function loadRecentBookings() {
         }
       }
       
-      // Format car display as carId(license_plate)
-      const carDisplay = `${carId}(${carData.license_plate || 'No Plate'})`;
+      // Update booking status based on time (doesn't save to db, just for display)
+      const currentStatus = bookingData.status || 'unknown';
+      const determinedStatus = determineCorrectStatus(bookingData);
       
-      // Add to final display array
-      allBookings.push({
-        id: id,
+      // Add to display array
+      bookings.push({
+        id: bookingDoc.id,
         user: userName,
         car: carDisplay,
         date: bookingData.start_time,
-        status: updatedBookingData.status || 'unknown',
-        car_id: carId
+        status: determinedStatus,
+        car_id: carId,
+        statusChanged: determinedStatus !== currentStatus
       });
     }
     
-    // Step 3: Update dashboard display immediately
-    dashboardData.recentBookings = allBookings;
-    renderRecentBookings(); // Update UI right away
+    // Sort by date (newest first) and take top 5
+    bookings.sort((a, b) => {
+      const dateA = a.date instanceof Timestamp ? a.date.seconds : a.date?.seconds || 0;
+      const dateB = b.date instanceof Timestamp ? b.date.seconds : b.date?.seconds || 0;
+      return dateB - dateA;
+    });
     
-    // Step 4: Update database status in background (non-blocking)
-    setTimeout(() => {
-      updateBookingStatusesInDatabase(bookingsToUpdate);
-    }, 100);
+    // Set dashboard data
+    dashboardData.recentBookings = bookings.slice(0, 5);
     
   } catch (error) {
     console.error('Error loading recent bookings:', error);
+    throw error;
   }
 }
-
-// Update booking statuses in database without blocking UI
-async function updateBookingStatusesInDatabase(bookingsToUpdate) {
-    try {
-      for (const booking of bookingsToUpdate) {
-        if (booking.newStatus && booking.newStatus !== 'unknown') {
-          try {
-            // Update status in timesheets collection
-            await updateDoc(doc(db, "timesheets", booking.carId, "bookings", booking.bookingId), {
-              status: booking.newStatus
-            });
-            console.log(`Updated booking ${booking.bookingId} status to ${booking.newStatus} in timesheets`);
-          } catch (e) {
-            console.error(`Error updating booking ${booking.bookingId} in timesheets:`, e);
-          }
-        } else {
-          console.warn(`Skipping update for booking ${booking.bookingId} in timesheets due to invalid status: ${booking.newStatus}`);
-        }
-      }
-  
-      for (const booking of bookingsToUpdate) {
-        if (booking.newStatus && booking.newStatus !== 'unknown') {
-          try {
-            // Update status in root bookings collection
-            await updateDoc(doc(db, "bookings", booking.bookingId), {
-              status: booking.newStatus
-            });
-            console.log(`Updated booking ${booking.bookingId} status to ${booking.newStatus} in bookings`);
-          } catch (e) {
-            console.error(`Error updating booking ${booking.bookingId} in bookings:`, e);
-          }
-        } else {
-          console.warn(`Skipping update for booking ${booking.bookingId} in bookings due to invalid status: ${booking.newStatus}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error in batch update:', error);
-    }
-  }
-  
-  // Update booking status based on current time
-function updateBookingStatus(booking) {
-    // If already cancelled, don't change the status
-    if (booking.status === 'cancelled') {
-      return booking.status;
-    }
-    
-    const now = new Date();
-    let startTime, endTime;
-    
-    // Handle Timestamp objects from Firestore
-    if (booking.start_time instanceof Timestamp) {
-      startTime = new Date(booking.start_time.seconds * 1000);
-    } else if (booking.start_time && typeof booking.start_time === 'object' && booking.start_time.seconds) {
-      // Handle plain object with seconds property
-      startTime = new Date(booking.start_time.seconds * 1000);
-    } else {
-      // Handle string or date
-      startTime = new Date(booking.start_time);
-    }
-    
-    if (booking.end_time instanceof Timestamp) {
-      endTime = new Date(booking.end_time.seconds * 1000);
-    } else if (booking.end_time && typeof booking.end_time === 'object' && booking.end_time.seconds) {
-      endTime = new Date(booking.end_time.seconds * 1000);
-    } else {
-      endTime = new Date(booking.end_time);
-    }
-    
-    // Check if dates are valid
-    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-      console.error('Invalid dates in booking:', booking);
-      return booking.status; // Return existing status if dates are invalid
-    }
-    
-    // Compare dates to determine status
-    if (now < startTime) {
-      return 'upcoming';
-    } else if (now >= startTime && now <= endTime) {
-      return 'active';
-    } else if (now > endTime) {
-      return 'completed';
-    }
-    
-    return booking.status; // Return existing status if logic fails
-  }
-
-  // Background function to update booking statuses
-async function updateAllBookingStatuses() {
-    try {
-      console.log("Fetching all bookings...");
-      const bookingsSnapshot = await getDocs(collection(db, "bookings"));
-      const bookingsToUpdate = [];
-  
-      bookingsSnapshot.forEach(doc => {
-        const booking = doc.data();
-        const newStatus = updateBookingStatus(booking);
-  
-        console.log(`Booking ${doc.id}: current status=${booking.status}, new status=${newStatus}`);
-  
-        if (newStatus !== booking.status) {
-          bookingsToUpdate.push({
-            carId: booking.carID, // Assuming carID is stored in the booking document
-            bookingId: doc.id,
-            newStatus: newStatus
-          });
-        }
-      });
-  
-      if (bookingsToUpdate.length > 0) {
-        console.log(`Updating ${bookingsToUpdate.length} bookings...`);
-        await updateBookingStatusesInDatabase(bookingsToUpdate);
-      } else {
-        console.log("No bookings to update.");
-      }
-    } catch (error) {
-      console.error('Error updating all booking statuses:', error);
-    }
-  }
 
 // Load car status data
 async function loadCarStatusData() {
@@ -796,7 +652,7 @@ async function loadMaintenanceAlerts() {
   }
 }
 
-// Render dashboard UI with error tolerance
+// Render dashboard UI with error handling
 function renderDashboard() {
   try {
     updateStatistics();
@@ -831,15 +687,16 @@ function renderDashboard() {
 
 // Update statistics cards
 function updateStatistics() {
-  try {
-    if (!document.getElementById('active-bookings')) return;
-    document.getElementById('active-bookings').textContent = dashboardData.activeBookings || 0;
-    document.getElementById('total-users').textContent = dashboardData.totalUsers || 0;
-    document.getElementById('available-cars').textContent = dashboardData.availableCars || 0;
-    document.getElementById('total-revenue').textContent = formatCurrency(dashboardData.totalRevenue || 0);
-  } catch (error) {
-    console.warn("Error updating statistics:", error);
-  }
+  document.getElementById('active-bookings').textContent = dashboardData.activeBookings;
+  document.getElementById('total-users').textContent = dashboardData.totalUsers;
+  document.getElementById('available-cars').textContent = dashboardData.availableCars;
+  document.getElementById('total-revenue').textContent = formatCurrency(dashboardData.totalRevenue);
+  
+  // Remove percentage increase/decrease as requested
+  const trendElements = document.querySelectorAll('.stat-trend');
+  trendElements.forEach(el => {
+    el.style.display = 'none';
+  });
 }
 
 // Render recent bookings table
@@ -937,6 +794,154 @@ function renderCarStatusChart() {
   });
 }
 
+// Helper functions
+function capitalizeFirstLetter(string) {
+  if (!string) return '';
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function getStatusClass(status) {
+  if (!status) return '';
+  
+  switch(status.toLowerCase()) {
+    case 'upcoming':
+      return 'status-upcoming';
+    case 'active':
+      return 'status-active';
+    case 'completed':
+      return 'status-completed';
+    case 'cancelled':
+      return 'status-cancelled';
+    default:
+      return '';
+  }
+}
+
+// Determine correct booking status based on time
+function determineCorrectStatus(booking) {
+  // If already cancelled, don't change the status
+  if (booking.status === 'cancelled') {
+    return booking.status;
+  }
+  
+  const now = new Date();
+  let startTime, endTime;
+  
+  // Handle Timestamp objects from Firestore
+  if (booking.start_time instanceof Timestamp) {
+    startTime = new Date(booking.start_time.seconds * 1000);
+  } else if (booking.start_time && typeof booking.start_time === 'object' && booking.start_time.seconds) {
+    // Handle plain object with seconds property
+    startTime = new Date(booking.start_time.seconds * 1000);
+  } else {
+    // Handle string or date
+    startTime = new Date(booking.start_time);
+  }
+  
+  if (booking.end_time instanceof Timestamp) {
+    endTime = new Date(booking.end_time.seconds * 1000);
+  } else if (booking.end_time && typeof booking.end_time === 'object' && booking.end_time.seconds) {
+    endTime = new Date(booking.end_time.seconds * 1000);
+  } else {
+    endTime = new Date(booking.end_time);
+  }
+  
+  // Check if dates are valid
+  if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+    console.error('Invalid dates in booking:', booking);
+    return booking.status; // Return existing status if dates are invalid
+  }
+  
+  // Compare dates to determine status
+  if (now < startTime) {
+    return 'upcoming';
+  } else if (now >= startTime && now <= endTime) {
+    return 'active';
+  } else if (now > endTime) {
+    return 'completed';
+  }
+  
+  return booking.status; // Return existing status if logic fails
+}
+
+// Background function to update all booking statuses
+async function updateAllBookingStatuses() {
+  try {
+    console.log("Starting background booking status update...");
+    const bookingsSnapshot = await getDocs(collection(db, "bookings"));
+    const bookingsToUpdate = [];
+
+    // Process each booking
+    for (const bookingDoc of bookingsSnapshot.docs) {
+      const booking = bookingDoc.data();
+      const currentStatus = booking.status || 'unknown';
+      const newStatus = determineCorrectStatus(booking);
+      
+      console.log(`Booking ${bookingDoc.id}: ${currentStatus} -> ${newStatus}`);
+      
+      // Check if status changed
+      if (newStatus !== currentStatus) {
+        const carId = booking.carID || null;
+        
+        // Add to updates list
+        bookingsToUpdate.push({
+          bookingId: bookingDoc.id,
+          carId: carId, 
+          newStatus: newStatus
+        });
+      }
+    }
+
+    // Update bookings in batches
+    if (bookingsToUpdate.length > 0) {
+      console.log(`Updating ${bookingsToUpdate.length} bookings...`);
+      
+      // Use batch for better performance
+      const batch = writeBatch(db);
+      let batchCount = 0;
+      
+      // Update root bookings collection
+      for (const booking of bookingsToUpdate) {
+        batch.update(doc(db, "bookings", booking.bookingId), { 
+          status: booking.newStatus 
+        });
+        batchCount++;
+        
+        // Commit batch if it gets too large
+        if (batchCount >= 500) {
+          await batch.commit();
+          console.log(`Committed batch of ${batchCount} updates`);
+          batchCount = 0;
+        }
+      }
+      
+      // Commit any remaining updates
+      if (batchCount > 0) {
+        await batch.commit();
+        console.log(`Committed final batch of ${batchCount} updates`);
+      }
+      
+      // Now update timesheets collection if carId is available
+      for (const booking of bookingsToUpdate) {
+        if (booking.carId) {
+          try {
+            await updateDoc(doc(db, "timesheets", booking.carId, "bookings", booking.bookingId), {
+              status: booking.newStatus
+            });
+            console.log(`Updated timesheet booking ${booking.bookingId} status to ${booking.newStatus}`);
+          } catch (e) {
+            console.error(`Error updating timesheet booking ${booking.bookingId}:`, e);
+          }
+        }
+      }
+    } else {
+      console.log("No status changes detected");
+    }
+  } catch (error) {
+    console.error("Error updating booking statuses:", error);
+  }
+}
+
 // Render user registration chart
 function renderUserRegistrationChart() {
   const chartCanvas = document.getElementById('userRegistrationChart');
@@ -1014,29 +1019,6 @@ function renderMaintenanceAlerts() {
   });
   
   alertsList.innerHTML = alertsContent;
-}
-
-// Helper functions
-function capitalizeFirstLetter(string) {
-  if (!string) return '';
-  return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-function getStatusClass(status) {
-  if (!status) return '';
-  
-  switch(status.toLowerCase()) {
-    case 'active':
-      return 'status-active';
-    case 'pending':
-      return 'status-pending';
-    case 'cancelled':
-      return 'status-cancelled';
-    case 'completed':
-      return 'status-completed';
-    default:
-      return '';
-  }
 }
 
 // Function to handle navigation to booking details
