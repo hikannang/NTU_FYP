@@ -97,21 +97,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (sessionStorage.getItem("performLogout") === "true") {
     sessionStorage.removeItem("performLogout");
     try {
-      // Import what we need for logout
-      const { signOut } = await import(
-        "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js"
-      );
-      const { auth } = await import("../static/js/common/firebase-config.js");
-
       await signOut(auth);
-      alert("You have been logged out successfully.");
+      alert("You have been logged out.");
       window.location.href = "../index.html";
-      return; // Exit early to prevent the rest of the initialization
+      return; // Exit early
     } catch (error) {
       console.error("Error during logout:", error);
       alert("Logout failed: " + error.message);
     }
   }
+
+  // Setup logout functionality after header is loaded
+  setupLogoutButton();
 
   // Set up date filter buttons
   setupDateFilters();
@@ -122,6 +119,47 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Render all dashboard components
   renderDashboard();
 });
+
+// Setup logout button
+function setupLogoutButton() {
+    setTimeout(() => {
+      const logoutButton = document.getElementById("logout-button");
+      if (logoutButton) {
+        console.log("Logout button found, attaching event listener");
+        logoutButton.addEventListener("click", async (event) => {
+          event.preventDefault();
+          console.log("Logout button clicked");
+          try {
+            await signOut(auth);
+            console.log("User signed out successfully");
+            window.location.href = "../index.html";
+          } catch (error) {
+            console.error("Error during logout:", error);
+            alert("Logout failed: " + error.message);
+          }
+        });
+      } else {
+        console.log("Logout button not found. It might not be in the DOM yet.");
+        // Try again after a short delay to ensure the header has loaded
+        setTimeout(() => {
+          const retryLogoutButton = document.getElementById("logout-button");
+          if (retryLogoutButton) {
+            console.log("Logout button found after delay");
+            retryLogoutButton.addEventListener("click", async (event) => {
+              event.preventDefault();
+              try {
+                await signOut(auth);
+                window.location.href = "../index.html";
+              } catch (error) {
+                console.error("Error during logout:", error);
+                alert("Logout failed: " + error.message);
+              }
+            });
+          }
+        }, 500);
+      }
+    }, 300);
+  }
 
 // Setup date filter buttons
 function setupDateFilters() {

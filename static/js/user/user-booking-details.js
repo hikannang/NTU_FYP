@@ -66,24 +66,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-// Add this function
+// Setup logout button
 function setupLogoutButton() {
     setTimeout(() => {
-        const logoutButton = document.getElementById('logout-button');
-        if (logoutButton) {
-            logoutButton.addEventListener('click', async (event) => {
-                event.preventDefault();
-                try {
-                    await signOut(auth);
-                    window.location.href = "../index.html";
-                } catch (error) {
-                    console.error("Error during logout:", error);
-                    alert("Logout failed: " + error.message);
-                }
+      const logoutButton = document.getElementById("logout-button");
+      if (logoutButton) {
+        console.log("Logout button found, attaching event listener");
+        logoutButton.addEventListener("click", async (event) => {
+          event.preventDefault();
+          console.log("Logout button clicked");
+          try {
+            await signOut(auth);
+            console.log("User signed out successfully");
+            window.location.href = "../index.html";
+          } catch (error) {
+            console.error("Error during logout:", error);
+            alert("Logout failed: " + error.message);
+          }
+        });
+      } else {
+        console.log("Logout button not found. It might not be in the DOM yet.");
+        // Try again after a short delay to ensure the header has loaded
+        setTimeout(() => {
+          const retryLogoutButton = document.getElementById("logout-button");
+          if (retryLogoutButton) {
+            console.log("Logout button found after delay");
+            retryLogoutButton.addEventListener("click", async (event) => {
+              event.preventDefault();
+              try {
+                await signOut(auth);
+                window.location.href = "../index.html";
+              } catch (error) {
+                console.error("Error during logout:", error);
+                alert("Logout failed: " + error.message);
+              }
             });
-        }
+          }
+        }, 500);
+      }
     }, 300);
-}
+  }
 
 // Load booking and car data from Firestore
 async function loadBookingAndCarData() {
