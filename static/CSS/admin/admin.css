@@ -39,21 +39,26 @@ body {
 
 /* Admin Content Area */
 .admin-content {
-  overflow-x: hidden;
-  box-sizing: border-box;
-  max-width: 100%;
-  transition: margin-left 0.3s ease;
   margin-left: var(--sidebar-width);
   margin-top: var(--header-height);
   padding: 24px;
   min-height: calc(100vh - var(--header-height));
+  box-sizing: border-box;
   width: auto;
 }
 
 /* Base sidebar state */
 .admin-sidebar {
-  transform: translateX(0);
+  position: fixed;
+  left: 0;
+  top: var(--header-height);
   width: var(--sidebar-width);
+  height: calc(100vh - var(--header-height));
+  background-color: white;
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+  z-index: 999;
+  transition: transform 0.3s ease;
 }
 
 /* Dashboard Header */
@@ -502,11 +507,10 @@ body {
   
   .admin-sidebar.active {
     transform: translateX(0);
-    width: var(--sidebar-width);
   }
   
   .admin-content {
-    margin-left: 0 !important;
+    margin-left: 0;
   }
 }
 
@@ -643,20 +647,4 @@ body {
   .admin-sidebar[style*="transform: translateX(-100%)"] ~ .admin-content {
     margin-left: 0 !important;
   }
-}
-
-/* Sidebar collapsed state handling */
-body.sidebar-collapsed .admin-sidebar {
-  transform: translateX(-100%);
-  width: 0;
-}
-
-body.sidebar-collapsed .admin-content {
-  margin-left: 0 !important;
-}
-
-/* Make sure !important is used to override any conflicts */
-.admin-sidebar.collapsed {
-  transform: translateX(-100%) !important;
-  width: 0 !important;
 }
