@@ -38,14 +38,6 @@ let dashboardData = {
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("DOM loaded, starting initialization");
   
-  // Handle logout first
-  if (sessionStorage.getItem("performLogout") === "true") {
-    sessionStorage.removeItem("performLogout");
-    localStorage.setItem("cleanLogout", "true");
-    window.location.replace("../index.html");
-    return;
-  }
-  
   // Then load UI components
   try {
     document.getElementById("header").innerHTML = await fetch(
@@ -184,7 +176,6 @@ async function loadDashboardData(period) {
   try {
     const dateRange = getDateRange(period);
     
-    // Instead of Promise.all (which fails completely if any promise fails),
     // handle each operation separately
     try {
       await loadStatistics(dateRange);

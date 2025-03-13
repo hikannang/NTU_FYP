@@ -338,7 +338,7 @@
           <i class="bi bi-gear"></i>
           Settings
         </a>
-        <a href="#" class="dropdown-item" id="logout-btn">
+        <a href="logout.html" class="dropdown-item" id="logout-btn">
           <i class="bi bi-box-arrow-right"></i>
           Logout
         </a>
@@ -386,7 +386,6 @@
   document.addEventListener("DOMContentLoaded", function () {
     const adminSidebar = document.getElementById("adminSidebar");
     const sidebarOverlay = document.getElementById("sidebarOverlay");
-    const logoutBtn = document.getElementById("logout-btn");
 
     // Set active menu item based on current page
     const currentPage = window.location.pathname.split("/").pop();
@@ -413,19 +412,6 @@
       sidebarOverlay.addEventListener("click", () => {
         adminSidebar.classList.remove("active");
         sidebarOverlay.classList.remove("active");
-      });
-    }
-
-    // In admin-header.html
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", function (event) {
-        event.preventDefault();
-
-        // Set the logout flag
-        sessionStorage.setItem('performLogout', 'true');
-        
-        // Redirect directly to index.html without reloading current page
-        window.location.href = "../index.html";
       });
     }
 
