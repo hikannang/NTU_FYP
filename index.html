@@ -102,6 +102,34 @@
           }
         });
       }
+
+      // Check if this is a clean logout
+      const cleanLogout = localStorage.getItem("cleanLogout");
+      
+      if (cleanLogout === "true") {
+        // Clear the flag
+        localStorage.removeItem("cleanLogout");
+        
+        // Show optional logout success message
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+          const logoutMessage = document.createElement('div');
+          logoutMessage.className = 'logout-message';
+          logoutMessage.innerHTML = '<i class="bi bi-check-circle"></i> Successfully logged out';
+          logoutMessage.style.cssText = 'color: #4caf50; text-align: center; margin-bottom: 15px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 5px;';
+          
+          loginForm.parentNode.insertBefore(logoutMessage, loginForm);
+        }
+        
+        // MOST IMPORTANT: Override the onAuthStateChanged behavior
+        const originalAuthStateChanged = firebase.auth().onAuthStateChanged;
+        firebase.auth().onAuthStateChanged = function(callback) {
+          // Wait a bit to ensure signOut completes
+          setTimeout(() => {
+            originalAuthStateChanged.call(firebase.auth(), callback);
+          }, 500);
+        };
+      }
     });
   </script>
 </body>

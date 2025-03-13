@@ -43,12 +43,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     sessionStorage.removeItem("performLogout");
     try {
       await signOut(auth);
-      window.location.href = "../index.html";
+      
+      // Set a flag that indicates a clean logout - check for this in index.html
+      localStorage.setItem("cleanLogout", "true");
+      
+      // Use replace instead of href to avoid browser history issues
+      window.location.replace("../index.html");
       return; // Exit early
     } catch (error) {
       console.error("Error during logout:", error);
       alert("Logout failed: " + error.message);
+      // Even on error, try to redirect back
+      window.location.replace("../index.html");
     }
+    return; // Make sure no other code runs
   }
 
   try {
