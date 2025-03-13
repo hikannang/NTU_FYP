@@ -1,14 +1,20 @@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+/>
+<link
+  href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+  rel="stylesheet"
+/>
 
 <style>
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
+    font-family: "Poppins", sans-serif;
   }
-  
+
   :root {
     --primary-color: #1e88e5;
     --secondary-color: #1976d2;
@@ -22,7 +28,7 @@
     --header-height: 70px;
     --sidebar-width: 250px;
   }
-  
+
   .admin-header {
     position: fixed;
     top: 0;
@@ -37,28 +43,28 @@
     padding: 0 20px;
     z-index: 1000;
   }
-  
+
   .header-left {
     display: flex;
     align-items: center;
   }
-  
+
   .logo-container {
     display: flex;
     align-items: center;
   }
-  
+
   .logo {
     height: 40px;
     margin-right: 15px;
   }
-  
+
   .logo-text {
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--text-color);
   }
-  
+
   .toggle-sidebar {
     margin-right: 20px;
     background: none;
@@ -70,27 +76,27 @@
     align-items: center;
     justify-content: center;
   }
-  
+
   .toggle-sidebar:hover {
     color: var(--primary-color);
   }
-  
+
   .header-right {
     display: flex;
     align-items: center;
     gap: 20px;
   }
-  
+
   .notification {
     position: relative;
     cursor: pointer;
   }
-  
+
   .notification i {
     font-size: 1.25rem;
     color: var(--light-text);
   }
-  
+
   .notification .badge {
     position: absolute;
     top: -5px;
@@ -105,14 +111,14 @@
     align-items: center;
     justify-content: center;
   }
-  
+
   .admin-profile {
     display: flex;
     align-items: center;
     cursor: pointer;
     position: relative;
   }
-  
+
   .profile-image {
     width: 40px;
     height: 40px;
@@ -125,33 +131,33 @@
     color: var(--primary-color);
     font-weight: 600;
   }
-  
+
   .profile-info {
     display: flex;
     flex-direction: column;
   }
-  
+
   .profile-name {
     font-weight: 500;
     font-size: 0.9rem;
     color: var(--text-color);
   }
-  
+
   .profile-role {
     font-size: 0.75rem;
     color: var(--light-text);
   }
-  
+
   .dropdown-toggle {
     margin-left: 5px;
     color: var(--light-text);
     transition: transform 0.2s;
   }
-  
+
   .admin-profile:hover .dropdown-toggle {
     transform: rotate(180deg);
   }
-  
+
   .profile-dropdown {
     position: absolute;
     top: 100%;
@@ -165,11 +171,11 @@
     display: none;
     z-index: 1001;
   }
-  
+
   .admin-profile:hover .profile-dropdown {
     display: block;
   }
-  
+
   .dropdown-item {
     padding: 10px 20px;
     display: flex;
@@ -179,17 +185,17 @@
     font-size: 0.9rem;
     transition: background-color 0.2s;
   }
-  
+
   .dropdown-item i {
     margin-right: 10px;
     color: var(--light-text);
     font-size: 1rem;
   }
-  
+
   .dropdown-item:hover {
     background-color: var(--background-color);
   }
-  
+
   /* Sidebar */
   .admin-sidebar {
     position: fixed;
@@ -203,15 +209,15 @@
     transition: transform 0.3s ease;
     z-index: 999;
   }
-  
+
   .admin-sidebar.collapsed {
     transform: translateX(-100%);
   }
-  
+
   .sidebar-menu {
     padding: 20px 0;
   }
-  
+
   .menu-item {
     padding: 12px 20px;
     display: flex;
@@ -221,68 +227,68 @@
     transition: background-color 0.2s;
     font-size: 0.9rem;
   }
-  
+
   .menu-item i {
     margin-right: 15px;
     font-size: 1.1rem;
     width: 20px;
     text-align: center;
   }
-  
+
   .menu-item:hover {
     background-color: var(--background-color);
   }
-  
+
   .menu-item.active {
     background-color: rgba(30, 136, 229, 0.1);
     color: var(--primary-color);
     font-weight: 500;
     border-left: 3px solid var(--primary-color);
   }
-  
+
   .menu-item.active i {
     color: var(--primary-color);
   }
-  
+
   /* Responsive */
   @media (max-width: 992px) {
     .admin-sidebar {
       transform: translateX(-100%);
     }
-    
+
     .admin-sidebar.active {
       transform: translateX(0);
     }
-    
+
     .admin-content {
       margin-left: 0 !important;
     }
   }
-  
+
   @media (max-width: 768px) {
     .admin-header {
       padding: 0 15px;
     }
-    
+
     .logo-text {
       display: none;
     }
-    
+
     .profile-info {
       display: none;
     }
-    
+
     .profile-dropdown {
       right: -10px;
     }
   }
-  
+
   @media (max-width: 480px) {
     .notification span {
       display: none;
     }
   }
-  
+
   /* Main content area - add to your admin.css */
   .admin-content {
     margin-left: var(--sidebar-width);
@@ -292,7 +298,7 @@
     background-color: var(--background-color);
     transition: margin-left 0.3s ease;
   }
-  
+
   /* Mobile sidebar overlay */
   .sidebar-overlay {
     display: none;
@@ -304,7 +310,7 @@
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 998;
   }
-  
+
   /* Show overlay when sidebar is active on mobile */
   @media (max-width: 992px) {
     .sidebar-overlay.active {
@@ -319,7 +325,7 @@
       <i class="bi bi-list"></i>
     </button>
     <div class="logo-container">
-      <img src="../static/images/logo.png" alt="BaoCarLiao Logo" class="logo">
+      <img src="../static/images/logo.png" alt="BaoCarLiao Logo" class="logo" />
       <span class="logo-text">Admin Portal</span>
     </div>
   </div>
@@ -337,7 +343,7 @@
         <span class="profile-role">Administrator</span>
       </div>
       <i class="bi bi-chevron-down dropdown-toggle"></i>
-      
+
       <div class="profile-dropdown">
         <a href="#" class="dropdown-item">
           <i class="bi bi-person-circle"></i>
@@ -416,33 +422,95 @@
       document.querySelector('.menu-item').classList.add('active');
     }
     
+    // Check if sidebar was previously collapsed
+    const savedSidebarState = localStorage.getItem('sidebarCollapsed');
+    if (savedSidebarState === 'true' && window.innerWidth >= 992) {
+      adminSidebar.style.transform = 'translateX(-100%)';
+      adminSidebar.style.width = '0';
+      const adminContent = document.querySelector('.admin-content');
+      if (adminContent) {
+        adminContent.style.marginLeft = '0';
+      }
+    }
+    
     // Toggle sidebar
-    toggleSidebar.addEventListener('click', () => {
-      // Toggle both sidebar visibility and content margin
-      adminSidebar.classList.toggle('collapsed');
-      
-      // Check if window is desktop size
-      if (window.innerWidth >= 992) {
-        // Handle desktop - toggle content margin
+    if (toggleSidebar) {
+      toggleSidebar.addEventListener('click', () => {
+        const isDesktop = window.innerWidth >= 992;
         const adminContent = document.querySelector('.admin-content');
-        if (adminContent) {
-          if (adminSidebar.classList.contains('collapsed')) {
-            adminContent.style.marginLeft = '0';
+        
+        if (isDesktop) {
+          // Desktop behavior - use direct manipulation instead of classes
+          const isCollapsed = adminSidebar.style.transform === 'translateX(-100%)';
+          
+          if (isCollapsed) {
+            // Expand sidebar
+            adminSidebar.style.transform = '';
+            adminSidebar.style.width = 'var(--sidebar-width)';
+            if (adminContent) {
+              adminContent.style.marginLeft = 'var(--sidebar-width)';
+            }
+            localStorage.setItem('sidebarCollapsed', 'false');
           } else {
+            // Collapse sidebar
+            adminSidebar.style.transform = 'translateX(-100%)';
+            adminSidebar.style.width = '0';
+            if (adminContent) {
+              adminContent.style.marginLeft = '0';
+            }
+            localStorage.setItem('sidebarCollapsed', 'true');
+          }
+        } else {
+          // Mobile behavior
+          adminSidebar.classList.toggle('active');
+          sidebarOverlay.classList.toggle('active');
+        }
+      });
+    }
+    
+    // Close sidebar when clicking outside on mobile
+    if (sidebarOverlay) {
+      sidebarOverlay.addEventListener('click', () => {
+        adminSidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+      });
+    }
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      const isDesktop = window.innerWidth >= 992;
+      const adminContent = document.querySelector('.admin-content');
+      
+      if (isDesktop) {
+        // Reset mobile classes
+        adminSidebar.classList.remove('active');
+        if (sidebarOverlay) {
+          sidebarOverlay.classList.remove('active');
+        }
+        
+        // Check saved state for desktop
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+          adminSidebar.style.transform = 'translateX(-100%)';
+          adminSidebar.style.width = '0';
+          if (adminContent) {
+            adminContent.style.marginLeft = '0';
+          }
+        } else {
+          adminSidebar.style.transform = '';
+          adminSidebar.style.width = 'var(--sidebar-width)';
+          if (adminContent) {
             adminContent.style.marginLeft = 'var(--sidebar-width)';
           }
         }
       } else {
-        // Handle mobile - toggle active class
-        adminSidebar.classList.toggle('active');
-        sidebarOverlay.classList.toggle('active');
+        // Reset desktop styles for mobile
+        adminSidebar.style.transform = '';
+        adminSidebar.style.width = 'var(--sidebar-width)';
+        if (adminContent) {
+          adminContent.style.marginLeft = '0';
+        }
       }
-    });
-    
-    // Close sidebar when clicking outside on mobile
-    sidebarOverlay.addEventListener('click', () => {
-      adminSidebar.classList.remove('active');
-      sidebarOverlay.classList.remove('active');
     });
     
     // Handle logout
@@ -459,6 +527,19 @@
           }
         } catch (error) {
           console.error("Error during logout:", error);
+        }
+      });
+    }
+    
+    // Add "More" button functionality from footer
+    const moreOptionsBtn = document.getElementById('moreOptions');
+    if (moreOptionsBtn) {
+      moreOptionsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Show sidebar when More is clicked in mobile footer
+        if (adminSidebar && sidebarOverlay) {
+          adminSidebar.classList.add('active');
+          sidebarOverlay.classList.add('active');
         }
       });
     }

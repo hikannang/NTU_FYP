@@ -43,6 +43,17 @@ body {
   box-sizing: border-box;
   max-width: 100%;
   transition: margin-left 0.3s ease;
+  margin-left: var(--sidebar-width);
+  margin-top: var(--header-height);
+  padding: 24px;
+  min-height: calc(100vh - var(--header-height));
+  width: auto;
+}
+
+/* Base sidebar state */
+.admin-sidebar {
+  transform: translateX(0);
+  width: var(--sidebar-width);
 }
 
 /* Dashboard Header */
@@ -195,10 +206,11 @@ body {
 /* Dashboard Row Layout */
 .dashboard-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: 1.5fr 1fr;
   gap: 20px;
   margin-bottom: 24px;
   width: 100%;
+  overflow: hidden;
 }
 
 /* Dashboard Cards */
@@ -483,6 +495,19 @@ body {
   .date-filter {
     margin-top: 16px;
   }
+  
+  .admin-sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .admin-sidebar.active {
+    transform: translateX(0);
+    width: var(--sidebar-width);
+  }
+  
+  .admin-content {
+    margin-left: 0 !important;
+  }
 }
 
 @media (max-width: 768px) {
@@ -611,7 +636,27 @@ body {
 
 /* When sidebar is collapsed, adjust content */
 @media (min-width: 992px) {
-  .admin-sidebar.collapsed + .admin-content {
-    margin-left: 0;
+  .admin-sidebar[style*="transform: translateX(-100%)"] {
+    width: 0;
   }
+  
+  .admin-sidebar[style*="transform: translateX(-100%)"] ~ .admin-content {
+    margin-left: 0 !important;
+  }
+}
+
+/* Sidebar collapsed state handling */
+body.sidebar-collapsed .admin-sidebar {
+  transform: translateX(-100%);
+  width: 0;
+}
+
+body.sidebar-collapsed .admin-content {
+  margin-left: 0 !important;
+}
+
+/* Make sure !important is used to override any conflicts */
+.admin-sidebar.collapsed {
+  transform: translateX(-100%) !important;
+  width: 0 !important;
 }
