@@ -3,954 +3,758 @@ import { db, auth } from "../common/firebase-config.js";
 import {
   collection,
   getDocs,
-  getDoc,
   doc,
+  getDoc,
   updateDoc,
   deleteDoc,
   query,
   where,
-  orderBy,
-  limit,
-  startAfter,
-  Timestamp
+  orderBy
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import {
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 
 // Global state
 let currentUser = null;
 let carsData = [];
 let filteredCars = [];
-let carTypeOptions = new Set();
-let currentPage = 1;
-let totalPages = 1;
-let carsPerPage = 12;
-let currentSortField = "license_plate";
-let currentSortDirection = "asc";
-let currentView = "grid"; // 'grid' or 'list'
-let selectedCars = new Set();
-let mapInstances = {};
+let currentView = "grid"; // Default view
+let currentFilter = "all"; // Default filter
+let currentSort = "name-asc"; // Default sort
 
-// Initialize the page
-document.addEventListener("DOMContentLoaded", async function() {
-  console.log("Initializing admin cars page...");
+// DOM Elements
+const loadingState = document.getElementById("loading-state");
+const emptyState = document.getElementById("empty-state");
+const gridView = document.getElementById("grid-view");
+const listView = document.getElementById("list-view");
+const listContent = document.getElementById("list-content");
+const searchInput = document.getElementById("search-input");
+const filterSelect = document.getElementById("filter-select");
+const sortSelect = document.getElementById("sort-select");
+const gridViewBtn = document.getElementById("grid-view-btn");
+const listViewBtn = document.getElementById("list-view-btn");
+const addCarBtn = document.getElementById("add-car-btn");
+
+// Initialize the application
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("Admin cars page initialized");
   
   try {
     // Load header and footer
-    document.getElementById("header").innerHTML = await fetch(
-      "../static/headerFooter/admin-header.html"
-    ).then(response => response.text());
+    await loadHeaderFooter();
     
-    document.getElementById("footer").innerHTML = await fetch(
-      "../static/headerFooter/admin-footer.html"
-    ).then(response => response.text());
+    // Add event listeners for controls
+    setupEventListeners();
     
     // Check authentication
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        currentUser = user;
         try {
+          // Verify the user is an admin
           const userDoc = await getDoc(doc(db, "users", user.uid));
           
-          if (userDoc.exists() && userDoc.data().role === 'admin') {
-            // User is authenticated as admin
-            initializeApp();
+          if (userDoc.exists() && userDoc.data().role === "admin") {
+            // Store current user
+            currentUser = {
+              uid: user.uid,
+              ...userDoc.data()
+            };
+            
+            console.log("Admin authenticated:", currentUser);
+            
+            // Load cars data
+            await loadCarsData();
           } else {
-            // User is not an admin
-            alert("You don't have permission to access this page");
-            window.location.href = "../index.html";
+            console.error("User is not an admin");
+            showErrorMessage("You do not have permission to access this page");
+            setTimeout(() => {
+              window.location.href = "../index.html";
+            }, 2000);
           }
         } catch (error) {
-          console.error("Error checking admin role:", error);
-          alert("Error checking permissions. Please try again.");
+          console.error("Error verifying admin:", error);
+          showErrorMessage("Failed to verify admin permissions: " + error.message);
         }
       } else {
-        // User is not logged in
+        console.log("User not authenticated, redirecting to login");
         window.location.href = "../index.html";
       }
     });
+    
   } catch (error) {
     console.error("Initialization error:", error);
-    document.body.innerHTML = `
-      <div class="error-container">
-        <h1>Error Loading Page</h1>
-        <p>${error.message}</p>
-        <button onclick="window.location.reload()">Retry</button>
-      </div>
-    `;
+    showErrorMessage("Failed to initialize page: " + error.message);
   }
 });
 
-// Main initialization function
-async function initializeApp() {
-  console.log("Setting up admin cars page");
-  
-  // Set up event listeners
-  setupEventListeners();
-  
-  // Load cars data
-  await loadCarsData();
-  
-  // Initialize the view
-  updateView();
-}
-
-// Set up all event listeners
-function setupEventListeners() {
-  // Search functionality
-  const searchInput = document.getElementById("car-search");
-  searchInput.addEventListener("input", handleSearch);
-  
-  document.getElementById("clear-search").addEventListener("click", () => {
-    searchInput.value = "";
-    handleSearch();
-  });
-  
-  // Filters
-  document.getElementById("status-filter").addEventListener("change", applyFilters);
-  document.getElementById("car-type-filter").addEventListener("change", applyFilters);
-  document.getElementById("sort-by").addEventListener("change", (e) => {
-    currentSortField = e.target.value;
-    applyFilters();
-  });
-  
-  // View toggle
-  document.getElementById("grid-view-btn").addEventListener("click", () => {
-    setView("grid");
-  });
-  
-  document.getElementById("list-view-btn").addEventListener("click", () => {
-    setView("list");
-  });
-  
-  // Pagination
-  document.getElementById("prev-page").addEventListener("click", () => {
-    if (currentPage > 1) {
-      currentPage--;
-      updateView();
-    }
-  });
-  
-  document.getElementById("next-page").addEventListener("click", () => {
-    if (currentPage < totalPages) {
-      currentPage++;
-      updateView();
-    }
-  });
-  
-  // Export button
-  document.getElementById("export-data").addEventListener("click", exportCarsData);
-  
-  // Bulk actions
-  document.getElementById("select-all").addEventListener("change", toggleSelectAll);
-  document.getElementById("bulk-available").addEventListener("click", () => bulkUpdateStatus("available"));
-  document.getElementById("bulk-maintenance").addEventListener("click", () => bulkUpdateStatus("maintenance"));
-  document.getElementById("bulk-delete").addEventListener("click", confirmBulkDelete);
-  
-  // Modal close buttons
-  document.querySelectorAll(".close-modal").forEach(button => {
-    button.addEventListener("click", () => {
-      document.querySelectorAll(".modal").forEach(modal => {
-        modal.style.display = "none";
-      });
-    });
-  });
-  
-  // Delete confirmation
-  document.getElementById("confirm-delete").addEventListener("click", executeDelete);
-  
-  // Car details modal actions
-  document.getElementById("detail-edit").addEventListener("click", () => {
-    // Get the currently viewed car ID
-    const carId = document.getElementById("detail-edit").dataset.carId;
-    window.location.href = `admin-edit-car.html?id=${carId}`;
-  });
-  
-  document.getElementById("detail-status-toggle").addEventListener("click", toggleCarStatus);
-}
-
-// Load cars data from Firestore
-async function loadCarsData() {
+// Load header and footer
+async function loadHeaderFooter() {
   try {
-    console.log("Loading cars data...");
-    document.getElementById("loading-state").style.display = "flex";
-    document.getElementById("empty-state").style.display = "none";
-    document.getElementById("grid-view").style.display = "none";
-    document.getElementById("list-view").style.display = "none";
+    // Load header
+    const headerResponse = await fetch("../static/headerFooter/admin-header.html");
+    document.getElementById("header").innerHTML = await headerResponse.text();
     
-    const carsSnapshot = await getDocs(collection(db, "cars"));
+    // Load footer
+    const footerResponse = await fetch("../static/headerFooter/admin-footer.html");
+    document.getElementById("footer").innerHTML = await footerResponse.text();
     
-    // Reset the cars array
-    carsData = [];
-    carTypeOptions = new Set();
-    
-    // Reset counters for info cards
-    let availableCount = 0;
-    let bookedCount = 0;
-    let maintenanceCount = 0;
-    
-    // Process each car document
-    carsSnapshot.forEach(doc => {
-      const car = doc.data();
-      car.id = doc.id;
-      
-      // Add to cars array
-      carsData.push(car);
-      
-      // Add car type to options
-      if (car.car_type) {
-        carTypeOptions.add(car.car_type);
+    // Setup logout button
+    setTimeout(() => {
+      const logoutBtn = document.getElementById("logout-button");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+          try {
+            await signOut(auth);
+            window.location.href = "../index.html";
+          } catch (error) {
+            console.error("Logout error:", error);
+            alert("Failed to log out: " + error.message);
+          }
+        });
       }
-      
-      // Update counters
-      if (car.status === "available") availableCount++;
-      else if (car.status === "booked") bookedCount++;
-      else if (car.status === "maintenance") maintenanceCount++;
-    });
-    
-    // Update info cards
-    document.getElementById("available-count").textContent = availableCount;
-    document.getElementById("booked-count").textContent = bookedCount;
-    document.getElementById("maintenance-count").textContent = maintenanceCount;
-    document.getElementById("total-count").textContent = carsData.length;
-    
-    // Populate car type filter
-    populateCarTypeFilter();
-    
-    // Apply filters to get the initial view
-    applyFilters();
-    
-    console.log(`Loaded ${carsData.length} cars`);
+    }, 100);
   } catch (error) {
-    console.error("Error loading cars data:", error);
-    alert("Failed to load cars data. Please try again.");
-  } finally {
-    document.getElementById("loading-state").style.display = "none";
+    console.error("Error loading header/footer:", error);
+    throw error;
   }
 }
 
-// Populate car type filter dropdown
-function populateCarTypeFilter() {
-  const carTypeFilter = document.getElementById("car-type-filter");
-  carTypeFilter.innerHTML = '<option value="all">All Types</option>';
+// Setup event listeners
+function setupEventListeners() {
+  // Search input
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      filterAndSortCars();
+    });
+  }
   
-  // Sort car types alphabetically
-  const sortedTypes = Array.from(carTypeOptions).sort();
+  // Filter select
+  if (filterSelect) {
+    filterSelect.addEventListener("change", () => {
+      currentFilter = filterSelect.value;
+      filterAndSortCars();
+    });
+  }
   
-  sortedTypes.forEach(type => {
-    const option = document.createElement("option");
-    option.value = type;
-    option.textContent = type;
-    carTypeFilter.appendChild(option);
-  });
+  // Sort select
+  if (sortSelect) {
+    sortSelect.addEventListener("change", () => {
+      currentSort = sortSelect.value;
+      filterAndSortCars();
+    });
+  }
+  
+  // View toggle buttons
+  if (gridViewBtn) {
+    gridViewBtn.addEventListener("click", () => {
+      setActiveView("grid");
+    });
+  }
+  
+  if (listViewBtn) {
+    listViewBtn.addEventListener("click", () => {
+      setActiveView("list");
+    });
+  }
+  
+  // Add car button
+  if (addCarBtn) {
+    addCarBtn.addEventListener("click", () => {
+      window.location.href = "admin-add-car.html";
+    });
+  }
 }
 
-// Handle search input
-function handleSearch() {
-  applyFilters();
-}
-
-// Apply all filters and sort
-function applyFilters() {
-  const searchTerm = document.getElementById("car-search").value.toLowerCase().trim();
-  const statusFilter = document.getElementById("status-filter").value;
-  const typeFilter = document.getElementById("car-type-filter").value;
-  
-  // Filter cars
-  filteredCars = carsData.filter(car => {
-    // Apply search filter
-    const matchesSearch = 
-      !searchTerm || 
-      (car.license_plate && car.license_plate.toLowerCase().includes(searchTerm)) ||
-      (car.car_type && car.car_type.toLowerCase().includes(searchTerm)) ||
-      (car.address && car.address.toLowerCase().includes(searchTerm)) ||
-      (car.id && car.id.toLowerCase().includes(searchTerm));
-    
-    // Apply status filter
-    const matchesStatus = statusFilter === "all" || car.status === statusFilter;
-    
-    // Apply type filter
-    const matchesType = typeFilter === "all" || car.car_type === typeFilter;
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
-  
-  // Sort cars
-  filteredCars.sort((a, b) => {
-    let fieldA = a[currentSortField] || "";
-    let fieldB = b[currentSortField] || "";
-    
-    // Handle different field types
-    if (typeof fieldA === "string") {
-      fieldA = fieldA.toLowerCase();
-      fieldB = fieldB.toLowerCase();
-    }
-    
-    if (currentSortDirection === "asc") {
-      return fieldA > fieldB ? 1 : -1;
-    } else {
-      return fieldA < fieldB ? 1 : -1;
-    }
-  });
-  
-  // Reset to first page when filters change
-  currentPage = 1;
-  
-  // Update the view
-  updateView();
-}
-
-// Set view (grid or list)
-function setView(view) {
-  currentView = view;
-  
-  // Update button states
-  document.getElementById("grid-view-btn").classList.toggle("active", view === "grid");
-  document.getElementById("list-view-btn").classList.toggle("active", view === "list");
-  
-  // Update view containers
-  document.getElementById("grid-view").style.display = view === "grid" ? "grid" : "none";
-  document.getElementById("list-view").style.display = view === "list" ? "block" : "none";
-}
-
-// Update the cars view
-function updateView() {
-  // Check if we have any cars
-  if (filteredCars.length === 0) {
-    document.getElementById("empty-state").style.display = "flex";
-    document.getElementById("grid-view").style.display = "none";
-    document.getElementById("list-view").style.display = "none";
-    updatePagination(0, 0);
+// Fetch cars data from Firestore
+async function loadCarsData() {
+  if (!loadingState) {
+    console.error("Loading state element not found");
     return;
   }
   
-  document.getElementById("empty-state").style.display = "none";
+  // Show loading state
+  showLoading(true);
   
-  // Calculate pagination
-  totalPages = Math.ceil(filteredCars.length / carsPerPage);
-  const startIdx = (currentPage - 1) * carsPerPage;
-  const endIdx = Math.min(startIdx + carsPerPage, filteredCars.length);
-  const currentPageCars = filteredCars.slice(startIdx, endIdx);
-  
-  // Update views
-  updateGridView(currentPageCars);
-  updateListView(currentPageCars);
-  setView(currentView);
-  
-  // Update pagination info
-  updatePagination(startIdx + 1, endIdx);
-}
-
-// Update the grid view
-function updateGridView(cars) {
-  const gridContainer = document.getElementById("grid-view");
-  gridContainer.innerHTML = "";
-  
-  cars.forEach(car => {
-    const carCard = document.createElement("div");
-    carCard.className = "car-card";
-    carCard.dataset.id = car.id;
+  try {
+    console.log("Fetching cars data from Firestore");
     
-    // Format service due date for display
-    let serviceDueText = "No service scheduled";
-    let serviceClass = "";
+    // Get cars collection reference
+    const carsRef = collection(db, "cars");
     
-    if (car.service_due) {
-      const serviceDueDate = car.service_due instanceof Timestamp ? 
-        new Date(car.service_due.seconds * 1000) : new Date(car.service_due);
+    // Create query - can add filters and ordering here if needed
+    const carsQuery = query(carsRef);
+    
+    // Execute query
+    const querySnapshot = await getDocs(carsQuery);
+    
+    console.log(`Found ${querySnapshot.size} cars`);
+    
+    // Process query results
+    carsData = [];
+    
+    querySnapshot.forEach((doc) => {
+      const car = {
+        id: doc.id,
+        ...doc.data()
+      };
       
-      const today = new Date();
-      const daysDiff = Math.floor((serviceDueDate - today) / (1000 * 60 * 60 * 24));
-      
-      serviceDueText = serviceDueDate.toLocaleDateString("en-SG", {
-        day: "numeric", 
-        month: "short", 
-        year: "numeric"
-      });
-      
-      if (daysDiff < 0) {
-        serviceDueText += " (Overdue)";
-        serviceClass = "service-alert";
-      } else if (daysDiff < 14) {
-        serviceDueText += " (Soon)";
-        serviceClass = "service-alert";
-      }
-    }
-    
-    // Determine car status class
-    const statusClass = car.status || "unknown";
-    
-    // Create car card content
-    carCard.innerHTML = `
-      <div class="car-image">
-        <img src="../static/images/car-placeholder.png" alt="${car.car_type || 'Car'}">
-        <div class="status-badge ${statusClass}">${capitalizeFirstLetter(car.status || "Unknown")}</div>
-      </div>
-      <div class="car-content">
-        <h3>${car.car_type || "Unknown Car Type"}</h3>
-        <p class="car-license">${car.license_plate || "No License Plate"}</p>
-        <div class="car-info-grid">
-          <div class="car-info-item">
-            <i class="bi bi-people"></i>
-            <span>${car.capacity || "N/A"}</span>
-          </div>
-          <div class="car-info-item">
-            <i class="bi bi-geo-alt"></i>
-            <span>${car.location_name || "No Location"}</span>
-          </div>
-          <div class="car-info-item">
-            <i class="bi bi-tools"></i>
-            <span class="${serviceClass}">${serviceDueText}</span>
-          </div>
-          <div class="car-info-item">
-            <i class="bi bi-fuel-pump"></i>
-            <span>${car.fuel_type || "N/A"}</span>
-          </div>
-        </div>
-        <div class="car-actions">
-          <button class="action-btn view" onclick="viewCarDetails('${car.id}')">
-            <i class="bi bi-eye"></i>
-          </button>
-          <button class="action-btn edit" onclick="editCar('${car.id}')">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="action-btn delete" onclick="confirmDeleteCar('${car.id}', '${car.license_plate || 'Unknown'}')">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-      </div>
-    `;
-    
-    gridContainer.appendChild(carCard);
-  });
-}
-
-// Update the list view
-function updateListView(cars) {
-  const listContent = document.getElementById("list-content");
-  listContent.innerHTML = "";
-  
-  cars.forEach(car => {
-    const listRow = document.createElement("div");
-    listRow.className = "list-row";
-    listRow.dataset.id = car.id;
-    
-    // Determine if this car is selected
-    const isSelected = selectedCars.has(car.id);
-    
-    // Format service due date for display
-    let serviceDueText = "Not scheduled";
-    let serviceClass = "";
-    
-    if (car.service_due) {
-      const serviceDueDate = car.service_due instanceof Timestamp ? 
-        new Date(car.service_due.seconds * 1000) : new Date(car.service_due);
-      
-      const today = new Date();
-      const daysDiff = Math.floor((serviceDueDate - today) / (1000 * 60 * 60 * 24));
-      
-      serviceDueText = serviceDueDate.toLocaleDateString("en-SG", {
-        day: "numeric", 
-        month: "short", 
-        year: "numeric"
-      });
-      
-      if (daysDiff < 0) {
-        serviceDueText += " (Overdue)";
-        serviceClass = "service-alert";
-      } else if (daysDiff < 14) {
-        serviceDueText += " (Soon)";
-        serviceClass = "service-alert";
-      }
-    }
-    
-    // Create list row content
-    listRow.innerHTML = `
-      <div class="col-checkbox">
-        <input type="checkbox" class="car-select" ${isSelected ? 'checked' : ''} 
-          onchange="toggleCarSelection('${car.id}', this.checked)">
-      </div>
-      <div class="col-id">${car.id || ""}</div>
-      <div class="col-license">${car.license_plate || "No Plate"}</div>
-      <div class="col-type">${car.car_type || "Unknown"}</div>
-      <div class="col-status">
-        <span class="status-indicator ${car.status || 'unknown'}">${capitalizeFirstLetter(car.status || "Unknown")}</span>
-      </div>
-      <div class="col-service ${serviceClass}">${serviceDueText}</div>
-      <div class="col-actions">
-        <button class="action-btn view" onclick="viewCarDetails('${car.id}')">
-          <i class="bi bi-eye"></i>
-        </button>
-        <button class="action-btn edit" onclick="editCar('${car.id}')">
-          <i class="bi bi-pencil"></i>
-        </button>
-        <button class="action-btn delete" onclick="confirmDeleteCar('${car.id}', '${car.license_plate || 'Unknown'}')">
-          <i class="bi bi-trash"></i>
-        </button>
-      </div>
-    `;
-    
-    // Add event listener for checkbox
-    const checkbox = listRow.querySelector(".car-select");
-    checkbox.addEventListener("change", (e) => {
-      toggleCarSelection(car.id, e.target.checked);
+      carsData.push(car);
+      console.log("Loaded car:", car.id);
     });
     
-    listContent.appendChild(listRow);
-  });
-  
-  // Update bulk action visibility
-  updateBulkActionsVisibility();
-}
-
-// Update pagination information
-function updatePagination(from, to) {
-  document.getElementById("showing-from").textContent = from;
-  document.getElementById("showing-to").textContent = to;
-  document.getElementById("total-items").textContent = filteredCars.length;
-  
-  const prevBtn = document.getElementById("prev-page");
-  const nextBtn = document.getElementById("next-page");
-  
-  prevBtn.disabled = currentPage <= 1;
-  nextBtn.disabled = currentPage >= totalPages;
-  
-  // Generate page numbers
-  const pageNumbers = document.getElementById("page-numbers");
-  pageNumbers.innerHTML = "";
-  
-  // Determine which page numbers to show
-  let startPage = Math.max(1, currentPage - 2);
-  let endPage = Math.min(totalPages, startPage + 4);
-  
-  if (endPage - startPage < 4 && startPage > 1) {
-    startPage = Math.max(1, endPage - 4);
-  }
-  
-  // Add first page if not in range
-  if (startPage > 1) {
-    addPageNumber(1);
-    if (startPage > 2) {
-      addEllipsis();
-    }
-  }
-  
-  // Add middle pages
-  for (let i = startPage; i <= endPage; i++) {
-    addPageNumber(i);
-  }
-  
-  // Add last page if not in range
-  if (endPage < totalPages) {
-    if (endPage < totalPages - 1) {
-      addEllipsis();
-    }
-    addPageNumber(totalPages);
-  }
-  
-  function addPageNumber(num) {
-    const btn = document.createElement("button");
-    btn.className = `page-number ${num === currentPage ? "active" : ""}`;
-    btn.textContent = num;
-    btn.addEventListener("click", () => {
-      if (num !== currentPage) {
-        currentPage = num;
-        updateView();
-      }
-    });
-    pageNumbers.appendChild(btn);
-  }
-  
-  function addEllipsis() {
-    const ellipsis = document.createElement("span");
-    ellipsis.className = "page-ellipsis";
-    ellipsis.textContent = "...";
-    pageNumbers.appendChild(ellipsis);
-  }
-}
-
-// Toggle selection of a car
-function toggleCarSelection(carId, isSelected) {
-  if (isSelected) {
-    selectedCars.add(carId);
-  } else {
-    selectedCars.delete(carId);
-  }
-  
-  updateBulkActionsVisibility();
-}
-
-// Toggle selection of all cars
-function toggleSelectAll(event) {
-  const isChecked = event.target.checked;
-  
-  // Update all visible checkboxes
-  document.querySelectorAll(".car-select").forEach(checkbox => {
-    checkbox.checked = isChecked;
+    // Apply initial filtering and sorting
+    filterAndSortCars();
     
-    const carId = checkbox.closest(".list-row").dataset.id;
-    if (isChecked) {
-      selectedCars.add(carId);
+    // Show the appropriate view
+    setActiveView(currentView);
+    
+  } catch (error) {
+    console.error("Error loading cars:", error);
+    showErrorMessage(`Failed to load cars: ${error.message}`);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Filter and sort cars based on current settings
+function filterAndSortCars() {
+  console.log("Filtering and sorting cars");
+  console.log("Current filter:", currentFilter);
+  console.log("Current sort:", currentSort);
+  console.log("Search query:", searchInput ? searchInput.value : "null");
+  
+  try {
+    // Get search query
+    const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : "";
+    
+    // Apply filters
+    filteredCars = carsData.filter(car => {
+      // Apply status filter
+      if (currentFilter !== "all" && car.status !== currentFilter) {
+        return false;
+      }
+      
+      // Apply search query
+      if (searchQuery) {
+        const make = car.make || "";
+        const model = car.model || "";
+        const licensePlate = car.license_plate || "";
+        const carType = car.car_type || "";
+        const address = car.address || "";
+        
+        return make.toLowerCase().includes(searchQuery) ||
+               model.toLowerCase().includes(searchQuery) ||
+               licensePlate.toLowerCase().includes(searchQuery) ||
+               carType.toLowerCase().includes(searchQuery) ||
+               address.toLowerCase().includes(searchQuery);
+      }
+      
+      return true;
+    });
+    
+    // Apply sorting
+    switch (currentSort) {
+      case "name-asc":
+        filteredCars.sort((a, b) => {
+          const nameA = `${a.make || ""} ${a.model || ""}`;
+          const nameB = `${b.make || ""} ${b.model || ""}`;
+          return nameA.localeCompare(nameB);
+        });
+        break;
+      case "name-desc":
+        filteredCars.sort((a, b) => {
+          const nameA = `${a.make || ""} ${a.model || ""}`;
+          const nameB = `${b.make || ""} ${b.model || ""}`;
+          return nameB.localeCompare(nameA);
+        });
+        break;
+      case "status":
+        filteredCars.sort((a, b) => {
+          return (a.status || "").localeCompare(b.status || "");
+        });
+        break;
+      case "date-added":
+        filteredCars.sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at.seconds * 1000) : new Date(0);
+          const dateB = b.created_at ? new Date(b.created_at.seconds * 1000) : new Date(0);
+          return dateB - dateA;
+        });
+        break;
+    }
+    
+    // Update the UI
+    updateCarsDisplay();
+    
+  } catch (error) {
+    console.error("Error filtering/sorting cars:", error);
+    showErrorMessage(`Failed to process cars data: ${error.message}`);
+  }
+}
+
+// Show or hide loading state
+function showLoading(show) {
+  if (loadingState) {
+    loadingState.style.display = show ? "flex" : "none";
+  }
+}
+
+// Show error message
+function showErrorMessage(message) {
+  console.error("ERROR:", message);
+  
+  // Hide loading state
+  showLoading(false);
+  
+  // Create error message container if it doesn't exist
+  let errorContainer = document.getElementById("error-container");
+  if (!errorContainer) {
+    errorContainer = document.createElement("div");
+    errorContainer.id = "error-container";
+    errorContainer.className = "error-container";
+    const mainElement = document.querySelector("main");
+    if (mainElement) {
+      mainElement.appendChild(errorContainer);
     } else {
-      selectedCars.delete(carId);
+      document.body.appendChild(errorContainer);
     }
-  });
-  
-  updateBulkActionsVisibility();
-}
-
-// Update bulk actions bar visibility
-function updateBulkActionsVisibility() {
-  const bulkActions = document.getElementById("bulk-actions");
-  const selectedCount = document.getElementById("selected-count");
-  
-  if (selectedCars.size > 0) {
-    bulkActions.style.display = "flex";
-    selectedCount.textContent = `${selectedCars.size} car${selectedCars.size > 1 ? 's' : ''} selected`;
-  } else {
-    bulkActions.style.display = "none";
-  }
-}
-
-// Update status of multiple cars
-async function bulkUpdateStatus(status) {
-  if (selectedCars.size === 0) return;
-  
-  try {
-    const carIds = Array.from(selectedCars);
-    
-    // Show confirmation
-    const statusText = status === "available" ? "Available" : "Maintenance";
-    if (!confirm(`Are you sure you want to set ${selectedCars.size} car(s) to "${statusText}" status?`)) {
-      return;
-    }
-    
-    // Update cars
-    for (const carId of carIds) {
-      await updateDoc(doc(db, "cars", carId), {
-        status: status,
-        last_updated: Timestamp.now()
-      });
-    }
-    
-    // Clear selection
-    selectedCars.clear();
-    
-    // Reload cars data
-    await loadCarsData();
-    
-    // Show success message
-    alert(`Successfully updated ${carIds.length} car(s) to "${statusText}" status.`);
-  } catch (error) {
-    console.error("Error updating car status:", error);
-    alert("Failed to update car status. Please try again.");
-  }
-}
-
-// Confirm delete for multiple cars
-function confirmBulkDelete() {
-  if (selectedCars.size === 0) return;
-  
-  // Show confirmation modal
-  document.getElementById("delete-car-info").textContent = 
-    `You are about to delete ${selectedCars.size} car${selectedCars.size > 1 ? 's' : ''} from the system.`;
-  
-  const deleteModal = document.getElementById("delete-modal");
-  deleteModal.style.display = "flex";
-  
-  // Set up delete handler
-  document.getElementById("confirm-delete").onclick = bulkDeleteCars;
-}
-
-// Delete multiple cars
-async function bulkDeleteCars() {
-  try {
-    const carIds = Array.from(selectedCars);
-    
-    // Delete cars
-    for (const carId of carIds) {
-      await deleteDoc(doc(db, "cars", carId));
-    }
-    
-    // Close modal
-    document.getElementById("delete-modal").style.display = "none";
-    
-    // Clear selection
-    selectedCars.clear();
-    
-    // Reload cars data
-    await loadCarsData();
-    
-    // Show success message
-    alert(`Successfully deleted ${carIds.length} car(s).`);
-  } catch (error) {
-    console.error("Error deleting cars:", error);
-    alert("Failed to delete cars. Please try again.");
-  }
-}
-
-// View car details
-window.viewCarDetails = function(carId) {
-  const car = carsData.find(car => car.id === carId);
-  if (!car) return;
-  
-  // Fill car details modal
-  document.getElementById("detail-car-type").textContent = car.car_type || "Unknown Car Type";
-  document.getElementById("detail-license").textContent = `License Plate: ${car.license_plate || "Unknown"}`;
-  
-  // Update capacity
-  document.getElementById("detail-capacity").textContent = car.capacity || "N/A";
-  
-  // Update fuel type
-  document.getElementById("detail-fuel").textContent = car.fuel_type || "N/A";
-  
-  // Update color
-  document.getElementById("detail-color").textContent = car.color || "N/A";
-  
-  // Update luggage
-  document.getElementById("detail-luggage").textContent = car.luggage_capacity || "N/A";
-  
-  // Update address
-  document.getElementById("detail-address").textContent = car.address || "No address provided";
-  
-  // Update service due date
-  if (car.service_due) {
-    const serviceDueDate = car.service_due instanceof Timestamp ? 
-      new Date(car.service_due.seconds * 1000) : new Date(car.service_due);
-    
-    document.getElementById("detail-service-due").textContent = serviceDueDate.toLocaleDateString("en-SG", {
-      day: "numeric", 
-      month: "short", 
-      year: "numeric"
-    });
-  } else {
-    document.getElementById("detail-service-due").textContent = "Not scheduled";
   }
   
-  // Update insurance expiry date
-  if (car.insurance_expiry) {
-    const insuranceDate = car.insurance_expiry instanceof Timestamp ? 
-      new Date(car.insurance_expiry.seconds * 1000) : new Date(car.insurance_expiry);
-    
-    document.getElementById("detail-insurance").textContent = insuranceDate.toLocaleDateString("en-SG", {
-      day: "numeric", 
-      month: "short", 
-      year: "numeric"
-    });
-  } else {
-    document.getElementById("detail-insurance").textContent = "Not provided";
-  }
-  
-  // Update special instructions
-  document.getElementById("detail-directions").textContent = car.special_instructions || "No special instructions.";
-  
-  // Update status badge
-  const statusBadge = document.getElementById("detail-status");
-  statusBadge.textContent = capitalizeFirstLetter(car.status || "Unknown");
-  statusBadge.className = car.status || "unknown";
-  
-  // Update status toggle button
-  const statusToggleBtn = document.getElementById("detail-status-toggle");
-  statusToggleBtn.dataset.carId = carId;
-  
-  if (car.status === "maintenance") {
-    statusToggleBtn.innerHTML = '<i class="bi bi-check-circle"></i> Set Available';
-    statusToggleBtn.className = "primary-btn";
-  } else {
-    statusToggleBtn.innerHTML = '<i class="bi bi-tools"></i> Set Maintenance';
-    statusToggleBtn.className = "secondary-btn";
-  }
-  
-  // Store car ID for edit button
-  document.getElementById("detail-edit").dataset.carId = carId;
-  
-  // Initialize Google Maps
-  setTimeout(() => {
-    if (car.latitude && car.longitude) {
-      initDetailMap(car.latitude, car.longitude);
-    } else {
-      // If no coordinates, try to geocode the address
-      if (car.address) {
-        geocodeAddress(car.address);
-      } else {
-        // If no address, show default map of Singapore
-        initDetailMap(1.3521, 103.8198);
-      }
-    }
-  }, 300);
-  
-  // Show modal
-  document.getElementById("car-details-modal").style.display = "flex";
-};
-
-// Initialize map for car details modal
-function initDetailMap(lat, lng) {
-  const mapElement = document.getElementById("detail-map");
-  
-  if (!mapElement) return;
-  
-  const mapOptions = {
-    center: { lat, lng },
-    zoom: 15,
-    mapTypeControl: false,
-    streetViewControl: false,
-    fullscreenControl: false
-  };
-  
-  const map = new google.maps.Map(mapElement, mapOptions);
-  
-  // Add marker
-  new google.maps.Marker({
-    position: { lat, lng },
-    map,
-    animation: google.maps.Animation.DROP
-  });
+  // Show error message
+  errorContainer.innerHTML = `
+    <div class="error-message">
+      <i class="bi bi-exclamation-triangle"></i>
+      <p>${message}</p>
+      <button onclick="window.location.reload()">Retry</button>
+    </div>
+  `;
+  errorContainer.style.display = "block";
 }
 
-// Geocode address to coordinates
-function geocodeAddress(address) {
-  const geocoder = new google.maps.Geocoder();
+// Update the cars display based on filtered data and current view
+function updateCarsDisplay() {
+  console.log(`Updating display with ${filteredCars.length} cars`);
   
-  geocoder.geocode({ address: address + ", Singapore" }, (results, status) => {
-    if (status === "OK" && results[0]) {
-      const location = results[0].geometry.location;
-      initDetailMap(location.lat(), location.lng());
-    } else {
-      console.error("Geocode failed:", status);
-      // Fall back to default Singapore map
-      initDetailMap(1.3521, 103.8198);
-    }
-  });
-}
-
-// Navigate to edit car page
-window.editCar = function(carId) {
-  window.location.href = `admin-edit-car.html?id=${carId}`;
-};
-
-// Confirm delete car
-window.confirmDeleteCar = function(carId, licensePlate) {
-  // Update delete modal
-  document.getElementById("delete-car-info").textContent = `License Plate: ${licensePlate}`;
-  
-  // Set up delete button
-  document.getElementById("confirm-delete").onclick = async () => {
-    await deleteCar(carId);
-  };
-  
-  // Show modal
-  document.getElementById("delete-modal").style.display = "flex";
-};
-
-// Delete a car
-async function deleteCar(carId) {
-  try {
-    await deleteDoc(doc(db, "cars", carId));
-    
-    // Close modal
-    document.getElementById("delete-modal").style.display = "none";
-    
-    // Reload cars data
-    await loadCarsData();
-    
-    // Show success message
-    alert("Car deleted successfully.");
-  } catch (error) {
-    console.error("Error deleting car:", error);
-    alert("Failed to delete car. Please try again.");
+  // Show empty state if no cars
+  if (emptyState) {
+    emptyState.style.display = filteredCars.length === 0 ? "flex" : "none";
   }
-}
-
-// Toggle car status (from detail modal)
-async function toggleCarStatus() {
-  const button = document.getElementById("detail-status-toggle");
-  const carId = button.dataset.carId;
-  const car = carsData.find(c => c.id === carId);
   
-  if (!car) return;
-  
-  // Determine new status
-  const newStatus = car.status === "maintenance" ? "available" : "maintenance";
-  
-  try {
-    // Update car status
-    await updateDoc(doc(db, "cars", carId), {
-      status: newStatus,
-      last_updated: Timestamp.now()
-    });
+  // Update grid view
+  if (gridView) {
+    // Clear existing content
+    gridView.innerHTML = "";
     
-    // Close modal
-    document.getElementById("car-details-modal").style.display = "none";
-    
-    // Reload cars data
-    await loadCarsData();
-    
-    // Show success message
-    alert(`Car status updated to ${capitalizeFirstLetter(newStatus)}.`);
-  } catch (error) {
-    console.error("Error updating car status:", error);
-    alert("Failed to update car status. Please try again.");
-  }
-}
-
-// Export cars data to CSV
-function exportCarsData() {
-  try {
-    // Create CSV content
-    let csvContent = "data:text/csv;charset=utf-8,";
-    
-    // Add headers
-    csvContent += "ID,License Plate,Car Type,Status,Capacity,Fuel Type,Color,Service Due,Insurance Expiry,Address\n";
-    
-    // Add filtered cars data
+    // Create car cards
     filteredCars.forEach(car => {
-      // Format dates
-      let serviceDue = "";
-      if (car.service_due) {
-        const serviceDueDate = car.service_due instanceof Timestamp ? 
-          new Date(car.service_due.seconds * 1000) : new Date(car.service_due);
-        serviceDue = serviceDueDate.toISOString().split('T')[0];
-      }
-      
-      let insuranceExpiry = "";
-      if (car.insurance_expiry) {
-        const insuranceDate = car.insurance_expiry instanceof Timestamp ? 
-          new Date(car.insurance_expiry.seconds * 1000) : new Date(car.insurance_expiry);
-        insuranceExpiry = insuranceDate.toISOString().split('T')[0];
-      }
-      
-      // Create CSV row
-      csvContent += [
-        car.id || "",
-        car.license_plate || "",
-        car.car_type || "",
-        car.status || "",
-        car.capacity || "",
-        car.fuel_type || "",
-        car.color || "",
-        serviceDue,
-        insuranceExpiry,
-        `"${(car.address || "").replace(/"/g, '""')}"`
-      ].join(",") + "\n";
+      const carCard = createCarCard(car);
+      gridView.appendChild(carCard);
     });
+  }
+  
+  // Update list view
+  if (listContent) {
+    // Clear existing content
+    listContent.innerHTML = "";
     
-    // Create download link
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `cars_export_${new Date().toISOString().split('T')[0]}.csv`);
-    
-    // Trigger download
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error("Error exporting cars data:", error);
-    alert("Failed to export cars data. Please try again.");
+    if (filteredCars.length > 0) {
+      // Create table
+      const table = document.createElement("table");
+      table.className = "cars-table";
+      
+      // Create table header
+      const thead = document.createElement("thead");
+      thead.innerHTML = `
+        <tr>
+          <th>Image</th>
+          <th>Details</th>
+          <th>Status</th>
+          <th>Availability</th>
+          <th>Actions</th>
+        </tr>
+      `;
+      table.appendChild(thead);
+      
+      // Create table body
+      const tbody = document.createElement("tbody");
+      
+      // Add car rows
+      filteredCars.forEach(car => {
+        const row = createCarRow(car);
+        tbody.appendChild(row);
+      });
+      
+      table.appendChild(tbody);
+      listContent.appendChild(table);
+    }
   }
 }
 
-// Helper function to capitalize first letter
-function capitalizeFirstLetter(string) {
-  if (!string) return "";
-  return string.charAt(0).toUpperCase() + string.slice(1);
+// Create a car card for grid view
+function createCarCard(car) {
+  // Create card container
+  const card = document.createElement("div");
+  card.className = "car-card";
+  card.dataset.carId = car.id;
+  
+  // Determine car image path
+  const carType = car.car_type || "car";
+  const imagePath = `../static/images/car_images/${carType}.png`;
+  const fallbackPath = "../static/images/assets/car-placeholder.jpg";
+  
+  // Create status badge based on car status
+  let statusBadgeClass = "status-badge";
+  let statusText = "Unknown";
+  
+  switch (car.status) {
+    case "available":
+      statusBadgeClass += " available";
+      statusText = "Available";
+      break;
+    case "unavailable":
+      statusBadgeClass += " unavailable";
+      statusText = "Unavailable";
+      break;
+    case "maintenance":
+      statusBadgeClass += " maintenance";
+      statusText = "Maintenance";
+      break;
+    case "booked":
+      statusBadgeClass += " booked";
+      statusText = "Booked";
+      break;
+  }
+  
+  // Build car name
+  const carName = `${car.make || ''} ${car.model || 'Car'}`.trim();
+  
+  // Construct card HTML
+  card.innerHTML = `
+    <div class="${statusBadgeClass}">${statusText}</div>
+    
+    <div class="car-image">
+      <img src="${imagePath}" alt="${carName}" onerror="this.onerror=null; this.src='${fallbackPath}'">
+    </div>
+    
+    <div class="car-details">
+      <h3 class="car-name">${carName}</h3>
+      
+      <div class="car-license">${car.license_plate || 'No plate'}</div>
+      
+      <div class="car-specs">
+        <div class="spec-item">
+          <i class="bi bi-people-fill"></i>
+          <span>${car.seating_capacity || '?'} seats</span>
+        </div>
+        <div class="spec-item">
+          <i class="bi bi-fuel-pump"></i>
+          <span>${car.fuel_type || 'N/A'}</span>
+        </div>
+      </div>
+      
+      <div class="car-location">
+        <i class="bi bi-geo-alt"></i>
+        <span>${car.address || 'No location set'}</span>
+      </div>
+    </div>
+    
+    <div class="car-actions">
+      <a href="admin-edit-car.html?id=${car.id}" class="edit-btn" title="Edit Car">
+        <i class="bi bi-pencil"></i> Edit
+      </a>
+      <button class="delete-btn" data-car-id="${car.id}" title="Delete Car">
+        <i class="bi bi-trash"></i> Delete
+      </button>
+    </div>
+  `;
+  
+  // Add event listener for delete button
+  const deleteBtn = card.querySelector(".delete-btn");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      const carId = deleteBtn.dataset.carId;
+      confirmDeleteCar(carId);
+    });
+  }
+  
+  return card;
 }
+
+// Create a car row for list view
+function createCarRow(car) {
+  // Create row element
+  const row = document.createElement("tr");
+  row.dataset.carId = car.id;
+  
+  // Determine car image path
+  const carType = car.car_type || "car";
+  const imagePath = `../static/images/car_images/${carType}.png`;
+  const fallbackPath = "../static/images/assets/car-placeholder.jpg";
+  
+  // Create status badge HTML based on car status
+  let statusBadgeClass = "status-badge";
+  let statusText = "Unknown";
+  
+  switch (car.status) {
+    case "available":
+      statusBadgeClass += " available";
+      statusText = "Available";
+      break;
+    case "unavailable":
+      statusBadgeClass += " unavailable";
+      statusText = "Unavailable";
+      break;
+    case "maintenance":
+      statusBadgeClass += " maintenance";
+      statusText = "Maintenance";
+      break;
+    case "booked":
+      statusBadgeClass += " booked";
+      statusText = "Booked";
+      break;
+  }
+  
+  // Format date added if available
+  let dateAdded = "N/A";
+  if (car.created_at && car.created_at.seconds) {
+    const date = new Date(car.created_at.seconds * 1000);
+    dateAdded = date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  }
+  
+  // Construct car name
+  const carName = `${car.make || ''} ${car.model || 'Car'}`.trim();
+  
+  // Set row HTML
+  row.innerHTML = `
+    <td class="car-image-cell">
+      <img src="${imagePath}" alt="${carName}" onerror="this.onerror=null; this.src='${fallbackPath}'">
+    </td>
+    <td class="car-info-cell">
+      <div class="car-name">${carName}</div>
+      <div class="car-license">${car.license_plate || 'No plate'}</div>
+      <div class="car-location">
+        <i class="bi bi-geo-alt"></i>
+        <span>${car.address || 'No location set'}</span>
+      </div>
+    </td>
+    <td class="car-status-cell">
+      <div class="${statusBadgeClass}">${statusText}</div>
+      <div class="added-date">Added: ${dateAdded}</div>
+    </td>
+    <td class="car-specs-cell">
+      <div class="spec-item">
+        <i class="bi bi-people-fill"></i>
+        <span>${car.seating_capacity || '?'} seats</span>
+      </div>
+      <div class="spec-item">
+        <i class="bi bi-fuel-pump"></i>
+        <span>${car.fuel_type || 'N/A'}</span>
+      </div>
+      <div class="spec-item">
+        <i class="bi bi-speedometer2"></i>
+        <span>${car.transmission || 'N/A'}</span>
+      </div>
+    </td>
+    <td class="car-actions-cell">
+      <a href="admin-edit-car.html?id=${car.id}" class="edit-btn" title="Edit Car">
+        <i class="bi bi-pencil"></i> Edit
+      </a>
+      <button class="delete-btn" data-car-id="${car.id}" title="Delete Car">
+        <i class="bi bi-trash"></i> Delete
+      </button>
+    </td>
+  `;
+  
+  // Add event listener for delete button
+  const deleteBtn = row.querySelector(".delete-btn");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      const carId = deleteBtn.dataset.carId;
+      confirmDeleteCar(carId);
+    });
+  }
+  
+  return row;
+}
+
+// Set active view (grid or list)
+function setActiveView(view) {
+  // Update current view
+  currentView = view;
+  
+  // Update view buttons
+  if (gridViewBtn && listViewBtn) {
+    if (view === "grid") {
+      gridViewBtn.classList.add("active");
+      listViewBtn.classList.remove("active");
+    } else {
+      gridViewBtn.classList.remove("active");
+      listViewBtn.classList.add("active");
+    }
+  }
+  
+  // Show/hide appropriate view
+  if (gridView && listView) {
+    if (view === "grid") {
+      gridView.style.display = "grid";
+      listView.style.display = "none";
+    } else {
+      gridView.style.display = "none";
+      listView.style.display = "block";
+    }
+  }
+}
+
+// Show confirmation dialog before deleting a car
+function confirmDeleteCar(carId) {
+  // Find car data
+  const car = carsData.find(c => c.id === carId);
+  if (!car) {
+    console.error(`Car with ID ${carId} not found`);
+    return;
+  }
+  
+  // Create modal backdrop
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  document.body.appendChild(backdrop);
+  
+  // Create modal
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Delete Car</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete this car?</p>
+        <div class="car-summary">
+          <p><strong>Make:</strong> ${car.make || 'N/A'}</p>
+          <p><strong>Model:</strong> ${car.model || 'N/A'}</p>
+          <p><strong>License Plate:</strong> ${car.license_plate || 'N/A'}</p>
+        </div>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="cancel-btn">Cancel</button>
+        <button class="confirm-delete-btn">Delete Car</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Show modal with animation
+  setTimeout(() => {
+    backdrop.style.opacity = "1";
+    modal.style.opacity = "1";
+  }, 10);
+  
+  // Handle close button
+  const closeBtn = modal.querySelector(".close-modal");
+  closeBtn.addEventListener("click", () => {
+    closeModal();
+  });
+  
+  // Handle cancel button
+  const cancelBtn = modal.querySelector(".cancel-btn");
+  cancelBtn.addEventListener("click", () => {
+    closeModal();
+  });
+  
+  // Handle click outside modal
+  backdrop.addEventListener("click", () => {
+    closeModal();
+  });
+  
+  // Handle confirm delete button
+  const confirmBtn = modal.querySelector(".confirm-delete-btn");
+  confirmBtn.addEventListener("click", async () => {
+    try {
+      // Close modal
+      closeModal();
+      
+      // Show loading state
+      showLoading(true);
+      
+      // Delete car from Firestore
+      await deleteDoc(doc(db, "cars", carId));
+      
+      console.log(`Car ${carId} deleted successfully`);
+      
+      // Remove car from local data
+      carsData = carsData.filter(c => c.id !== carId);
+      
+      // Update display
+      filterAndSortCars();
+      
+      // Show success message
+      showToast("Car deleted successfully");
+    } catch (error) {
+      console.error(`Error deleting car ${carId}:`, error);
+      showErrorMessage(`Failed to delete car: ${error.message}`);
+    } finally {
+      showLoading(false);
+    }
+  });
+  
+  // Function to close modal
+  function closeModal() {
+    backdrop.style.opacity = "0";
+    modal.style.opacity = "0";
+    
+    setTimeout(() => {
+      backdrop.remove();
+      modal.remove();
+    }, 300);
+  }
+}
+
+// Show toast notification
+function showToast(message, type = "success") {
+  // Create toast if it doesn't exist
+  let toast = document.getElementById("toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "toast";
+    toast.className = "toast";
+    document.body.appendChild(toast);
+  }
+  
+  // Set toast content and type
+  toast.textContent = message;
+  toast.className = `toast ${type}`;
+  
+  // Show toast
+  toast.style.display = "block";
+  
+  // Animate toast
+  setTimeout(() => {
+    toast.classList.add("show");
+    
+    // Hide toast after delay
+    setTimeout(() => {
+      toast.classList.remove("show");
+      
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 300);
+    }, 3000);
+  }, 10);
+}
+
+// Export functions for external use
+export {
+  loadCarsData,
+  filterAndSortCars,
+  setActiveView
+};
