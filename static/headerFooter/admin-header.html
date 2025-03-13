@@ -94,8 +94,9 @@
   .admin-profile {
     display: flex;
     align-items: center;
-    cursor: pointer;
     position: relative;
+    cursor: pointer;
+    padding: 10px 0; /* Add padding for better hover area */
   }
   
   .profile-image {
@@ -133,6 +134,7 @@
     transition: transform 0.2s;
   }
   
+  /* Dropdown Menu - Return to hover behavior but extend hover area */
   .profile-dropdown {
     position: absolute;
     top: 100%;
@@ -144,12 +146,30 @@
     padding: 10px 0;
     margin-top: 10px;
     display: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
     z-index: 1001;
   }
   
-  /* Use visible class instead of hover */
-  .profile-dropdown.visible {
+  /* Create a hover extension area to prevent dropdown from closing */
+  .profile-dropdown::before {
+    content: "";
+    position: absolute;
+    top: -15px;
+    left: 0;
+    right: 0;
+    height: 15px;
+  }
+  
+  .admin-profile:hover .profile-dropdown {
     display: block;
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .admin-profile:hover .dropdown-toggle {
+    transform: rotate(180deg);
   }
   
   .dropdown-item {
@@ -293,7 +313,7 @@
       <i class="bi bi-bell"></i>
       <span class="badge">2</span>
     </div>
-    <div class="admin-profile" id="admin-profile">
+    <div class="admin-profile">
       <div class="profile-image">
         <i class="bi bi-person"></i>
       </div>
@@ -303,7 +323,7 @@
       </div>
       <i class="bi bi-chevron-down dropdown-toggle"></i>
       
-      <div class="profile-dropdown" id="profile-dropdown">
+      <div class="profile-dropdown">
         <a href="#" class="dropdown-item">
           <i class="bi bi-person-circle"></i>
           Profile
@@ -361,26 +381,6 @@
     const adminSidebar = document.getElementById('adminSidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     const logoutBtn = document.getElementById('logout-btn');
-    const adminProfile = document.getElementById('admin-profile');
-    const profileDropdown = document.getElementById('profile-dropdown');
-    
-    // Toggle profile dropdown on click instead of hover
-    if (adminProfile && profileDropdown) {
-      adminProfile.addEventListener('click', function(e) {
-        e.stopPropagation();
-        profileDropdown.classList.toggle('visible');
-      });
-      
-      // Close dropdown when clicking elsewhere
-      document.addEventListener('click', function() {
-        profileDropdown.classList.remove('visible');
-      });
-      
-      // Don't close dropdown when clicking inside it
-      profileDropdown.addEventListener('click', function(e) {
-        e.stopPropagation();
-      });
-    }
     
     // Set active menu item based on current page
     const currentPage = window.location.pathname.split('/').pop();
@@ -408,16 +408,13 @@
       });
     }
     
-    // Improved logout functionality
+    // SIMPLE LOGOUT BUTTON - matching user-header.html implementation exactly
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        // Set a flag in session storage that the main JS file will check
+      logoutBtn.addEventListener('click', function(event) {
+        event.preventDefault();
+        // Set a flag that the main JS file will check for
         sessionStorage.setItem('performLogout', 'true');
-        
-        // Redirect to prevent confusion
-        window.location.href = "../index.html";
+        window.location.reload(); // Reload to trigger the logout in main JS
       });
     }
     
