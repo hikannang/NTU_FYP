@@ -1,160 +1,344 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cars Overview</title>
-    <link rel="stylesheet" href="../static/css/admin/admin.css">
-    <link rel="stylesheet" href="../static/css/admin/admin-cars.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-    <style>
-        main {
-            margin-bottom: 60px;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        #search-bar {
-            width: 100%;
-            padding: 10px;
-            margin: 20px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        .action-btn {
-            margin: 2px;
-            padding: 5px 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-        }
-        .action-btn:hover {
-            background-color: #0056b3;
-        }
-        .delete-btn {
-            background-color: #dc3545;
-        }
-        .delete-btn:hover {
-            background-color: #c82333;
-        }
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-                margin: 10px;
-            }
-            #cars-table {
-                display: block;
-                overflow-x: auto;
-            }
-        }
-    </style>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Cars | BaoCarLiao Admin</title>
+    <link rel="stylesheet" href="../static/css/admin/admin.css" />
+    <link rel="stylesheet" href="../static/css/admin/admin-cars.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
     <div id="header"></div>
 
-    <main>
-        <div class="container">
-            <h1>Cars Management</h1>
-            <input type="text" id="search-bar" placeholder="Search by Car ID, Location, or Car Plate">
-            
-            <table id="cars-table">
-                <thead>
-                    <tr>
-                        <th>Car ID</th>
-                        <th>Address</th>
-                        <th>Car Plate</th>
-                        <th>Status</th>
-                        <th>Car Type</th>
-                        <th>Service Due</th>
-                        <th>Insurance Expiry</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Will be populated dynamically -->
-                </tbody>
-            </table>
+    <div class="admin-content">
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <h1>Manage Cars</h1>
+          <p class="subtitle">View and manage all vehicles in the fleet</p>
         </div>
-    </main>
+        <div class="header-actions">
+          <button id="export-data" class="secondary-btn">
+            <i class="bi bi-download"></i> Export
+          </button>
+          <a href="admin-addCars.html" class="primary-btn">
+            <i class="bi bi-plus-lg"></i> Add Car
+          </a>
+        </div>
+      </div>
+
+      <!-- Filters and Search -->
+      <div class="filters-section">
+        <div class="search-bar">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            id="car-search"
+            placeholder="Search by license plate, car type, or address..."
+          />
+          <button id="clear-search" class="clear-btn">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+
+        <div class="filters-container">
+          <div class="filter-group">
+            <label for="status-filter">Status</label>
+            <select id="status-filter" class="filter-select">
+              <option value="all">All</option>
+              <option value="available">Available</option>
+              <option value="booked">Booked</option>
+              <option value="maintenance">Maintenance</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="car-type-filter">Car Type</label>
+            <select id="car-type-filter" class="filter-select">
+              <option value="all">All Types</option>
+              <!-- Will be populated from JS -->
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="sort-by">Sort By</label>
+            <select id="sort-by" class="filter-select">
+              <option value="license_plate">License Plate</option>
+              <option value="car_type">Car Type</option>
+              <option value="status">Status</option>
+            </select>
+          </div>
+
+          <div class="view-toggle">
+            <button
+              id="grid-view-btn"
+              class="view-btn active"
+              title="Grid View"
+            >
+              <i class="bi bi-grid"></i>
+            </button>
+            <button id="list-view-btn" class="view-btn" title="List View">
+              <i class="bi bi-list-ul"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Cards -->
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="card-icon available">
+            <i class="bi bi-check-circle"></i>
+          </div>
+          <div class="card-content">
+            <h3 id="available-count">0</h3>
+            <p>Available</p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="card-icon booked">
+            <i class="bi bi-calendar-check"></i>
+          </div>
+          <div class="card-content">
+            <h3 id="booked-count">0</h3>
+            <p>Booked</p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="card-icon maintenance">
+            <i class="bi bi-tools"></i>
+          </div>
+          <div class="card-content">
+            <h3 id="maintenance-count">0</h3>
+            <p>Maintenance</p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="card-icon total">
+            <i class="bi bi-car-front"></i>
+          </div>
+          <div class="card-content">
+            <h3 id="total-count">0</h3>
+            <p>Total Cars</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- View Toggle Container -->
+      <div id="cars-container">
+        <!-- Loading State -->
+        <div id="loading-state" class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading cars data...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display: none">
+          <i class="bi bi-car-front"></i>
+          <h3>No cars found</h3>
+          <p>Try adjusting your filters or add new cars to your fleet.</p>
+          <a href="admin-addCars.html" class="primary-btn">Add New Car</a>
+        </div>
+
+        <!-- Grid View (Default) -->
+        <div id="grid-view" class="car-grid">
+          <!-- Car cards will be inserted here by JavaScript -->
+        </div>
+
+        <!-- List View -->
+        <div id="list-view" class="car-list" style="display: none">
+          <div class="list-header">
+            <div class="col-checkbox">
+              <input type="checkbox" id="select-all" />
+            </div>
+            <div class="col-id">ID</div>
+            <div class="col-license">License Plate</div>
+            <div class="col-type">Car Type</div>
+            <div class="col-status">Status</div>
+            <div class="col-service">Next Service</div>
+            <div class="col-actions">Actions</div>
+          </div>
+
+          <div id="list-content" class="list-content">
+            <!-- Car list items will be inserted here by JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk Actions (visible when items are selected) -->
+      <div id="bulk-actions" class="bulk-actions" style="display: none">
+        <span id="selected-count">0 cars selected</span>
+        <div class="bulk-buttons">
+          <button id="bulk-available" class="bulk-btn available">
+            <i class="bi bi-check-circle"></i> Set Available
+          </button>
+          <button id="bulk-maintenance" class="bulk-btn maintenance">
+            <i class="bi bi-tools"></i> Set Maintenance
+          </button>
+          <button id="bulk-delete" class="bulk-btn delete">
+            <i class="bi bi-trash"></i> Delete
+          </button>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-container">
+        <div class="pagination-info">
+          Showing <span id="showing-from">0</span> -
+          <span id="showing-to">0</span> of <span id="total-items">0</span> cars
+        </div>
+        <div class="pagination-controls">
+          <button id="prev-page" class="page-btn" disabled>
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <div id="page-numbers" class="page-numbers">
+            <!-- Page numbers will be inserted here by JavaScript -->
+          </div>
+          <button id="next-page" class="page-btn" disabled>
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Car Details Modal -->
+    <div id="car-details-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Car Details</h2>
+          <button class="close-modal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="car-detail-grid">
+            <div class="car-image-container">
+              <!-- We'll use a fallback car image since you might not have actual car images -->
+              <img
+                src="../static/images/car-placeholder.png"
+                alt="Car"
+                class="car-detail-image"
+              />
+              <div class="car-status-badge">
+                <span id="detail-status">Available</span>
+              </div>
+            </div>
+            <div class="car-info-container">
+              <h3 id="detail-car-type">Car Type</h3>
+              <p id="detail-license">License Plate: ABC123</p>
+
+              <div class="detail-section">
+                <h4>Car Specifications</h4>
+                <div class="specs-grid">
+                  <div class="spec-item">
+                    <i class="bi bi-people"></i>
+                    <span id="detail-capacity">5</span>
+                    <p>Capacity</p>
+                  </div>
+                  <div class="spec-item">
+                    <i class="bi bi-fuel-pump"></i>
+                    <span id="detail-fuel">Petrol</span>
+                    <p>Fuel Type</p>
+                  </div>
+                  <div class="spec-item">
+                    <i class="bi bi-palette"></i>
+                    <span id="detail-color">White</span>
+                    <p>Color</p>
+                  </div>
+                  <div class="spec-item">
+                    <i class="bi bi-briefcase"></i>
+                    <span id="detail-luggage">2 L + 1 S</span>
+                    <p>Luggage</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="detail-section">
+                <h4>Location</h4>
+                <p id="detail-address">123 Main St, Singapore</p>
+                <div id="detail-map" class="detail-map"></div>
+              </div>
+
+              <div class="detail-section">
+                <h4>Maintenance Details</h4>
+                <div class="maintenance-info">
+                  <div class="info-row">
+                    <span class="label">Service Due:</span>
+                    <span id="detail-service-due" class="value"
+                      >01 Jun 2023</span
+                    >
+                  </div>
+                  <div class="info-row">
+                    <span class="label">Insurance Expiry:</span>
+                    <span id="detail-insurance" class="value">31 Dec 2023</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="detail-section">
+                <h4>Special Instructions</h4>
+                <p id="detail-directions">
+                  Park in designated spots only. Key box located at entrance.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="detail-edit" class="secondary-btn">
+            <i class="bi bi-pencil"></i> Edit
+          </button>
+          <button id="detail-status-toggle" class="primary-btn">
+            <i class="bi bi-tools"></i> Set Maintenance
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal">
+      <div class="modal-content modal-sm">
+        <div class="modal-header">
+          <h2>Confirm Deletion</h2>
+          <button class="close-modal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="warning-text">
+            <i class="bi bi-exclamation-triangle"></i>
+            Are you sure you want to delete this car? This action cannot be
+            undone.
+          </p>
+          <p id="delete-car-info">License Plate: ABC123</p>
+        </div>
+        <div class="modal-footer">
+          <button class="close-modal secondary-btn">Cancel</button>
+          <button id="confirm-delete" class="danger-btn">
+            <i class="bi bi-trash"></i> Delete
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div id="footer"></div>
 
-    <script type="module">
-        import { checkAdmin } from '../static/js/common/auth.js';
-        import { db } from '../static/js/common/firebase-config.js';
-        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
-
-        // Load header and footer
-        document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html').then(response => response.text());
-        document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html').then(response => response.text());
-
-        // Check if user is admin
-        try {
-            const userData = await checkAdmin();
-            document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
-        } catch (error) {
-            alert(error);
-            window.location.href = "../index.html";
-        }
-
-        // Function to populate cars table
-        async function populateCarsTable() {
-            const carsTableBody = document.getElementById('cars-table').getElementsByTagName('tbody')[0];
-            try {
-                const carsSnapshot = await getDocs(collection(db, 'cars'));
-                carsSnapshot.forEach((doc) => {
-                    const car = doc.data();
-                    const row = carsTableBody.insertRow();
-                    row.insertCell(0).textContent = doc.id;
-                    row.insertCell(1).textContent = car.address;
-                    row.insertCell(2).textContent = car.license_plate;
-                    row.insertCell(3).textContent = car.status;
-                    row.insertCell(4).textContent = car.car_type;
-                    row.insertCell(5).textContent = new Date(car.service_due.seconds * 1000).toLocaleDateString();
-                    row.insertCell(6).textContent = new Date(car.insurance_expiry.seconds * 1000).toLocaleDateString();
-                    const actionsCell = row.insertCell(7);
-                    actionsCell.innerHTML = `
-                        <button onclick="window.location.href='admin-editCar.html?carId=${doc.id}'" class="action-btn">Edit</button>
-                        <button onclick="deleteCar('${doc.id}')" class="action-btn delete-btn">Delete</button>
-                    `;
-                });
-            } catch (error) {
-                console.error('Error fetching cars:', error);
-                alert('Failed to load cars. Please try again.');
-            }
-        }
-
-        // Add search functionality
-        document.getElementById('search-bar').addEventListener('input', filterCarsTable);
-
-        function filterCarsTable() {
-            const searchInput = document.getElementById('search-bar').value.toLowerCase();
-            const rows = document.getElementById('cars-table').getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-
-            Array.from(rows).forEach(row => {
-                const carId = row.cells[0].textContent.toLowerCase();
-                const address = row.cells[1].textContent.toLowerCase();
-                const plate = row.cells[2].textContent.toLowerCase();
-
-                if (carId.includes(searchInput) || address.includes(searchInput) || plate.includes(searchInput)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-
-        // Initialize table
-        populateCarsTable();
-    </script>
-</body>
+    <!-- Scripts -->
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places"
+      defer
+    ></script>
+    <script src="../static/js/admin/admin-cars.js" type="module"></script>
+  </body>
 </html>
