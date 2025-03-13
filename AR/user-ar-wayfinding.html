@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Find Your Car | CarShare</title>
+    <title>Find Your Car | BaoCarLiao</title>
     
     <!-- AR.js and A-Frame libraries -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
@@ -27,28 +27,27 @@
     
     <!-- Instruction Modal -->
     <div id="instruction-modal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" onclick="closeInstructionModal()">
             <div class="modal-header">
                 <h2>Find Your Car with AR</h2>
                 <span class="close" id="modal-close">&times;</span>
             </div>
             <div class="modal-body">
                 <div class="instruction-image">
-                    <img src="images/ar-instructions.png" alt="AR Instructions">
+                    <img src="./images/ar-instructions.png" alt="AR Instructions">
                 </div>
                 <div class="instructions">
                     <p><strong>1.</strong> Point your camera around to locate your car</p>
                     <p><strong>2.</strong> Follow the arrow at the top to navigate</p>
-                    <p><strong>3.</strong> Look for the 3D model marking your car's location</p>
+                    <p><strong>3.</strong> Look for the 3D pin marking your car's location</p>
                     <p><strong>4.</strong> If AR doesn't work well, use Map view instead</p>
                 </div>
-                <button id="start-ar-button" class="primary-btn">Start AR Navigation</button>
             </div>
         </div>
     </div>
     
     <!-- AR Interface Overlay -->
-    <div class="ar-overlay" style="display: none;">
+    <div class="ar-overlay">
         <!-- Compass Arrow -->
         <div class="compass-container">
             <div class="arrow"></div>
@@ -56,7 +55,7 @@
         
         <!-- Distance Display -->
         <div class="distance-container">
-            <div id="distance-display">Calculating distance...</div>
+            <div id="distanceFromTarget">Calculating distance...</div>
         </div>
         
         <!-- Back Button -->
@@ -74,46 +73,65 @@
         </div>
     </div>
     
-    <!-- A-Frame Scene -->
-    <div id="ar-view">
-        <a-scene 
-            embedded
-            arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix;"
-            vr-mode-ui="enabled: false"
-            renderer="antialias: true; logarithmicDepthBuffer: true; precision: medium;"
-            id="scene">
-            
-            <a-assets>
-                <a-asset-item id="car-model" src="models/pin.glb"></a-asset-item>
-            </a-assets>
-            
-            <!-- Car Entity (Initially Off) -->
-            <a-entity id="carOff"></a-entity>
-            
-            <!-- Camera with cursor -->
-            <a-entity camera look-controls wasd-controls position="0 1.6 0">
-                <a-entity cursor="fuse: false"
-                    position="0 0 -1"
-                    geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
-                    material="color: white; shader: flat">
-                </a-entity>
-            </a-entity>
-        </a-scene>
-    </div>
-    
     <!-- Map View (Initially Hidden) -->
-    <div id="map-view" style="display: none;">
+    <div id="map-view" class="map-view">
         <div id="map"></div>
     </div>
     
+    <!-- Car Information Modal (Appears when close) -->
+    <div id="car-info-modal" class="car-info-modal" style="display: none;">
+        <div class="car-info-header">
+            <img id="car-image" src="" alt="Car Image">
+            <div class="car-details">
+                <h3 id="car-model">Car Model</h3>
+                <p id="license-plate">License Plate</p>
+            </div>
+        </div>
+        <div class="car-info-body">
+            <div class="directions" id="car-directions">
+                Loading directions...
+            </div>
+        </div>
+        <div class="car-info-footer">
+            <button id="close-modal-button" class="primary-btn">Got it</button>
+        </div>
+    </div>
+    
     <!-- Error Message -->
-    <div id="error-message" class="error-message" style="display: none;">
+    <div id="error-overlay" class="error-message" style="display: none;">
         <i class="bi bi-exclamation-triangle"></i>
         <h3>Something went wrong</h3>
         <p id="error-text">Unable to access AR features</p>
-        <button id="retry-button" class="primary-btn">Try Again</button>
-        <button id="fallback-button" class="secondary-btn">Use Map Only</button>
+        <div class="error-actions">
+            <button id="retry-button" class="primary-btn">Try Again</button>
+            <button id="map-fallback-button" class="secondary-btn">Open in Maps</button>
+        </div>
     </div>
+    
+    <!-- A-Frame Scene -->
+    <a-scene 
+        embedded
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix;"
+        vr-mode-ui="enabled: false"
+        renderer="antialias: true; logarithmicDepthBuffer: true; precision: medium;"
+        id="scene">
+        
+        <a-assets>
+            <a-asset-item id="pin-model" src="../static/assets/3dModels/pin.glb"></a-asset-item>
+        </a-assets>
+        
+        <!-- Car Entity (Initially Off) -->
+        <a-entity id="carOff"></a-entity>
+        
+        <!-- Camera with cursor -->
+        <a-entity camera look-controls wasd-controls position="0 1.6 0">
+            <a-entity cursor="fuse: false"
+                position="0 0 -1"
+                geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                material="color: white; shader: flat">
+            </a-entity>
+        </a-entity>
+    </a-scene>
     
     <!-- Google Maps API -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&callback=initMap" async defer></script>
@@ -122,6 +140,6 @@
     <script src="../static/js/common/firebase-config.js" type="module"></script>
     
     <!-- Custom JS -->
-    <script src="js/user-ar-wayfinding.js" type="module"></script>
+    <script src="./js/user-ar-wayfinding.js" type="module"></script>
 </body>
 </html>

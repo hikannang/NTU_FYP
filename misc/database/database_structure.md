@@ -39,6 +39,7 @@ Root
 │   │   ├── service_due: datetime
 │   │   ├── small_luggage: integer
 │   │   ├── status: string
+│   │   ├── directions: string
 │   ├── carID_2 (Document)
 │       └── (Same structure as carID_1)
 ├── timesheets (Collection)
