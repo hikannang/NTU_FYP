@@ -43,7 +43,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     sessionStorage.removeItem("performLogout");
     try {
       await signOut(auth);
-      alert("You have been logged out.");
       window.location.href = "../index.html";
       return; // Exit early
     } catch (error) {
