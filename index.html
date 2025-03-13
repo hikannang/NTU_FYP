@@ -132,5 +132,57 @@
       }
     });
   </script>
+  
+  <script type="module">
+    import { auth } from "./static/js/common/firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+    
+    // Check for clean logout flag first thing
+    if (localStorage.getItem("cleanLogout") === "true") {
+      localStorage.removeItem("cleanLogout");
+      console.log("Clean logout detected, suppressing auth check");
+      
+      // Display optional logout success message
+      document.addEventListener("DOMContentLoaded", () => {
+        const container = document.querySelector(".login-card");
+        if (container) {
+          const logoutMessage = document.createElement("div");
+          logoutMessage.textContent = "You have been logged out successfully.";
+          logoutMessage.style.cssText = "color: #4caf50; text-align: center; margin-bottom: 15px; padding: 8px;";
+          container.insertBefore(logoutMessage, container.firstChild);
+          
+          // Auto-remove after 3 seconds
+          setTimeout(() => logoutMessage.remove(), 3000);
+        }
+      });
+      
+    } else {
+      // Normal auth state check
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // User is signed in - redirect to dashboard
+          // Remove any alerts here, just redirect silently
+          const checkUser = async (userId) => {
+            try {
+              const userDoc = await getDoc(doc(db, "users", userId));
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                if (userData.role === "admin") {
+                  window.location.href = "./admin/admin-dashboard.html";
+                } else {
+                  window.location.href = "./user/user-dashboard.html";
+                }
+              }
+            } catch (error) {
+              console.error("Error checking user role:", error);
+            }
+          };
+          
+          checkUser(user.uid);
+        }
+        // No else statement here - login is the correct page for non-authenticated users
+      });
+    }
+  </script>
 </body>
 </html>

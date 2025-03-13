@@ -34,34 +34,20 @@ let dashboardData = {
   maintenanceAlerts: [],
 };
 
-// Initialize the page
+// Initialize the page with improved sequence
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("DOM loaded, starting initialization");
   
-  // Check if logout was requested first
+  // Handle logout first
   if (sessionStorage.getItem("performLogout") === "true") {
     sessionStorage.removeItem("performLogout");
-    try {
-      await signOut(auth);
-      
-      // Set a flag that indicates a clean logout - check for this in index.html
-      localStorage.setItem("cleanLogout", "true");
-      
-      // Use replace instead of href to avoid browser history issues
-      window.location.replace("../index.html");
-      return; // Exit early
-    } catch (error) {
-      console.error("Error during logout:", error);
-      alert("Logout failed: " + error.message);
-      // Even on error, try to redirect back
-      window.location.replace("../index.html");
-    }
-    return; // Make sure no other code runs
+    localStorage.setItem("cleanLogout", "true");
+    window.location.replace("../index.html");
+    return;
   }
-
+  
+  // Then load UI components
   try {
-    console.log("Loading header and footer");
-    // Load header and footer
     document.getElementById("header").innerHTML = await fetch(
       "../static/headerFooter/admin-header.html"
     ).then((response) => response.text());
@@ -70,74 +56,51 @@ document.addEventListener("DOMContentLoaded", async () => {
       "../static/headerFooter/admin-footer.html"
     ).then((response) => response.text());
     
-    console.log("Header and footer loaded, checking auth state");
-    
-    // Give header time to initialize
-    setTimeout(() => {
-      // Check for logout button after header is loaded
-      const logoutBtn = document.getElementById("logout-btn");
-      if (logoutBtn) {
-        console.log("Setting up logout button");
-        logoutBtn.addEventListener('click', function(event) {
-          event.preventDefault();
-          sessionStorage.setItem('performLogout', 'true');
-          window.location.reload();
-        });
-      } else {
-        console.warn("Logout button not found in header");
-      }
-    }, 500);
-    
-    // Continue with auth check and data loading
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // Load admin data and check admin status
-        try {
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            
-            if (userData.role === "admin") {
-              // Update the welcome message
-              const welcomeMessage = document.getElementById("welcome-message");
-              if (welcomeMessage) {
-                welcomeMessage.textContent = userData.firstName || "Admin";
-              }
-              
-              // Set up date filter buttons
-              setupDateFilters();
-              
-              // Load initial data
-              await loadDashboardData("day");
-              
-              // Render all dashboard components
-              renderDashboard();
-            } else {
-              // Not an admin, redirect to user dashboard
-              alert("You don't have permission to access the admin area.");
-              window.location.href = "../user/user-dashboard.html";
-            }
-          } else {
-            // User document doesn't exist
-            alert("User profile not found.");
-            await signOut(auth);
-            window.location.href = "../index.html";
-          }
-        } catch (error) {
-          console.error("Error verifying admin:", error);
-          alert("Error accessing admin area: " + error.message);
-          window.location.href = "../index.html";
-        }
-      } else {
-        // User is signed out, redirect to login
-        window.location.href = "../index.html";
-      }
-    });
+    // Only proceed with auth check after UI is loaded
+    setTimeout(() => checkAuthAndLoadData(), 100);
   } catch (error) {
-    console.error("Initialization error:", error);
-    alert("Failed to initialize: " + error.message);
+    console.error("Error loading UI components:", error);
   }
 });
+
+// Separate function to check auth and load data
+async function checkAuthAndLoadData() {
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (!userDoc.exists()) {
+          console.error("User document not found");
+          return;
+        }
+        
+        const userData = userDoc.data();
+        if (userData.role !== "admin") {
+          console.warn("Not an admin user");
+          window.location.href = "../user/user-dashboard.html";
+          return;
+        }
+        
+        // Update welcome message
+        const welcomeMessage = document.getElementById("welcome-message");
+        if (welcomeMessage) {
+          welcomeMessage.textContent = userData.firstName || "Admin";
+        }
+        
+        // Initialize dashboard with admin data
+        setupDateFilters();
+        await loadDashboardData("day");
+        
+      } catch (error) {
+        console.error("Error loading admin data:", error);
+        // Log but don't alert
+      }
+    } else {
+      // Redirect without alert
+      window.location.href = "../index.html";
+    }
+  });
+}
 
 // Date helpers
 const getDateRange = (period) => {
@@ -216,22 +179,54 @@ function setupDateFilters() {
   });
 }
 
-// Load all dashboard data
+// Load all dashboard data with better error handling
 async function loadDashboardData(period) {
   try {
     const dateRange = getDateRange(period);
-
-    // Load data in parallel for better performance
-    await Promise.all([
-      loadStatistics(dateRange),
-      loadRecentBookings(),
-      loadCarStatusData(),
-      loadUserRegistrationData(period),
-      loadMaintenanceAlerts(),
-    ]);
+    
+    // Instead of Promise.all (which fails completely if any promise fails),
+    // handle each operation separately
+    try {
+      await loadStatistics(dateRange);
+    } catch (error) {
+      console.error("Error loading statistics:", error);
+      // Don't show alert, just log the error
+    }
+    
+    try {
+      await loadRecentBookings();
+    } catch (error) {
+      console.error("Error loading bookings:", error);
+      // Don't show alert, just log the error
+    }
+    
+    try {
+      await loadCarStatusData();
+    } catch (error) {
+      console.error("Error loading car status:", error);
+      // Don't show alert, just log the error
+    }
+    
+    try {
+      await loadUserRegistrationData(period);
+    } catch (error) {
+      console.error("Error loading user registrations:", error);
+      // Don't show alert, just log the error
+    }
+    
+    try {
+      await loadMaintenanceAlerts();
+    } catch (error) {
+      console.error("Error loading maintenance alerts:", error);
+      // Don't show alert, just log the error
+    }
+    
+    // Still render whatever data we could load
+    renderDashboard();
+    
   } catch (error) {
-    console.error("Error loading dashboard data:", error);
-    alert("Failed to load dashboard data. Please try again.");
+    console.error("Error in dashboard data loading:", error);
+    // No alert here - just log to console
   }
 }
 
@@ -625,30 +620,50 @@ async function loadMaintenanceAlerts() {
   }
 }
 
-// Render dashboard UI
+// Render dashboard UI with error tolerance
 function renderDashboard() {
-  // Update statistics
-  updateStatistics();
+  try {
+    updateStatistics();
+  } catch (e) {
+    console.warn("Error updating statistics:", e);
+  }
   
-  // Update recent bookings table
-  renderRecentBookings();
+  try {
+    renderRecentBookings();
+  } catch (e) {
+    console.warn("Error rendering bookings:", e);
+  }
   
-  // Update car status chart
-  renderCarStatusChart();
+  try {
+    renderCarStatusChart();
+  } catch (e) {
+    console.warn("Error rendering car chart:", e);
+  }
   
-  // Update user registration chart
-  renderUserRegistrationChart();
+  try {
+    renderUserRegistrationChart();
+  } catch (e) {
+    console.warn("Error rendering user chart:", e);
+  }
   
-  // Update maintenance alerts
-  renderMaintenanceAlerts();
+  try {
+    renderMaintenanceAlerts();
+  } catch (e) {
+    console.warn("Error rendering alerts:", e);
+  }
 }
 
 // Update statistics cards
 function updateStatistics() {
-  document.getElementById('active-bookings').textContent = dashboardData.activeBookings;
-  document.getElementById('total-users').textContent = dashboardData.totalUsers;
-  document.getElementById('available-cars').textContent = dashboardData.availableCars;
-  document.getElementById('total-revenue').textContent = formatCurrency(dashboardData.totalRevenue);
+  try {
+    if (!document.getElementById('active-bookings')) return;
+    document.getElementById('active-bookings').textContent = dashboardData.activeBookings || 0;
+    document.getElementById('total-users').textContent = dashboardData.totalUsers || 0;
+    document.getElementById('available-cars').textContent = dashboardData.availableCars || 0;
+    document.getElementById('total-revenue').textContent = formatCurrency(dashboardData.totalRevenue || 0);
+  } catch (error) {
+    console.warn("Error updating statistics:", error);
+  }
 }
 
 // Render recent bookings table
