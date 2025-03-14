@@ -95,6 +95,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Initialization error:", error);
     showError(`Error initializing page: ${error.message}`);
   }
+
+  // Make sure DOM is fully loaded before initializing
+  let mapInitialized = false;
+  
+  // Global initMap function to be called by Google Maps API
+  window.initMap = function() {
+    // If DOM is not ready yet, wait for DOMContentLoaded
+    if (document.readyState !== 'complete' && document.readyState !== 'interactive') {
+      document.addEventListener('DOMContentLoaded', initializeMap);
+    } else {
+      // DOM is ready, initialize map immediately
+      if (!mapInitialized) {
+        initializeMap();
+        mapInitialized = true;
+      }
+    }
+  };
 });
 
 // Initialize form with data
@@ -292,14 +309,22 @@ function updateColorOptions(modelId, selectedColor = null) {
   }
 }
 
-// Initialize Google Maps
+// Initialize Google Maps with Places Autocomplete
 function initializeMap() {
   try {
     console.log("Initializing Google Maps");
     
+    // Check if map container exists
+    if (!mapContainer) {
+      console.error("Map container not found!");
+      return;
+    }
+    
     // Get coordinates from form
     const lat = parseFloat(carLatitude.value) || 1.3521; // Default to Singapore
     const lng = parseFloat(carLongitude.value) || 103.8198;
+    
+    console.log(`Setting up map with coordinates: ${lat}, ${lng}`);
     
     // Initialize map
     map = new google.maps.Map(mapContainer, {
@@ -323,8 +348,46 @@ function initializeMap() {
       title: "Car Location"
     });
     
+    // Set up Places Autocomplete
+    const addressInput = document.getElementById("car-address");
+    if (addressInput) {
+      const autocomplete = new google.maps.places.Autocomplete(addressInput);
+      
+      // Bias the autocomplete results to the map's viewport
+      autocomplete.bindTo('bounds', map);
+      
+      // Add listener for place changes
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        
+        if (!place.geometry || !place.geometry.location) {
+          // User entered the name of a place that was not suggested
+          console.warn("No details available for input: '" + place.name + "'");
+          return;
+        }
+        
+        // Update map with selected place
+        if (place.geometry.viewport) {
+          map.fitBounds(place.geometry.viewport);
+        } else {
+          map.setCenter(place.geometry.location);
+          map.setZoom(17);
+        }
+        
+        // Update marker
+        marker.setPosition(place.geometry.location);
+        
+        // Update form values
+        carAddress.value = place.formatted_address;
+        carLatitude.value = place.geometry.location.lat();
+        carLongitude.value = place.geometry.location.lng();
+        
+        console.log(`Place selected: ${place.formatted_address}`);
+      });
+    }
+    
     // Update coordinates when marker is dragged
-    google.maps.event.addListener(marker, "dragend", function() {
+    google.maps.event.addListener(marker, 'dragend', function() {
       const position = marker.getPosition();
       carLatitude.value = position.lat();
       carLongitude.value = position.lng();
@@ -334,7 +397,7 @@ function initializeMap() {
     });
     
     // Add click event to map
-    google.maps.event.addListener(map, "click", function(event) {
+    google.maps.event.addListener(map, 'click', function(event) {
       marker.setPosition(event.latLng);
       carLatitude.value = event.latLng.lat();
       carLongitude.value = event.latLng.lng();
@@ -343,7 +406,7 @@ function initializeMap() {
       geocodePosition(event.latLng);
     });
     
-    console.log("Google Maps initialized");
+    console.log("Google Maps initialized successfully");
   } catch (error) {
     console.error("Error initializing Google Maps:", error);
     showError("Failed to initialize map. You can still edit car details without the map.");
@@ -370,22 +433,27 @@ function searchAddress() {
     return;
   }
   
+  // Show loading message
+  showMessage("Searching for address...", "info");
+  
   geocoder.geocode({ address }, (results, status) => {
     if (status === "OK" && results[0]) {
       const location = results[0].geometry.location;
       
       // Update map
       map.setCenter(location);
+      map.setZoom(16);
       marker.setPosition(location);
       
       // Update form fields
       carLatitude.value = location.lat();
       carLongitude.value = location.lng();
+      carAddress.value = results[0].formatted_address;
       
       showMessage("Location found", "success");
     } else {
       console.warn("Geocode failed:", status);
-      showMessage("Couldn't find that address. Please try again.", "error");
+      showMessage("Couldn't find that address. Please try again or use the map to select a location.", "error");
     }
   });
 }
@@ -490,7 +558,50 @@ function setupFormHandlers() {
   }
 }
 
-// Handle form submission
+// Add this function to automatically get coordinates from address if needed
+async function ensureCoordinates() {
+  // If we already have valid coordinates, return them
+  const lat = parseFloat(carLatitude.value.trim());
+  const lng = parseFloat(carLongitude.value.trim());
+  
+  if (!isNaN(lat) && !isNaN(lng)) {
+    return { lat, lng };
+  }
+  
+  // If we have an address but no coordinates, try to geocode
+  const address = carAddress.value.trim();
+  if (!address) {
+    return null; // No address to geocode
+  }
+  
+  // Show a message
+  showMessage("Getting coordinates from address...", "info");
+  
+  try {
+    // Use a promise wrapper for geocoder
+    return new Promise((resolve, reject) => {
+      geocoder.geocode({ address }, (results, status) => {
+        if (status === "OK" && results[0]) {
+          const location = results[0].geometry.location;
+          
+          // Set the values in the form
+          carLatitude.value = location.lat();
+          carLongitude.value = location.lng();
+          
+          resolve({ lat: location.lat(), lng: location.lng() });
+        } else {
+          console.warn("Geocode failed:", status);
+          resolve(null); // Return null but don't reject
+        }
+      });
+    });
+  } catch (error) {
+    console.error("Error geocoding address:", error);
+    return null;
+  }
+}
+
+// Update your handleFormSubmit function to call ensureCoordinates
 async function handleFormSubmit(e) {
   e.preventDefault();
   
@@ -502,13 +613,11 @@ async function handleFormSubmit(e) {
     const carColorValue = carColorSelect.value;
     const licensePlateValue = carLicensePlate.value.trim();
     const addressValue = carAddress.value.trim();
-    const latValue = parseFloat(carLatitude.value.trim());
-    const lngValue = parseFloat(carLongitude.value.trim());
     const statusValue = carStatus.value;
     const serviceDueValue = new Date(serviceDue.value);
     const insuranceExpiryValue = new Date(insuranceExpiry.value);
     
-    // Form validation
+    // Form validation (without coordinate validation)
     if (!carTypeValue) {
       throw new Error('Please select a car model');
     }
@@ -519,10 +628,6 @@ async function handleFormSubmit(e) {
     
     if (!addressValue) {
       throw new Error('Please enter a car location address');
-    }
-    
-    if (isNaN(latValue) || isNaN(lngValue)) {
-      throw new Error('Please enter valid coordinates');
     }
     
     if (!statusValue) {
@@ -537,8 +642,8 @@ async function handleFormSubmit(e) {
       throw new Error('Please enter a valid insurance expiry date');
     }
     
-    // Get additional data from car model
-    const modelData = allCarModels[carTypeValue] || {};
+    // Try to get coordinates from address if they're missing
+    const coordinates = await ensureCoordinates();
     
     // Create car update object
     const carUpdate = {
@@ -546,10 +651,6 @@ async function handleFormSubmit(e) {
       car_color: carColorValue,
       license_plate: licensePlateValue,
       address: addressValue,
-      current_location: {
-        latitude: latValue,
-        longitude: lngValue,
-      },
       status: statusValue,
       service_due: serviceDueValue,
       insurance_expiry: insuranceExpiryValue,
@@ -557,23 +658,24 @@ async function handleFormSubmit(e) {
       updated_by: currentUser?.uid || 'unknown'
     };
     
-    // Add model-specific data if available
-    if (modelData.fuel_type) {
-      carUpdate.fuel_type = modelData.fuel_type;
+    // Add coordinates if available
+    if (coordinates) {
+      carUpdate.current_location = {
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
+      };
+    } else {
+      // Use whatever values are in the form, even if they might be invalid
+      const latValue = parseFloat(carLatitude.value.trim() || "0");
+      const lngValue = parseFloat(carLongitude.value.trim() || "0");
+      
+      carUpdate.current_location = {
+        latitude: latValue,
+        longitude: lngValue,
+      };
     }
     
-    if (modelData.seating_capacity) {
-      carUpdate.seating_capacity = parseInt(modelData.seating_capacity);
-    }
-    
-    if (modelData.large_luggage) {
-      carUpdate.large_luggage = parseInt(modelData.large_luggage);
-    }
-    
-    if (modelData.small_luggage) {
-      carUpdate.small_luggage = parseInt(modelData.small_luggage);
-    }
-    
+    // Rest of your function - update Firestore, show success message, etc.
     console.log("Updating car with data:", carUpdate);
     
     // Update car in Firestore
@@ -585,7 +687,6 @@ async function handleFormSubmit(e) {
     setTimeout(() => {
       window.location.href = 'admin-cars.html';
     }, 1500);
-    
   } catch (error) {
     console.error("Error updating car:", error);
     showMessage(error.message, "error");
@@ -678,6 +779,24 @@ function showMessage(message, type = "info") {
     }, 3000);
   }, 10);
 }
+
+// Debug helper for map loading issues
+function checkMapContainer() {
+  console.log("Map container check:");
+  console.log("- Element exists:", !!mapContainer);
+  if (mapContainer) {
+    console.log("- Size:", mapContainer.clientWidth, "x", mapContainer.clientHeight);
+    console.log("- Visibility:", window.getComputedStyle(mapContainer).visibility);
+    console.log("- Display:", window.getComputedStyle(mapContainer).display);
+  }
+  
+  console.log("Google Maps API status:");
+  console.log("- google object:", typeof google !== 'undefined' ? "Loaded" : "Not loaded");
+  console.log("- maps object:", typeof google !== 'undefined' && google.maps ? "Loaded" : "Not loaded");
+}
+
+// Call this function 2 seconds after page load
+setTimeout(checkMapContainer, 2000);
 
 // Initialize Google Maps API after the page loads
 window.initMap = initializeMap;
