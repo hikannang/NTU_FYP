@@ -161,28 +161,37 @@
                   </div>
                 </div>
 
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="car-latitude">Latitude</label>
-                    <input
-                      type="number"
-                      id="car-latitude"
-                      name="car-latitude"
-                      step="0.000001"
-                      placeholder="Will be auto-filled from address"
-                    />
-                  </div>
+                <div class="form-group">
+                  <label for="car-directions"
+                    >Directions <small>(Optional)</small></label
+                  >
+                  <textarea
+                    id="car-directions"
+                    name="car-directions"
+                    rows="3"
+                    placeholder="Enter special directions for finding the car (e.g., parking level, landmarks)"
+                  ></textarea>
+                </div>
 
-                  <div class="form-group">
-                    <label for="car-longitude">Longitude</label>
-                    <input
-                      type="number"
-                      id="car-longitude"
-                      name="car-longitude"
-                      step="0.000001"
-                      placeholder="Will be auto-filled from address"
-                    />
-                  </div>
+                <!-- Update these input fields in your HTML -->
+                <div class="form-group">
+                  <label for="car-latitude">Latitude</label>
+                  <input
+                    type="text"
+                    id="car-latitude"
+                    name="car-latitude"
+                    placeholder="Will be auto-filled from address"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="car-longitude">Longitude</label>
+                  <input
+                    type="text"
+                    id="car-longitude"
+                    name="car-longitude"
+                    placeholder="Will be auto-filled from address"
+                  />
                 </div>
 
                 <div class="location-actions">

@@ -39,6 +39,7 @@ const insuranceExpiry = document.getElementById("insurance-expiry");
 const submitButton = document.getElementById("submit-button");
 const cancelButton = document.getElementById("cancel-button");
 const deleteButton = document.getElementById("delete-car-btn");
+const carDirections = document.getElementById("car-directions");
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", async () => {
@@ -98,12 +99,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Make sure DOM is fully loaded before initializing
   let mapInitialized = false;
-  
+
   // Global initMap function to be called by Google Maps API
-  window.initMap = function() {
+  window.initMap = function () {
     // If DOM is not ready yet, wait for DOMContentLoaded
-    if (document.readyState !== 'complete' && document.readyState !== 'interactive') {
-      document.addEventListener('DOMContentLoaded', initializeMap);
+    if (
+      document.readyState !== "complete" &&
+      document.readyState !== "interactive"
+    ) {
+      document.addEventListener("DOMContentLoaded", initializeMap);
     } else {
       // DOM is ready, initialize map immediately
       if (!mapInitialized) {
@@ -216,6 +220,11 @@ function populateForm(car) {
     carAddress.value = car.address;
   }
 
+  // Set directions
+  if (car.directions && carDirections) {
+    carDirections.value = car.directions;
+  }
+
   // Set coordinates
   if (car.current_location) {
     if (car.current_location.latitude) {
@@ -311,21 +320,25 @@ function updateColorOptions(modelId, selectedColor = null) {
 
 // Initialize Google Maps with Places Autocomplete
 function initializeMap() {
+  const lat = parseFloat(carLatitude.value.trim().replace(/,/g, "")) || 1.3521; // Default to Singapore
+  const lng =
+    parseFloat(carLongitude.value.trim().replace(/,/g, "")) || 103.8198;
+    
   try {
     console.log("Initializing Google Maps");
-    
+
     // Check if map container exists
     if (!mapContainer) {
       console.error("Map container not found!");
       return;
     }
-    
+
     // Get coordinates from form
     const lat = parseFloat(carLatitude.value) || 1.3521; // Default to Singapore
     const lng = parseFloat(carLongitude.value) || 103.8198;
-    
+
     console.log(`Setting up map with coordinates: ${lat}, ${lng}`);
-    
+
     // Initialize map
     map = new google.maps.Map(mapContainer, {
       center: { lat, lng },
@@ -333,39 +346,39 @@ function initializeMap() {
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: true,
-      zoomControl: true
+      zoomControl: true,
     });
-    
+
     // Initialize geocoder
     geocoder = new google.maps.Geocoder();
-    
+
     // Add marker at current location
     marker = new google.maps.Marker({
       position: { lat, lng },
       map: map,
       draggable: true,
       animation: google.maps.Animation.DROP,
-      title: "Car Location"
+      title: "Car Location",
     });
-    
+
     // Set up Places Autocomplete
     const addressInput = document.getElementById("car-address");
     if (addressInput) {
       const autocomplete = new google.maps.places.Autocomplete(addressInput);
-      
+
       // Bias the autocomplete results to the map's viewport
-      autocomplete.bindTo('bounds', map);
-      
+      autocomplete.bindTo("bounds", map);
+
       // Add listener for place changes
-      autocomplete.addListener('place_changed', () => {
+      autocomplete.addListener("place_changed", () => {
         const place = autocomplete.getPlace();
-        
+
         if (!place.geometry || !place.geometry.location) {
           // User entered the name of a place that was not suggested
           console.warn("No details available for input: '" + place.name + "'");
           return;
         }
-        
+
         // Update map with selected place
         if (place.geometry.viewport) {
           map.fitBounds(place.geometry.viewport);
@@ -373,43 +386,45 @@ function initializeMap() {
           map.setCenter(place.geometry.location);
           map.setZoom(17);
         }
-        
+
         // Update marker
         marker.setPosition(place.geometry.location);
-        
+
         // Update form values
         carAddress.value = place.formatted_address;
         carLatitude.value = place.geometry.location.lat();
         carLongitude.value = place.geometry.location.lng();
-        
+
         console.log(`Place selected: ${place.formatted_address}`);
       });
     }
-    
+
     // Update coordinates when marker is dragged
-    google.maps.event.addListener(marker, 'dragend', function() {
+    google.maps.event.addListener(marker, "dragend", function () {
       const position = marker.getPosition();
       carLatitude.value = position.lat();
       carLongitude.value = position.lng();
-      
+
       // Get address from coordinates
       geocodePosition(position);
     });
-    
+
     // Add click event to map
-    google.maps.event.addListener(map, 'click', function(event) {
+    google.maps.event.addListener(map, "click", function (event) {
       marker.setPosition(event.latLng);
       carLatitude.value = event.latLng.lat();
       carLongitude.value = event.latLng.lng();
-      
+
       // Get address from coordinates
       geocodePosition(event.latLng);
     });
-    
+
     console.log("Google Maps initialized successfully");
   } catch (error) {
     console.error("Error initializing Google Maps:", error);
-    showError("Failed to initialize map. You can still edit car details without the map.");
+    showError(
+      "Failed to initialize map. You can still edit car details without the map."
+    );
   }
 }
 
@@ -427,33 +442,36 @@ function geocodePosition(position) {
 // Search for address and update map
 function searchAddress() {
   const address = carAddress.value.trim();
-  
+
   if (!address) {
     showMessage("Please enter an address to search", "warning");
     return;
   }
-  
+
   // Show loading message
   showMessage("Searching for address...", "info");
-  
+
   geocoder.geocode({ address }, (results, status) => {
     if (status === "OK" && results[0]) {
       const location = results[0].geometry.location;
-      
+
       // Update map
       map.setCenter(location);
       map.setZoom(16);
       marker.setPosition(location);
-      
+
       // Update form fields
       carLatitude.value = location.lat();
       carLongitude.value = location.lng();
       carAddress.value = results[0].formatted_address;
-      
+
       showMessage("Location found", "success");
     } else {
       console.warn("Geocode failed:", status);
-      showMessage("Couldn't find that address. Please try again or use the map to select a location.", "error");
+      showMessage(
+        "Couldn't find that address. Please try again or use the map to select a location.",
+        "error"
+      );
     }
   });
 }
@@ -462,28 +480,31 @@ function searchAddress() {
 function useCurrentLocation() {
   if (navigator.geolocation) {
     showMessage("Getting your location...", "info");
-    
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        
+
         // Update map
         map.setCenter({ lat, lng });
         marker.setPosition({ lat, lng });
-        
+
         // Update form fields
         carLatitude.value = lat;
         carLongitude.value = lng;
-        
+
         // Get address from coordinates
         geocodePosition(new google.maps.LatLng(lat, lng));
-        
+
         showMessage("Current location set", "success");
       },
       (error) => {
         console.error("Geolocation error:", error);
-        showMessage("Couldn't get your location. Please enable location services.", "error");
+        showMessage(
+          "Couldn't get your location. Please enable location services.",
+          "error"
+        );
       },
       { enableHighAccuracy: true }
     );
@@ -496,98 +517,100 @@ function useCurrentLocation() {
 function setupFormHandlers() {
   // Car model change event
   if (carModelSelect) {
-    carModelSelect.addEventListener('change', (e) => {
+    carModelSelect.addEventListener("change", (e) => {
       updateColorOptions(e.target.value);
     });
   }
-  
+
   // Address search button
   if (searchAddressBtn) {
-    searchAddressBtn.addEventListener('click', (e) => {
+    searchAddressBtn.addEventListener("click", (e) => {
       e.preventDefault();
       searchAddress();
     });
   }
-  
+
   // Use current location button
   if (useCurrentLocationBtn) {
-    useCurrentLocationBtn.addEventListener('click', (e) => {
+    useCurrentLocationBtn.addEventListener("click", (e) => {
       e.preventDefault();
       useCurrentLocation();
     });
   }
-  
+
   // Manual coordinate input events
   if (carLatitude && carLongitude) {
     const updateMarkerFromCoords = () => {
       const lat = parseFloat(carLatitude.value);
       const lng = parseFloat(carLongitude.value);
-      
+
       if (!isNaN(lat) && !isNaN(lng)) {
         const position = new google.maps.LatLng(lat, lng);
         marker.setPosition(position);
         map.setCenter(position);
       }
     };
-    
-    carLatitude.addEventListener('change', updateMarkerFromCoords);
-    carLongitude.addEventListener('change', updateMarkerFromCoords);
+
+    carLatitude.addEventListener("change", updateMarkerFromCoords);
+    carLongitude.addEventListener("change", updateMarkerFromCoords);
   }
-  
+
   // Form submit event
   if (editCarForm) {
-    editCarForm.addEventListener('submit', handleFormSubmit);
+    editCarForm.addEventListener("submit", handleFormSubmit);
   }
-  
+
   // Cancel button event
   if (cancelButton) {
-    cancelButton.addEventListener('click', (e) => {
+    cancelButton.addEventListener("click", (e) => {
       e.preventDefault();
-      if (confirm('Are you sure you want to cancel? Any changes will be lost.')) {
-        window.location.href = 'admin-cars.html';
+      if (
+        confirm("Are you sure you want to cancel? Any changes will be lost.")
+      ) {
+        window.location.href = "admin-cars.html";
       }
     });
   }
-  
+
   // Delete button event
   if (deleteButton) {
-    deleteButton.addEventListener('click', (e) => {
+    deleteButton.addEventListener("click", (e) => {
       e.preventDefault();
       confirmDeleteCar();
     });
   }
 }
 
-// Add this function to automatically get coordinates from address if needed
+// Updated ensureCoordinates function
 async function ensureCoordinates() {
   // If we already have valid coordinates, return them
   const lat = parseFloat(carLatitude.value.trim());
   const lng = parseFloat(carLongitude.value.trim());
-  
+
   if (!isNaN(lat) && !isNaN(lng)) {
     return { lat, lng };
   }
-  
+
   // If we have an address but no coordinates, try to geocode
   const address = carAddress.value.trim();
   if (!address) {
     return null; // No address to geocode
   }
-  
+
   // Show a message
   showMessage("Getting coordinates from address...", "info");
-  
+
   try {
     // Use a promise wrapper for geocoder
     return new Promise((resolve, reject) => {
       geocoder.geocode({ address }, (results, status) => {
         if (status === "OK" && results[0]) {
           const location = results[0].geometry.location;
-          
+
           // Set the values in the form
           carLatitude.value = location.lat();
           carLongitude.value = location.lng();
-          
+
           resolve({ lat: location.lat(), lng: location.lng() });
         } else {
           console.warn("Geocode failed:", status);
@@ -604,88 +627,94 @@ async function ensureCoordinates() {
 // Update your handleFormSubmit function to call ensureCoordinates
 async function handleFormSubmit(e) {
   e.preventDefault();
-  
+
   try {
     showLoading(true);
-    
+
     // Get form values
     const carTypeValue = carModelSelect.value;
     const carColorValue = carColorSelect.value;
     const licensePlateValue = carLicensePlate.value.trim();
     const addressValue = carAddress.value.trim();
+    const directionsValue = carDirections ? carDirections.value.trim() : ""; // Add directions
+    const latInput = carLatitude.value.trim();
+    const lngInput = carLongitude.value.trim();
+    const latValue = latInput ? parseFloat(latInput.replace(/,/g, "")) : null;
+    const lngValue = lngInput ? parseFloat(lngInput.replace(/,/g, "")) : null;
     const statusValue = carStatus.value;
     const serviceDueValue = new Date(serviceDue.value);
     const insuranceExpiryValue = new Date(insuranceExpiry.value);
-    
-    // Form validation (without coordinate validation)
+
+    // Form validation
     if (!carTypeValue) {
-      throw new Error('Please select a car model');
+      throw new Error("Please select a car model");
     }
-    
+
     if (!licensePlateValue) {
-      throw new Error('Please enter a license plate number');
+      throw new Error("Please enter a license plate number");
     }
-    
+
     if (!addressValue) {
-      throw new Error('Please enter a car location address');
+      throw new Error("Please enter a car location address");
     }
-    
+
     if (!statusValue) {
-      throw new Error('Please select a car status');
+      throw new Error("Please select a car status");
     }
-    
+
     if (isNaN(serviceDueValue.getTime())) {
-      throw new Error('Please enter a valid service due date');
+      throw new Error("Please enter a valid service due date");
     }
-    
+
     if (isNaN(insuranceExpiryValue.getTime())) {
-      throw new Error('Please enter a valid insurance expiry date');
+      throw new Error("Please enter a valid insurance expiry date");
     }
-    
+
     // Try to get coordinates from address if they're missing
-    const coordinates = await ensureCoordinates();
-    
+    let coordinates = null;
+    if (latValue === null || lngValue === null) {
+      coordinates = await ensureCoordinates();
+    }
+
     // Create car update object
     const carUpdate = {
       car_type: carTypeValue,
       car_color: carColorValue,
       license_plate: licensePlateValue,
       address: addressValue,
+      directions: directionsValue, // Add directions to update
       status: statusValue,
       service_due: serviceDueValue,
       insurance_expiry: insuranceExpiryValue,
       updated_at: serverTimestamp(),
-      updated_by: currentUser?.uid || 'unknown'
+      updated_by: currentUser?.uid || "unknown",
     };
-    
-    // Add coordinates if available
+
+    // Add coordinates if we have them - don't validate ranges
     if (coordinates) {
       carUpdate.current_location = {
         latitude: coordinates.lat,
         longitude: coordinates.lng,
       };
-    } else {
-      // Use whatever values are in the form, even if they might be invalid
-      const latValue = parseFloat(carLatitude.value.trim() || "0");
-      const lngValue = parseFloat(carLongitude.value.trim() || "0");
-      
+    } else if (latValue !== null && lngValue !== null) {
+      // Use the values from the form without any range validation
       carUpdate.current_location = {
         latitude: latValue,
         longitude: lngValue,
       };
     }
-    
+
     // Rest of your function - update Firestore, show success message, etc.
     console.log("Updating car with data:", carUpdate);
-    
+
     // Update car in Firestore
-    await updateDoc(doc(db, 'cars', carId), carUpdate);
-    
+    await updateDoc(doc(db, "cars", carId), carUpdate);
+
     showMessage("Car updated successfully!", "success");
-    
+
     // Redirect back to cars page after short delay
     setTimeout(() => {
-      window.location.href = 'admin-cars.html';
+      window.location.href = "admin-cars.html";
     }, 1500);
   } catch (error) {
     console.error("Error updating car:", error);
@@ -696,7 +725,11 @@ async function handleFormSubmit(e) {
 
 // Confirm car deletion
 function confirmDeleteCar() {
-  if (confirm("Are you sure you want to delete this car? This action cannot be undone.")) {
+  if (
+    confirm(
+      "Are you sure you want to delete this car? This action cannot be undone."
+    )
+  ) {
     deleteCar();
   }
 }
@@ -705,16 +738,15 @@ function confirmDeleteCar() {
 async function deleteCar() {
   try {
     showLoading(true);
-    
-    await deleteDoc(doc(db, 'cars', carId));
-    
+
+    await deleteDoc(doc(db, "cars", carId));
+
     showMessage("Car deleted successfully!", "success");
-    
+
     // Redirect back to cars page after short delay
     setTimeout(() => {
-      window.location.href = 'admin-cars.html';
+      window.location.href = "admin-cars.html";
     }, 1500);
-    
   } catch (error) {
     console.error("Error deleting car:", error);
     showMessage(error.message, "error");
@@ -737,7 +769,7 @@ function showError(message) {
   } else {
     alert(message);
   }
-  
+
   showLoading(false);
 }
 
@@ -749,29 +781,29 @@ function showMessage(message, type = "info") {
     toastContainer.id = "toast-container";
     document.body.appendChild(toastContainer);
   }
-  
+
   // Create toast message
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
-  
+
   // Set toast icon based on type
   let icon = "info-circle";
   if (type === "success") icon = "check-circle";
   if (type === "warning") icon = "exclamation-triangle";
   if (type === "error") icon = "x-circle";
-  
+
   toast.innerHTML = `
     <i class="bi bi-${icon}"></i>
     <span>${message}</span>
   `;
-  
+
   // Add toast to container
   toastContainer.appendChild(toast);
-  
+
   // Show toast
   setTimeout(() => {
     toast.classList.add("show");
-    
+
     // Auto-hide after delay
     setTimeout(() => {
       toast.classList.remove("show");
@@ -785,14 +817,28 @@ function checkMapContainer() {
   console.log("Map container check:");
   console.log("- Element exists:", !!mapContainer);
   if (mapContainer) {
-    console.log("- Size:", mapContainer.clientWidth, "x", mapContainer.clientHeight);
-    console.log("- Visibility:", window.getComputedStyle(mapContainer).visibility);
+    console.log(
+      "- Size:",
+      mapContainer.clientWidth,
+      "x",
+      mapContainer.clientHeight
+    );
+    console.log(
+      "- Visibility:",
+      window.getComputedStyle(mapContainer).visibility
+    );
     console.log("- Display:", window.getComputedStyle(mapContainer).display);
   }
-  
+
   console.log("Google Maps API status:");
-  console.log("- google object:", typeof google !== 'undefined' ? "Loaded" : "Not loaded");
-  console.log("- maps object:", typeof google !== 'undefined' && google.maps ? "Loaded" : "Not loaded");
+  console.log(
+    "- google object:",
+    typeof google !== "undefined" ? "Loaded" : "Not loaded"
+  );
+  console.log(
+    "- maps object:",
+    typeof google !== "undefined" && google.maps ? "Loaded" : "Not loaded"
+  );
 }
 
 // Call this function 2 seconds after page load
