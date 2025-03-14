@@ -813,38 +813,28 @@ async function handleFormSubmit(e) {
       carData.fuel_type = modelData.fuel_type;
     }
     
-    if (modelData.seating_capacity !== undefined && modelData.seating_capacity !== null) {
-      carData.seating_capacity = parseInt(modelData.seating_capacity) || 0;
+    if (modelData.seating_capacity) {
+      carData.seating_capacity = parseInt(modelData.seating_capacity);
     }
     
-    if (modelData.large_luggage !== undefined && modelData.large_luggage !== null) {
-      carData.large_luggage = parseInt(modelData.large_luggage) || 0;
+    if (modelData.large_luggage) {
+      carData.large_luggage = parseInt(modelData.large_luggage);
     }
     
-    if (modelData.small_luggage !== undefined && modelData.small_luggage !== null) {
-      carData.small_luggage = parseInt(modelData.small_luggage) || 0;
+    if (modelData.small_luggage) {
+      carData.small_luggage = parseInt(modelData.small_luggage);
     }
     
-    console.log("Adding new car with data:", carData);
+    // Get the next sequential car ID
+    const nextCarId = await getNextCarId();
+    console.log(`Adding new car with ID: ${nextCarId}`);
     
-    try {
-      // Get the next sequential car ID
-      const nextCarId = await getNextCarId();
-      console.log(`Using sequential car ID: ${nextCarId}`);
-      
-      // Add the car document with the specific ID
-      await setDoc(doc(db, "cars", nextCarId), carData);
-      
-      console.log(`Car added successfully with ID: ${nextCarId}`);
-      showMessage(`Car added successfully with ID: ${nextCarId}`, "success");
-    } catch (idError) {
-      console.error("Error with sequential ID, falling back to auto-generated ID:", idError);
-      
-      // Fallback to auto-generated ID if there's an issue
-      const docRef = await addDoc(collection(db, "cars"), carData);
-      console.log(`Car added with auto-generated ID: ${docRef.id}`);
-      showMessage(`Car added successfully`, "success");
-    }
+    // Add the car document with the specific ID
+    await setDoc(doc(db, "cars", nextCarId), carData);
+    
+    console.log(`Car added successfully with ID: ${nextCarId}`);
+    
+    showMessage(`Car added successfully with ID: ${nextCarId}`, "success");
     
     // Redirect back to cars page after short delay
     setTimeout(() => {
@@ -854,10 +844,68 @@ async function handleFormSubmit(e) {
   } catch (error) {
     console.error("Error adding car:", error);
     showMessage(error.message, "error");
-  } finally {
     showLoading(false);
   }
 }
+
+// Helper functions
+function showLoading(show) {
+  if (loadingOverlay) {
+    loadingOverlay.style.display = show ? "flex" : "none";
+  }
+}
+
+function showError(message) {
+  if (errorContainer) {
+    errorContainer.textContent = message;
+    errorContainer.style.display = "block";
+    formContainer.style.display = "none";
+  } else {
+    alert(message);
+  }
+
+  showLoading(false);
+}
+
+function showMessage(message, type = "info") {
+  // Create toast container if it doesn't exist
+  let toastContainer = document.getElementById("toast-container");
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.id = "toast-container";
+    document.body.appendChild(toastContainer);
+  }
+
+  // Create toast message
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+
+  // Set toast icon based on type
+  let icon = "info-circle";
+  if (type === "success") icon = "check-circle";
+  if (type === "warning") icon = "exclamation-triangle";
+  if (type === "error") icon = "x-circle";
+
+  toast.innerHTML = `
+        <i class="bi bi-${icon}"></i>
+        <span>${message}</span>
+      `;
+
+  // Add toast to container
+  toastContainer.appendChild(toast);
+
+  // Show toast
+  setTimeout(() => {
+    toast.classList.add("show");
+
+    // Auto-hide after delay
+    setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }, 10);
+}
+
 // Check map container
 function checkMapContainer() {
   console.log("Map container check:");
