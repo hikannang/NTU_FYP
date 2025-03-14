@@ -3,100 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New Car Model</title>
-    <link rel="stylesheet" href="../static/css/admin/admin-CarForm.css">
+    <title>Car Models | BaoCarLiao Admin</title>
     <link rel="stylesheet" href="../static/css/admin/admin.css">
+    <link rel="stylesheet" href="../static/css/admin/admin-addModels.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-    <style>
-        main {
-            margin-bottom: 60px; /* Space for fixed footer */
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-                margin: 10px;
-            }
-            main {
-                padding: 10px;
-            }
-        }
-    </style>
 </head>
-<body>
+<body class="admin-body">
+    <!-- Admin header will be loaded here -->
     <div id="header"></div>
-
-    <main>
+    
+    <main class="admin-main">
         <div class="container">
-            <h1>Add New Car Model</h1>
-            <form id="add-car-model-form">
-                <!-- Car Model Name -->
-                <label for="car-model-name">Car Model Name:</label>
-                <input type="text" id="car-model-name" name="car-model-name" placeholder="Enter car model name" required>
+            <!-- Page Header -->
+            <div class="page-header-wrapper">
+                <div class="page-header">
+                    <div class="breadcrumb">
+                        <a href="admin-dashboard.html"><i class="bi bi-house"></i> Dashboard</a>
+                        <i class="bi bi-chevron-right"></i>
+                        <a href="admin-cars.html">Fleet Management</a>
+                        <i class="bi bi-chevron-right"></i>
+                        <span class="current">Car Models</span>
+                    </div>
+                    <h1 class="page-title">
+                        <i class="bi bi-layers"></i> Car Models
+                    </h1>
+                </div>
+                
+                <div class="header-actions">
+                    <div class="search-container">
+                        <input type="text" id="model-search" class="search-input" placeholder="Search models...">
+                        <i class="bi bi-search"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="loading-overlay">
+                <div class="spinner"></div>
+                <p>Processing...</p>
+            </div>
+            
+            <!-- Error Container -->
+            <div id="error-container" class="error-container" style="display: none;"></div>
+            
+            <!-- Main Content Container -->
+            <div id="form-container" class="form-container">
+                <div class="content-grid">
+                    <!-- Models List -->
+                    <div class="models-section">
+                        <h2 class="section-title">Available Car Models</h2>
+                        <div id="model-list" class="model-list">
+                            <!-- Models will be loaded here -->
+                            <div class="loading-placeholder">
+                                <div class="spinner small"></div>
+                                <p>Loading car models...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Add/Edit Form -->
+                    <div class="form-section">
+                        <h2 id="form-title" class="section-title">Add New Car Model</h2>
+                        <p id="form-subtitle" class="form-subtitle">Create a new car model specification</p>
+                        
+                        <form id="add-model-form" class="add-model-form">
+                            <div class="form-columns">
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="model-id">Model ID <span class="required">*</span></label>
+                                        <div class="input-help">
+                                            <input type="text" id="model-id" name="model-id" placeholder="e.g. modely_white" required>
+                                            <span class="help-text">Unique identifier (lowercase, no spaces)</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="model-name">Model Name <span class="required">*</span></label>
+                                        <div class="input-help">
+                                            <input type="text" id="model-name" name="model-name" placeholder="e.g. Tesla Model Y" required>
+                                            <span class="help-text">Display name of the car model</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="fuel-type">Fuel Type <span class="required">*</span></label>
+                                        <select id="fuel-type" name="fuel-type" required>
+                                            <option value="petrol">Petrol</option>
+                                            <option value="electric">Electric</option>
+                                        </select>
+                                    </div>
 
-                <!-- Car Color -->
-                <label for="car-color">Car Color:</label>
-                <input type="text" id="car-color" name="car-color" placeholder="Enter car color" required>
-
-                <!-- Fuel Type -->
-                <label for="fuel-type">Fuel Type:</label>
-                <select id="fuel-type" name="fuel-type" required>
-                    <option value="Petrol">Petrol</option>
-                    <option value="Electric">Electric</option>
-                    <option value="Hybrid">Hybrid</option>
-                </select>
-
-                <!-- Seating Capacity -->
-                <label for="seating-capacity">Seating Capacity:</label>
-                <select id="seating-capacity" name="seating-capacity" required>
-                    <option value="5">5</option>
-                    <option value="7">7</option>
-                </select>
-
-                <!-- Large Luggage Space -->
-                <label for="large-luggage">Large Luggage Space:</label>
-                <input type="number" id="large-luggage" name="large-luggage" 
-                    placeholder="Enter large luggage capacity" required min="0">
-
-                <!-- Small Luggage Space -->
-                <label for="small-luggage">Small Luggage Space:</label>
-                <input type="number" id="small-luggage" name="small-luggage" 
-                    placeholder="Enter small luggage capacity" required min="0">
-
-                <!-- Submit Button -->
-                <button type="submit">Add Car Model</button>
-            </form>
+                                    <div class="form-group">
+                                        <label for="seating-capacity">Seating Capacity <span class="required">*</span></label>
+                                        <select id="seating-capacity" name="seating-capacity" required>
+                                            <option value="5" selected>5 seats</option>
+                                            <option value="7">7 seats</option>
+                                        </select>
+                                        <span class="help-text">Number of passengers the vehicle can accommodate</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-column">
+                                    <div class="form-group">
+                                        <label for="large-luggage">Large Luggage Capacity</label>
+                                        <div class="input-help">
+                                            <input type="number" id="large-luggage" name="large-luggage" min="0" max="10" value="2">
+                                            <span class="help-text">Number of large suitcases</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="small-luggage">Small Luggage Capacity</label>
+                                        <div class="input-help">
+                                            <input type="number" id="small-luggage" name="small-luggage" min="0" max="10" value="3">
+                                            <span class="help-text">Number of small bags</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label>Colors <span class="required">*</span></label>
+                                        <div class="color-input-group">
+                                            <input type="text" id="color" name="color" placeholder="e.g. white, black, blue">
+                                            <button id="add-color-btn" class="add-color-btn">Add</button>
+                                        </div>
+                                        <div id="colors-list" class="colors-list">
+                                            <!-- Color chips will be added here -->
+                                        </div>
+                                        <span class="help-text">Add one or more available colors</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Preview Section -->
+                            <div class="preview-section">
+                                <h3 class="preview-title">Model Preview</h3>
+                                <div id="model-preview" class="model-preview">
+                                    <div class="preview-placeholder">
+                                        <i class="bi bi-car-front"></i>
+                                        <p>Fill out the form to see a preview</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Form Actions -->
+                            <div class="form-actions">
+                                <button type="button" id="cancel-button" class="secondary-btn">
+                                    <i class="bi bi-x-lg"></i> Cancel
+                                </button>
+                                <button type="submit" id="submit-button" class="primary-btn">
+                                    <i class="bi bi-plus-lg"></i> Add Model
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
-
+    
+    <!-- Admin footer will be loaded here -->
     <div id="footer"></div>
-
+    
+    <!-- Firebase Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
+    
+    <!-- Custom Scripts -->
+    <script src="../static/js/admin/admin-addModels.js" type="module"></script>
+    
+    <!-- Header and Footer Loading -->
     <script type="module">
         import { checkAdmin } from '../static/js/common/auth.js';
-        import { db } from '../static/js/common/firebase-config.js';
-
+        
         // Load header and footer
-        document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html').then(response => response.text());
-        document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html').then(response => response.text());
-
-        // Check if user is admin
-        try {
-            const userData = await checkAdmin();
-            document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
-        } catch (error) {
-            alert(error);
-            window.location.href = "../index.html";
-        }
+        document.addEventListener("DOMContentLoaded", async function() {
+            try {
+                // Load header and footer
+                document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html')
+                    .then(response => response.text());
+                document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html')
+                    .then(response => response.text());
+                
+                // Check admin status
+                const userData = await checkAdmin();
+                if (userData) {
+                    const welcomeMsg = document.getElementById("welcome-message");
+                    if (welcomeMsg) welcomeMsg.textContent = userData.firstName || "Admin";
+                }
+            } catch (error) {
+                console.error("Error loading interface:", error);
+            }
+        });
     </script>
-    <script src="../static/js/common/firebase-config.js" type="module"></script>
-    <script src="../static/js/admin/admin-addModels.js" type="module"></script>
 </body>
 </html>

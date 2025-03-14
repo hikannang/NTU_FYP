@@ -42,11 +42,7 @@
         </div>
 
         <!-- Error Container -->
-        <div
-          id="error-container"
-          class="error-container"
-          style="display: none"
-        ></div>
+        <div id="error-container" class="error-container" style="display: none;"></div>
 
         <!-- Form Container -->
         <div id="form-container" class="form-container">
@@ -56,40 +52,17 @@
               <div class="form-section">
                 <h2 class="section-title">Vehicle Information</h2>
 
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="car-model"
-                      >Car Model <span class="required">*</span></label
-                    >
-                    <select id="car-model" name="car-model" required>
-                      <option value="" disabled selected>
-                        Select a car model
-                      </option>
-                      <!-- Options will be populated via JavaScript -->
-                    </select>
-                    <small class="help-text"
-                      >Select from available car models in the system</small
-                    >
-                  </div>
-
-                  <div class="form-group">
-                    <label for="car-color"
-                      >Color <span class="required">*</span></label
-                    >
-                    <select id="car-color" name="car-color" required>
-                      <option value="" disabled selected>Select a color</option>
-                      <!-- Options will be populated via JavaScript -->
-                    </select>
-                    <small class="help-text"
-                      >Available colors depend on selected model</small
-                    >
-                  </div>
+                <div class="form-group">
+                  <label for="car-model">Car Model <span class="required">*</span></label>
+                  <select id="car-model" name="car-model" required>
+                    <option value="" disabled selected>Select a car model</option>
+                    <!-- Options will be populated via JavaScript -->
+                  </select>
+                  <small class="help-text">Select the car model including color variant</small>
                 </div>
 
                 <div class="form-group">
-                  <label for="license-plate"
-                    >License Plate <span class="required">*</span></label
-                  >
+                  <label for="license-plate">License Plate <span class="required">*</span></label>
                   <input
                     type="text"
                     id="license-plate"
@@ -97,56 +70,32 @@
                     placeholder="Enter license plate number"
                     required
                   />
-                  <small class="help-text"
-                    >Enter the vehicle's license plate number</small
-                  >
+                  <small class="help-text">Enter the vehicle's license plate number</small>
                 </div>
 
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="service-due"
-                      >Service Due Date <span class="required">*</span></label
-                    >
-                    <input
-                      type="date"
-                      id="service-due"
-                      name="service-due"
-                      required
-                    />
-                    <small class="help-text"
-                      >When is the next service scheduled?</small
-                    >
+                    <label for="service-due">Service Due Date <span class="required">*</span></label>
+                    <input type="date" id="service-due" name="service-due" required />
+                    <small class="help-text">When is the next service scheduled?</small>
                   </div>
 
                   <div class="form-group">
-                    <label for="insurance-expiry"
-                      >Insurance Expiry <span class="required">*</span></label
-                    >
-                    <input
-                      type="date"
-                      id="insurance-expiry"
-                      name="insurance-expiry"
-                      required
-                    />
-                    <small class="help-text"
-                      >When does the insurance expire?</small
-                    >
+                    <label for="insurance-expiry">Insurance Expiry <span class="required">*</span></label>
+                    <input type="date" id="insurance-expiry" name="insurance-expiry" required />
+                    <small class="help-text">When does the insurance expire?</small>
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label for="car-status"
-                    >Status <span class="required">*</span></label
-                  >
+                  <label for="car-status">Status <span class="required">*</span></label>
                   <select id="car-status" name="car-status" required>
                     <option value="" disabled>Select vehicle status</option>
                     <option value="available" selected>Available</option>
                     <option value="maintenance">Maintenance</option>
                     <option value="unavailable">Unavailable</option>
                   </select>
-                  <small class="help-text"
-                    >Initial status of the vehicle in the system</small
-                  >
+                  <small class="help-text">Initial status of the vehicle in the system</small>
                 </div>
               </div>
 
@@ -155,9 +104,7 @@
                 <h2 class="section-title">Vehicle Location</h2>
 
                 <div class="form-group">
-                  <label for="car-address"
-                    >Address <span class="required">*</span></label
-                  >
+                  <label for="car-address">Address <span class="required">*</span></label>
                   <div class="input-with-button">
                     <input
                       type="text"
@@ -166,33 +113,22 @@
                       placeholder="Enter car location address"
                       required
                     />
-                    <button
-                      type="button"
-                      id="search-address-btn"
-                      class="icon-button"
-                    >
+                    <button type="button" id="search-address-btn" class="icon-button">
                       <i class="bi bi-search"></i>
                     </button>
                   </div>
-                  <small class="help-text"
-                    >Enter the address where the car is located</small
-                  >
+                  <small class="help-text">Enter the address where the car is located</small>
                 </div>
 
                 <div class="form-group full-width">
-                  <label for="car-directions"
-                    >Directions <small>(Optional)</small></label
-                  >
+                  <label for="car-directions">Directions <small>(Optional)</small></label>
                   <textarea
                     id="car-directions"
                     name="car-directions"
                     rows="4"
                     placeholder="Enter special directions for finding the car (e.g., parking level, landmarks)"
                   ></textarea>
-                  <small class="help-text"
-                    >Add any additional directions to help users find the
-                    vehicle</small
-                  >
+                  <small class="help-text">Add any additional directions to help users find the vehicle</small>
                 </div>
 
                 <div class="form-row">
@@ -204,9 +140,7 @@
                       name="car-latitude"
                       placeholder="Will be auto-filled from address"
                     />
-                    <small class="help-text"
-                      >Automatically filled when selecting a location</small
-                    >
+                    <small class="help-text">Automatically filled when selecting a location</small>
                   </div>
 
                   <div class="form-group">
@@ -217,18 +151,12 @@
                       name="car-longitude"
                       placeholder="Will be auto-filled from address"
                     />
-                    <small class="help-text"
-                      >Automatically filled when selecting a location</small
-                    >
+                    <small class="help-text">Automatically filled when selecting a location</small>
                   </div>
                 </div>
 
                 <div class="location-actions">
-                  <button
-                    type="button"
-                    id="use-current-location-btn"
-                    class="secondary-btn"
-                  >
+                  <button type="button" id="use-current-location-btn" class="secondary-btn">
                     <i class="bi bi-geo-alt"></i> Use Current Location
                   </button>
                 </div>
@@ -236,20 +164,13 @@
                 <div id="map-container" class="map-container"></div>
                 <div class="map-instructions">
                   <i class="bi bi-info-circle"></i>
-                  <span
-                    >Click on the map or drag the marker to update the
-                    location</span
-                  >
+                  <span>Click on the map or drag the marker to update the location</span>
                 </div>
               </div>
             </div>
 
             <!-- Car Specifications Summary -->
-            <div
-              class="form-section summary-section"
-              id="summary-section"
-              style="display: none"
-            >
+            <div class="form-section summary-section" id="summary-section" style="display: none;">
               <h2 class="section-title">Vehicle Specifications Summary</h2>
               <div class="summary-card">
                 <!-- Add car image section -->
@@ -263,63 +184,49 @@
                     Model name
                   </div>
                 </div>
-
+                
                 <div class="summary-content">
                   <div class="specs-row">
                     <div class="spec-item">
-                      <div class="spec-icon">
-                        <i class="bi bi-fuel-pump"></i>
-                      </div>
+                      <div class="spec-icon"><i class="bi bi-fuel-pump"></i></div>
                       <div class="spec-info">
                         <span class="spec-label">Fuel Type</span>
                         <span class="spec-value" id="summary-fuel-type">-</span>
                       </div>
                     </div>
-
+                    
                     <div class="spec-item">
-                      <div class="spec-icon">
-                        <i class="bi bi-people-fill"></i>
-                      </div>
+                      <div class="spec-icon"><i class="bi bi-people-fill"></i></div>
                       <div class="spec-info">
                         <span class="spec-label">Seating Capacity</span>
                         <span class="spec-value" id="summary-seating">-</span>
                       </div>
                     </div>
                   </div>
-
+                  
                   <div class="specs-row">
                     <div class="spec-item">
-                      <div class="spec-icon">
-                        <i class="bi bi-briefcase-fill"></i>
-                      </div>
+                      <div class="spec-icon"><i class="bi bi-briefcase-fill"></i></div>
                       <div class="spec-info">
                         <span class="spec-label">Large Luggage</span>
-                        <span class="spec-value" id="summary-large-luggage"
-                          >-</span
-                        >
+                        <span class="spec-value" id="summary-large-luggage">-</span>
                       </div>
                     </div>
-
+                    
                     <div class="spec-item">
-                      <div class="spec-icon">
-                        <i class="bi bi-briefcase"></i>
-                      </div>
+                      <div class="spec-icon"><i class="bi bi-briefcase"></i></div>
                       <div class="spec-info">
                         <span class="spec-label">Small Luggage</span>
-                        <span class="spec-value" id="summary-small-luggage"
-                          >-</span
-                        >
+                        <span class="spec-value" id="summary-small-luggage">-</span>
                       </div>
                     </div>
                   </div>
                 </div>
-
+                
                 <div class="summary-footer">
                   <div class="info-note">
                     <i class="bi bi-info-circle"></i>
-                    <span
-                      >Specifications are based on the selected car model.</span
-                    >
+                    <span>Specifications are based on the selected car model.</span>
                   </div>
                 </div>
               </div>
@@ -343,11 +250,7 @@
     <div id="footer"></div>
 
     <!-- Google Maps API -->
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places&callback=initMap"
-      async
-      defer
-    ></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIzCVkjYrehQ5o4VeoD5_lwc-0-36mXqc&libraries=places&callback=initMap" async defer></script>
 
     <!-- Firebase Scripts -->
     <script src="../static/js/common/firebase-config.js" type="module"></script>
@@ -358,25 +261,22 @@
 
     <!-- Header and Footer Loading -->
     <script type="module">
-      import { checkAdmin } from "../static/js/common/auth.js";
-
+      import { checkAdmin } from '../static/js/common/auth.js';
+      
       // Load header and footer
-      document.addEventListener("DOMContentLoaded", async function () {
+      document.addEventListener("DOMContentLoaded", async function() {
         try {
           // Load header and footer
-          document.getElementById("header").innerHTML = await fetch(
-            "../static/headerFooter/admin-header.html"
-          ).then((response) => response.text());
-          document.getElementById("footer").innerHTML = await fetch(
-            "../static/headerFooter/admin-footer.html"
-          ).then((response) => response.text());
-
+          document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html')
+            .then(response => response.text());
+          document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html')
+            .then(response => response.text());
+          
           // Check admin status
           const userData = await checkAdmin();
           if (userData) {
             const welcomeMsg = document.getElementById("welcome-message");
-            if (welcomeMsg)
-              welcomeMsg.textContent = userData.firstName || "Admin";
+            if (welcomeMsg) welcomeMsg.textContent = userData.firstName || "Admin";
           }
         } catch (error) {
           console.error("Error loading interface:", error);

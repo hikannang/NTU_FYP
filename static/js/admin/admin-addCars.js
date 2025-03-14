@@ -1,4 +1,3 @@
-// admin-addCars.js - Part 1
 import { db, auth } from "../common/firebase-config.js";
 import {
   collection,
@@ -25,22 +24,20 @@ const formContainer = document.getElementById("form-container");
 const errorContainer = document.getElementById("error-container");
 const addCarForm = document.getElementById("add-car-form");
 const carModelSelect = document.getElementById("car-model");
-const carColorSelect = document.getElementById("car-color");
 const carLicensePlate = document.getElementById("license-plate");
 const carAddress = document.getElementById("car-address");
 const carDirections = document.getElementById("car-directions");
 const carLatitude = document.getElementById("car-latitude");
 const carLongitude = document.getElementById("car-longitude");
 const searchAddressBtn = document.getElementById("search-address-btn");
-const useCurrentLocationBtn = document.getElementById(
-  "use-current-location-btn"
-);
+const useCurrentLocationBtn = document.getElementById("use-current-location-btn");
 const mapContainer = document.getElementById("map-container");
 const carStatus = document.getElementById("car-status");
 const serviceDue = document.getElementById("service-due");
 const insuranceExpiry = document.getElementById("insurance-expiry");
 const submitButton = document.getElementById("submit-button");
 const cancelButton = document.getElementById("cancel-button");
+
 // Summary card elements
 const summarySection = document.getElementById("summary-section");
 const summaryCarImage = document.getElementById("summary-car-image");
@@ -50,22 +47,10 @@ const summarySeating = document.getElementById("summary-seating");
 const summaryLargeLuggage = document.getElementById("summary-large-luggage");
 const summarySmallLuggage = document.getElementById("summary-small-luggage");
 
-// Add this debugging function to check elements
-function debugSummaryElements() {
-  console.log("Debugging summary elements:");
-  console.log("summarySection exists:", !!summarySection);
-  console.log("summaryCarImage exists:", !!summaryCarImage);
-  console.log("summaryCarName exists:", !!summaryCarName);
-  console.log("summaryFuelType exists:", !!summaryFuelType);
-  console.log("summarySeating exists:", !!summarySeating);
-  console.log("summaryLargeLuggage exists:", !!summaryLargeLuggage);
-  console.log("summarySmallLuggage exists:", !!summarySmallLuggage);
-}
-
 // Initialize page
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("Add Car page loading");
-
+  
   try {
     // Check authentication
     onAuthStateChanged(auth, async (user) => {
@@ -73,15 +58,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
           // Verify admin status
           const userDoc = await getDoc(doc(db, "users", user.uid));
-
+          
           if (userDoc.exists() && userDoc.data().role === "admin") {
             currentUser = {
               uid: user.uid,
-              ...userDoc.data(),
+              ...userDoc.data()
             };
-
+            
             console.log("Admin authenticated:", currentUser.email);
-
+            
             // Initialize form
             await initializeForm();
           } else {
@@ -103,63 +88,50 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Setup form handlers
     setupFormHandlers();
+    
   } catch (error) {
     console.error("Initialization error:", error);
     showError(`Error initializing page: ${error.message}`);
   }
-
+  
   // Google Maps init function to be called by the API
-  window.initMap = function () {
-    console.log("Google Maps API callback received");
-
-    // If DOM is not ready yet, set a timeout
-    if (
-      document.readyState !== "complete" &&
-      document.readyState !== "interactive"
-    ) {
-      console.log("DOM not ready, setting timeout for map initialization");
-      setTimeout(window.initMap, 500);
-      return;
+  window.initMap = function() {
+    if (document.readyState !== "complete" && document.readyState !== "interactive") {
+      document.addEventListener("DOMContentLoaded", initializeMap);
+    } else {
+      if (!mapInitialized) {
+        initializeMap();
+        mapInitialized = true;
+      }
     }
-
-    // Check if map container is ready
-    if (!mapContainer) {
-      console.log("Map container not found, setting timeout");
-      setTimeout(window.initMap, 500);
-      return;
-    }
-
-    // Check if map is already initialized
-    if (mapInitialized) {
-      console.log("Map already initialized, skipping");
-      return;
-    }
-
-    // If all conditions are met, initialize the map
-    console.log("Initializing map from Google callback");
-    initializeMap();
-    mapInitialized = true;
-
-    // Check map state after initialization
-    setTimeout(checkMapContainer, 500);
   };
+  
   setTimeout(debugSummaryElements, 1000);
 });
 
+// Debug summary elements
+function debugSummaryElements() {
+  console.log("Debugging summary elements:");
+  console.log("summarySection exists:", !!summarySection);
+  console.log("summaryCarImage exists:", !!summaryCarImage);
+  console.log("summaryCarName exists:", !!summaryCarName);
+  console.log("summaryFuelType exists:", !!summaryFuelType);
+  console.log("summarySeating exists:", !!summarySeating);
+  console.log("summaryLargeLuggage exists:", !!summaryLargeLuggage);
+  console.log("summarySmallLuggage exists:", !!summarySmallLuggage);
+}
 
 // Initialize form
 async function initializeForm() {
   showLoading(true);
-
+  
   try {
     // Set default dates
     setDefaultDates();
-
+    
     // Load car models
     await loadCarModels();
-
-    // Initialize Google Maps (will be called by API callback)
-
+    
     // Show form
     showLoading(false);
   } catch (error) {
@@ -174,7 +146,7 @@ function setDefaultDates() {
   const sixMonthsFromNow = new Date();
   sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
   serviceDue.value = formatDateForInput(sixMonthsFromNow);
-
+  
   // Set insurance expiry to 1 year from now
   const oneYearFromNow = new Date();
   oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
@@ -184,69 +156,105 @@ function setDefaultDates() {
 // Format date for input field (YYYY-MM-DD)
 function formatDateForInput(date) {
   if (!date) return "";
-
+  
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-
+  
   return `${year}-${month}-${day}`;
 }
 
-// Load all car models from Firestore
+// Load all car models from Firestore with integrated color information
 async function loadCarModels() {
   try {
     console.log("Loading car models");
-
+    
     const carModelsSnapshot = await getDocs(collection(db, "car_models"));
-
-    // Add this inside your loadCarModels function where you process each model
-    carModelsSnapshot.forEach((doc) => {
-      const model = doc.data();
-      const modelId = doc.id;
-
-      // Log model data for debugging
-      console.log(`Model ${modelId} data:`, {
-        name: model.name,
-        fuel_type: model.fuel_type,
-        seating_capacity: model.seating_capacity,
-        large_luggage: model.large_luggage,
-        small_luggage: model.small_luggage,
-      });
-
-      // Store model data for later use
-      allCarModels[modelId] = model;
-
-      // Add option to select
-      const option = document.createElement("option");
-      option.value = modelId;
-      option.textContent = model.name || modelId;
-      carModelSelect.appendChild(option);
-    });
-
+    
     if (!carModelsSnapshot.empty) {
       // Clear car model select options
-      carModelSelect.innerHTML =
-        '<option value="" disabled selected>Select a car model</option>';
-
-      carModelsSnapshot.forEach((doc) => {
+      carModelSelect.innerHTML = '<option value="" disabled selected>Select a car model</option>';
+      
+      // Group models by name for organization
+      const modelsByName = {};
+      
+      // First pass - group models by their name
+      carModelsSnapshot.forEach(doc => {
         const model = doc.data();
         const modelId = doc.id;
-
+        
         // Store model data for later use
         allCarModels[modelId] = model;
-
-        // Add option to select
-        const option = document.createElement("option");
-        option.value = modelId;
-        option.textContent = model.name || modelId;
-        carModelSelect.appendChild(option);
+        
+        // Get model name
+        const modelName = model.name || modelId;
+        
+        // Create or update model group
+        if (!modelsByName[modelName]) {
+          modelsByName[modelName] = [];
+        }
+        
+        // Add model to group
+        modelsByName[modelName].push({
+          id: modelId,
+          data: model
+        });
       });
-
-      console.log(`Loaded ${Object.keys(allCarModels).length} car models`);
+      
+      // Second pass - add options to select grouped by model name
+      Object.keys(modelsByName).sort().forEach(modelName => {
+        const models = modelsByName[modelName];
+        
+        // If this model has variants (multiple colors), create an optgroup
+        if (models.length > 1) {
+          const optgroup = document.createElement("optgroup");
+          optgroup.label = modelName;
+          
+          // Add each variant as an option in the group
+          models.forEach(model => {
+            const variant = model.data;
+            let colorText = "";
+            
+            // Determine color text
+            if (variant.color) {
+              colorText = variant.color.charAt(0).toUpperCase() + variant.color.slice(1);
+            } else if (variant.colors && Array.isArray(variant.colors) && variant.colors.length > 0) {
+              colorText = variant.colors[0].charAt(0).toUpperCase() + variant.colors[0].slice(1);
+            }
+            
+            // Create option with color info
+            const option = document.createElement("option");
+            option.value = model.id;
+            option.textContent = `${modelName} (${colorText})`;
+            optgroup.appendChild(option);
+          });
+          
+          carModelSelect.appendChild(optgroup);
+        } else {
+          // If there's just one variant, add it directly
+          const model = models[0];
+          const variant = model.data;
+          let colorText = "";
+          
+          // Determine color text
+          if (variant.color) {
+            colorText = variant.color.charAt(0).toUpperCase() + variant.color.slice(1);
+          } else if (variant.colors && Array.isArray(variant.colors) && variant.colors.length > 0) {
+            colorText = variant.colors[0].charAt(0).toUpperCase() + variant.colors[0].slice(1);
+          }
+          
+          // Create option with or without color info
+          const option = document.createElement("option");
+          option.value = model.id;
+          option.textContent = colorText ? `${modelName} (${colorText})` : modelName;
+          carModelSelect.appendChild(option);
+        }
+      });
+      
+      console.log(`Loaded ${Object.keys(allCarModels).length} car models in ${Object.keys(modelsByName).length} groups`);
     } else {
       console.warn("No car models found in database");
-      carModelSelect.innerHTML =
-        '<option value="" disabled>No car models available</option>';
+      carModelSelect.innerHTML = '<option value="" disabled>No car models available</option>';
     }
   } catch (error) {
     console.error("Error loading car models:", error);
@@ -254,100 +262,29 @@ async function loadCarModels() {
   }
 }
 
-// Update color options based on selected model
-function updateColorOptions(modelId) {
-  console.log("Updating color options for model:", modelId);
-  
-  // Clear existing options
-  carColorSelect.innerHTML = '<option value="" disabled selected>Select a color</option>';
-  
-  if (modelId && allCarModels[modelId]) {
-    const model = allCarModels[modelId];
-    console.log("Model data for color options:", model);
-    
-    let hasAddedColor = false;
-    
-    // If model has specific colors
-    if (model.colors && Array.isArray(model.colors) && model.colors.length > 0) {
-      console.log("Model has colors array:", model.colors);
-      model.colors.forEach(color => {
-        const option = document.createElement("option");
-        option.value = color;
-        option.textContent = color.charAt(0).toUpperCase() + color.slice(1);
-        carColorSelect.appendChild(option);
-        hasAddedColor = true;
-      });
-    } 
-    // If model has a single color
-    else if (model.color) {
-      console.log("Model has single color:", model.color);
-      const option = document.createElement("option");
-      option.value = model.color;
-      option.textContent = model.color.charAt(0).toUpperCase() + model.color.slice(1);
-      carColorSelect.appendChild(option);
-      hasAddedColor = true;
-      
-      // If there's only one color, auto-select it
-      carColorSelect.value = model.color;
-    } 
-    // Default colors
-    else {
-      console.log("Using default colors");
-      const defaultColors = ["White", "Black", "Silver", "Blue", "Red"];
-      defaultColors.forEach(color => {
-        const option = document.createElement("option");
-        option.value = color.toLowerCase();
-        option.textContent = color;
-        carColorSelect.appendChild(option);
-        hasAddedColor = true;
-      });
-    }
-    
-    // If we added colors and there's only one option (plus the disabled default),
-    // select it automatically
-    if (hasAddedColor && carColorSelect.options.length === 2) {
-      carColorSelect.selectedIndex = 1;
-    }
-  }
-}
-
 // Initialize Google Maps with Places Autocomplete
 function initializeMap() {
   try {
     console.log("Initializing Google Maps");
-
-    // Check if Google Maps is loaded
-    if (typeof google === "undefined" || !google.maps) {
-      console.error("Google Maps API is not loaded");
-      return;
-    }
-
+    
     // Check if map container exists
     if (!mapContainer) {
       console.error("Map container not found!");
       return;
     }
-
-    // Log container dimensions
-    console.log(
-      "Map container dimensions:",
-      mapContainer.clientWidth,
-      "x",
-      mapContainer.clientHeight
-    );
-
-    // Ensure container is visible and has dimensions
-    if (mapContainer.clientWidth === 0 || mapContainer.clientHeight === 0) {
-      console.error("Map container has zero dimensions, can't initialize map");
+    
+    // Check if Google Maps is loaded
+    if (typeof google === 'undefined' || !google.maps) {
+      console.error("Google Maps API is not loaded");
       return;
     }
-
+    
     // Default to Singapore if no coordinates
-    const lat = parseFloat(carLatitude.value) || 1.3521;
-    const lng = parseFloat(carLongitude.value) || 103.8198;
-
+    const lat = parseFloat(carLatitude.value.trim().replace(/,/g, "")) || 1.3521;
+    const lng = parseFloat(carLongitude.value.trim().replace(/,/g, "")) || 103.8198;
+    
     console.log(`Setting up map with coordinates: ${lat}, ${lng}`);
-
+    
     // Initialize map
     map = new google.maps.Map(mapContainer, {
       center: { lat, lng },
@@ -355,727 +292,610 @@ function initializeMap() {
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: true,
-      zoomControl: true,
+      zoomControl: true
     });
-
+    
     // Initialize geocoder
     geocoder = new google.maps.Geocoder();
-
+    
     // Add marker at current location
     marker = new google.maps.Marker({
       position: { lat, lng },
       map: map,
       draggable: true,
       animation: google.maps.Animation.DROP,
-      title: "Car Location",
+      title: "Car Location"
     });
 
-    // Add event listener to map idle event
-    google.maps.event.addListenerOnce(map, "idle", function () {
-      console.log("Map is fully loaded and idle");
-    });
-
-    // Set up Places Autocomplete
-    const addressInput = document.getElementById("car-address");
-    if (addressInput) {
-      try {
-        console.log("Setting up Places Autocomplete");
-        const autocomplete = new google.maps.places.Autocomplete(addressInput);
-
-        // Bias the autocomplete results to the map's viewport
-        autocomplete.bindTo("bounds", map);
-
-        // Add listener for place changes
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
-
-          if (!place.geometry || !place.geometry.location) {
-            // User entered the name of a place that was not suggested
-            console.warn(
-              "No details available for input: '" + place.name + "'"
-            );
-            return;
+            // Set up Places Autocomplete
+        const addressInput = document.getElementById("car-address");
+        if (addressInput) {
+          try {
+            console.log("Setting up Places Autocomplete");
+            const autocomplete = new google.maps.places.Autocomplete(addressInput);
+            
+            // Bias the autocomplete results to the map's viewport
+            autocomplete.bindTo("bounds", map);
+            
+            // Add listener for place changes
+            autocomplete.addListener("place_changed", () => {
+              const place = autocomplete.getPlace();
+              
+              if (!place.geometry || !place.geometry.location) {
+                // User entered the name of a place that was not suggested
+                console.warn("No details available for input: '" + place.name + "'");
+                return;
+              }
+              
+              // Update map with selected place
+              if (place.geometry.viewport) {
+                map.fitBounds(place.geometry.viewport);
+              } else {
+                map.setCenter(place.geometry.location);
+                map.setZoom(17);
+              }
+              
+              // Update marker
+              marker.setPosition(place.geometry.location);
+              
+              // Update form values
+              carAddress.value = place.formatted_address;
+              carLatitude.value = formatCoordinate(place.geometry.location.lat());
+              carLongitude.value = formatCoordinate(place.geometry.location.lng());
+              
+              console.log(`Place selected: ${place.formatted_address}`);
+            });
+            console.log("Places Autocomplete setup complete");
+          } catch (error) {
+            console.error("Error setting up Places Autocomplete:", error);
           }
-
-          // Update map with selected place
-          if (place.geometry.viewport) {
-            map.fitBounds(place.geometry.viewport);
-          } else {
-            map.setCenter(place.geometry.location);
-            map.setZoom(17);
-          }
-
-          // Update marker
-          marker.setPosition(place.geometry.location);
-
-          // Update form values
-          carAddress.value = place.formatted_address;
-          carLatitude.value = formatCoordinate(place.geometry.location.lat());
-          carLongitude.value = formatCoordinate(place.geometry.location.lng());
-
-          console.log(`Place selected: ${place.formatted_address}`);
+        } else {
+          console.error("Address input element not found");
+        }
+        
+        // Update coordinates when marker is dragged
+        google.maps.event.addListener(marker, "dragend", function() {
+          const position = marker.getPosition();
+          carLatitude.value = formatCoordinate(position.lat());
+          carLongitude.value = formatCoordinate(position.lng());
+          
+          // Get address from coordinates
+          geocodePosition(position);
         });
-        console.log("Places Autocomplete setup complete");
+        
+        // Add click event to map
+        google.maps.event.addListener(map, "click", function(event) {
+          marker.setPosition(event.latLng);
+          carLatitude.value = formatCoordinate(event.latLng.lat());
+          carLongitude.value = formatCoordinate(event.latLng.lng());
+          
+          // Get address from coordinates
+          geocodePosition(event.latLng);
+        });
+        
+        console.log("Google Maps initialized successfully");
       } catch (error) {
-        console.error("Error setting up Places Autocomplete:", error);
+        console.error("Error initializing Google Maps:", error);
       }
-    } else {
-      console.error("Address input element not found");
     }
-
-    // Update coordinates when marker is dragged
-    google.maps.event.addListener(marker, "dragend", function () {
-      const position = marker.getPosition();
-      carLatitude.value = formatCoordinate(position.lat());
-      carLongitude.value = formatCoordinate(position.lng());
-
-      // Get address from coordinates
-      geocodePosition(position);
-    });
-
-    // Add click event to map
-    google.maps.event.addListener(map, "click", function (event) {
-      marker.setPosition(event.latLng);
-      carLatitude.value = formatCoordinate(event.latLng.lat());
-      carLongitude.value = formatCoordinate(event.latLng.lng());
-
-      // Get address from coordinates
-      geocodePosition(event.latLng);
-    });
-
-    console.log("Google Maps initialized successfully");
-  } catch (error) {
-    console.error("Error initializing Google Maps:", error);
-  }
-}
-
-// Function to manually initialize Google Maps if the callback doesn't work
-function tryInitializeMap() {
-  console.log("Attempting manual map initialization");
-
-  // Check if Google Maps API is loaded
-  if (typeof google === "undefined" || !google.maps) {
-    console.error("Google Maps API not loaded yet. Will retry in 1 second.");
-    setTimeout(tryInitializeMap, 1000);
-    return;
-  }
-
-  // Check if map container exists and is visible
-  if (!mapContainer) {
-    console.error("Map container element not found!");
-    return;
-  }
-
-  // Check if map is already initialized
-  if (map) {
-    console.log("Map already initialized");
-    return;
-  }
-
-  try {
-    console.log("Manually initializing map");
-
-    // Initialize map
-    initializeMap();
-
-    console.log("Manual map initialization complete");
-  } catch (error) {
-    console.error("Error in manual map initialization:", error);
-  }
-}
-
-// Call this function after a delay to ensure DOM is fully loaded
-setTimeout(tryInitializeMap, 1500);
-
-// Format coordinate to 15 decimal places
-function formatCoordinate(value) {
-  if (value === null || value === undefined || isNaN(value)) return "";
-  return value.toFixed(15);
-}
-
-// Geocode position to get address
-function geocodePosition(position) {
-  geocoder.geocode({ location: position }, (results, status) => {
-    if (status === "OK" && results[0]) {
-      carAddress.value = results[0].formatted_address;
-    } else {
-      console.warn("Geocode failed:", status);
-    }
-  });
-}
-
-// Search for address and update map
-function searchAddress() {
-  const address = carAddress.value.trim();
-
-  if (!address) {
-    showMessage("Please enter an address to search", "warning");
-    return;
-  }
-
-  showMessage("Searching for address...", "info");
-
-  geocoder.geocode({ address }, (results, status) => {
-    if (status === "OK" && results[0]) {
-      const location = results[0].geometry.location;
-
-      // Update map
-      map.setCenter(location);
-      map.setZoom(16);
-      marker.setPosition(location);
-
-      // Update form fields
-      carLatitude.value = formatCoordinate(location.lat());
-      carLongitude.value = formatCoordinate(location.lng());
-      carAddress.value = results[0].formatted_address;
-
-      showMessage("Location found", "success");
-    } else {
-      console.warn("Geocode failed:", status);
-      showMessage(
-        "Could not find that address. Please try again or use the map to select a location.",
-        "error"
-      );
-    }
-  });
-}
-
-// Use current location
-function useCurrentLocation() {
-  if (navigator.geolocation) {
-    showMessage("Getting your location...", "info");
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-
-        // Update map
-        map.setCenter({ lat, lng });
-        marker.setPosition({ lat, lng });
-
-        // Update form fields
-        carLatitude.value = formatCoordinate(lat);
-        carLongitude.value = formatCoordinate(lng);
-
-        // Get address from coordinates
-        geocodePosition(new google.maps.LatLng(lat, lng));
-
-        showMessage("Current location set", "success");
-      },
-      (error) => {
-        console.error("Geolocation error:", error);
-        showMessage(
-          "Could not get your location. Please enable location services.",
-          "error"
-        );
-      },
-      { enableHighAccuracy: true }
-    );
-  } else {
-    showMessage("Geolocation is not supported by this browser", "error");
-  }
-}
-
-// Setup form event handlers
-function setupFormHandlers() {
-  // Car model change event
-  // Car model change event
-if (carModelSelect) {
-  carModelSelect.addEventListener("change", (e) => {
-    const selectedModelId = e.target.value;
-    updateColorOptions(selectedModelId);
     
-    // Slight delay to ensure colors are populated
-    setTimeout(() => {
-      // If there's only one color option, it will be auto-selected
-      updateSummaryCard(selectedModelId);
-    }, 100);
-  });
-}
-
-// Car color change event
-if (carColorSelect) {
-  carColorSelect.addEventListener("change", (e) => {
-    const selectedModelId = carModelSelect.value;
-    if (selectedModelId) {
-      updateSummaryCard(selectedModelId);
+    // Format coordinate to 15 decimal places
+    function formatCoordinate(value) {
+      if (value === null || value === undefined || isNaN(value)) return "";
+      return value.toFixed(15);
     }
-  });
-}
-
-  // Updated event listener for search button
-  if (searchAddressBtn) {
-    searchAddressBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      console.log("Search button clicked");
-      searchAddress();
-    });
-  }
-
-  // Use current location button
-  if (useCurrentLocationBtn) {
-    useCurrentLocationBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      useCurrentLocation();
-    });
-  }
-
-  // Form submit event
-  if (addCarForm) {
-    addCarForm.addEventListener("submit", handleFormSubmit);
-  }
-
-  // Cancel button event
-  if (cancelButton) {
-    cancelButton.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (
-        confirm(
-          "Are you sure you want to cancel? Any entered data will be lost."
-        )
-      ) {
-        window.location.href = "admin-cars.html";
+    
+    // Geocode position to get address
+    function geocodePosition(position) {
+      geocoder.geocode({ location: position }, (results, status) => {
+        if (status === "OK" && results[0]) {
+          carAddress.value = results[0].formatted_address;
+        } else {
+          console.warn("Geocode failed:", status);
+        }
+      });
+    }
+    
+    // Search for address and update map
+    function searchAddress() {
+      const address = carAddress.value.trim();
+      
+      if (!address) {
+        showMessage("Please enter an address to search", "warning");
+        return;
       }
-    });
-  }
-}
-
-// Ensure we have coordinates from address if needed
-async function ensureCoordinates() {
-  // If we already have valid coordinates, return them
-  const lat = parseFloat(carLatitude.value.trim());
-  const lng = parseFloat(carLongitude.value.trim());
-
-  if (!isNaN(lat) && !isNaN(lng)) {
-    return { lat, lng };
-  }
-
-  // If we have an address but no coordinates, try to geocode
-  const address = carAddress.value.trim();
-  if (!address) {
-    return null; // No address to geocode
-  }
-
-  // Show a message
-  showMessage("Getting coordinates from address...", "info");
-
-  try {
-    // Use a promise wrapper for geocoder
-    return new Promise((resolve, reject) => {
+      
+      showMessage("Searching for address...", "info");
+      
       geocoder.geocode({ address }, (results, status) => {
         if (status === "OK" && results[0]) {
           const location = results[0].geometry.location;
-
-          // Set the values in the form
+          
+          // Update map
+          map.setCenter(location);
+          map.setZoom(16);
+          marker.setPosition(location);
+          
+          // Update form fields
           carLatitude.value = formatCoordinate(location.lat());
           carLongitude.value = formatCoordinate(location.lng());
-
-          resolve({ lat: location.lat(), lng: location.lng() });
+          carAddress.value = results[0].formatted_address;
+          
+          showMessage("Location found", "success");
         } else {
           console.warn("Geocode failed:", status);
-          resolve(null); // Return null but don't reject
+          showMessage("Could not find that address. Please try again or use the map to select a location.", "error");
         }
       });
-    });
-  } catch (error) {
-    console.error("Error geocoding address:", error);
-    return null;
-  }
-}
-
-// Get the next available car ID
-async function getNextCarId() {
-  try {
-    console.log("Getting next available car ID");
-    
-    // Query all car documents and sort by ID
-    const carsRef = collection(db, "cars");
-    const carsSnapshot = await getDocs(carsRef);
-    
-    if (carsSnapshot.empty) {
-      console.log("No existing cars, starting with ID 1");
-      return "1"; // Start with 1 if no cars exist
     }
     
-    // Extract numeric IDs
-    const numericIds = [];
-    carsSnapshot.forEach(doc => {
-      const id = doc.id;
-      // Try to parse ID as number
-      const numericId = parseInt(id);
-      if (!isNaN(numericId)) {
-        numericIds.push(numericId);
+    // Use current location
+    function useCurrentLocation() {
+      if (navigator.geolocation) {
+        showMessage("Getting your location...", "info");
+        
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // Update map
+            map.setCenter({ lat, lng });
+            marker.setPosition({ lat, lng });
+            
+            // Update form fields
+            carLatitude.value = formatCoordinate(lat);
+            carLongitude.value = formatCoordinate(lng);
+            
+            // Get address from coordinates
+            geocodePosition(new google.maps.LatLng(lat, lng));
+            
+            showMessage("Current location set", "success");
+          },
+          (error) => {
+            console.error("Geolocation error:", error);
+            showMessage("Could not get your location. Please enable location services.", "error");
+          },
+          { enableHighAccuracy: true }
+        );
+      } else {
+        showMessage("Geolocation is not supported by this browser", "error");
       }
-    });
-    
-    // If no numeric IDs found, start with 1
-    if (numericIds.length === 0) {
-      console.log("No numeric IDs found, starting with ID 1");
-      return "1";
     }
     
-    // Find the highest ID
-    const highestId = Math.max(...numericIds);
-    const nextId = (highestId + 1).toString();
-    
-    console.log(`Highest existing ID: ${highestId}, next ID: ${nextId}`);
-    return nextId;
-  } catch (error) {
-    console.error("Error getting next car ID:", error);
-    // Return a timestamp-based ID as fallback
-    return Date.now().toString();
-  }
-}
-
-// Handle form submission
-async function handleFormSubmit(e) {
-  e.preventDefault();
-  
-  try {
-    showLoading(true);
-    
-    // Get form values
-    const carTypeValue = carModelSelect.value;
-    const carColorValue = carColorSelect.value;
-    const licensePlateValue = carLicensePlate.value.trim();
-    const addressValue = carAddress.value.trim();
-    const directionsValue = carDirections ? carDirections.value.trim() : "";
-    const statusValue = carStatus.value;
-    const serviceDueValue = new Date(serviceDue.value);
-    const insuranceExpiryValue = new Date(insuranceExpiry.value);
-    
-    // Form validation
-    if (!carTypeValue) {
-      throw new Error("Please select a car model");
+    // Setup form event handlers
+    function setupFormHandlers() {
+      // Car model change event
+      if (carModelSelect) {
+        carModelSelect.addEventListener("change", (e) => {
+          // Update the model summary when selection changes
+          updateModelSummary(e.target.value);
+        });
+      }
+      
+      // Address search button
+      if (searchAddressBtn) {
+        searchAddressBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          searchAddress();
+        });
+      }
+      
+      // Use current location button
+      if (useCurrentLocationBtn) {
+        useCurrentLocationBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          useCurrentLocation();
+        });
+      }
+      
+      // Form submit event
+      if (addCarForm) {
+        addCarForm.addEventListener("submit", handleFormSubmit);
+      }
+      
+      // Cancel button event
+      if (cancelButton) {
+        cancelButton.addEventListener("click", (e) => {
+          e.preventDefault();
+          if (confirm("Are you sure you want to cancel? Any entered data will be lost.")) {
+            window.location.href = "admin-cars.html";
+          }
+        });
+      }
     }
     
-    if (!licensePlateValue) {
-      throw new Error("Please enter a license plate number");
+    // Update model summary when selection changes
+    function updateModelSummary(modelId) {
+      if (!summarySection) return;
+      
+      // If no model selected, hide summary
+      if (!modelId || !allCarModels[modelId]) {
+        summarySection.style.display = "none";
+        return;
+      }
+      
+      // Get model data
+      const model = allCarModels[modelId];
+      
+      // Get color information
+      let colorValue = "";
+      if (model.color) {
+        colorValue = model.color;
+      } else if (model.colors && Array.isArray(model.colors) && model.colors.length > 0) {
+        colorValue = model.colors[0];
+      }
+      
+      // Update car image if possible
+      if (summaryCarImage) {
+        // Try color-specific image first
+        let imagePath = `../static/images/car_images/${modelId}`;
+        summaryCarImage.src = imagePath + ".png";
+        
+        // Add fallback for image loading errors
+        summaryCarImage.onerror = function() {
+          // Try base model without color
+          const baseModelId = modelId.split('_')[0];
+          this.src = `../static/images/car_images/${baseModelId}.png`;
+          
+          // If that fails too, use placeholder
+          this.onerror = function() {
+            this.src = "../static/images/assets/car-placeholder.jpg";
+          };
+        };
+      }
+      
+      // Update summary elements
+      if (summaryCarName) {
+        const modelName = model.name || modelId;
+        const colorDisplay = colorValue ? ` (${colorValue.charAt(0).toUpperCase() + colorValue.slice(1)})` : "";
+        summaryCarName.textContent = modelName + colorDisplay;
+      }
+      
+      if (summaryFuelType) {
+        summaryFuelType.textContent = model.fuel_type ? 
+          (model.fuel_type.charAt(0).toUpperCase() + model.fuel_type.slice(1)) : 
+          "Not specified";
+      }
+      
+      if (summarySeating) {
+        summarySeating.textContent = model.seating_capacity ? 
+          `${model.seating_capacity} seats` : 
+          "Not specified";
+      }
+      
+      if (summaryLargeLuggage) {
+        summaryLargeLuggage.textContent = model.large_luggage !== undefined ? 
+          `${model.large_luggage}` : 
+          "Not specified";
+      }
+      
+      if (summarySmallLuggage) {
+        summarySmallLuggage.textContent = model.small_luggage !== undefined ? 
+          `${model.small_luggage}` : 
+          "Not specified";
+      }
+      
+      // Show the summary section
+      summarySection.style.display = "block";
     }
     
-    if (!addressValue) {
-      throw new Error("Please enter a car location address");
+    // Ensure we have coordinates from address if needed
+    async function ensureCoordinates() {
+      // If we already have valid coordinates, return them
+      const lat = parseFloat(carLatitude.value.trim().replace(/,/g, ""));
+      const lng = parseFloat(carLongitude.value.trim().replace(/,/g, ""));
+      
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng };
+      }
+      
+      // If we have an address but no coordinates, try to geocode
+      const address = carAddress.value.trim();
+      if (!address) {
+        return null; // No address to geocode
+      }
+      
+      // Show a message
+      showMessage("Getting coordinates from address...", "info");
+      
+      try {
+        // Use a promise wrapper for geocoder
+        return new Promise((resolve, reject) => {
+          geocoder.geocode({ address }, (results, status) => {
+            if (status === "OK" && results[0]) {
+              const location = results[0].geometry.location;
+              
+              // Set the values in the form
+              carLatitude.value = formatCoordinate(location.lat());
+              carLongitude.value = formatCoordinate(location.lng());
+              
+              resolve({ lat: location.lat(), lng: location.lng() });
+            } else {
+              console.warn("Geocode failed:", status);
+              resolve(null); // Return null but don't reject
+            }
+          });
+        });
+      } catch (error) {
+        console.error("Error geocoding address:", error);
+        return null;
+      }
     }
     
-    if (!statusValue) {
-      throw new Error("Please select a car status");
+    // Get the next available car ID
+    async function getNextCarId() {
+      try {
+        console.log("Getting next available car ID");
+        
+        // Query all car documents and sort by ID
+        const carsRef = collection(db, "cars");
+        const carsSnapshot = await getDocs(carsRef);
+        
+        if (carsSnapshot.empty) {
+          console.log("No existing cars, starting with ID 1");
+          return "1"; // Start with 1 if no cars exist
+        }
+        
+        // Extract numeric IDs
+        const numericIds = [];
+        carsSnapshot.forEach(doc => {
+          const id = doc.id;
+          // Try to parse ID as number
+          const numericId = parseInt(id);
+          if (!isNaN(numericId)) {
+            numericIds.push(numericId);
+          }
+        });
+        
+        // If no numeric IDs found, start with 1
+        if (numericIds.length === 0) {
+          console.log("No numeric IDs found, starting with ID 1");
+          return "1";
+        }
+        
+        // Find the highest ID
+        const highestId = Math.max(...numericIds);
+        const nextId = (highestId + 1).toString();
+        
+        console.log(`Highest existing ID: ${highestId}, next ID: ${nextId}`);
+        return nextId;
+      } catch (error) {
+        console.error("Error getting next car ID:", error);
+        // Return a timestamp-based ID as fallback
+        return Date.now().toString();
+      }
     }
     
-    if (isNaN(serviceDueValue.getTime())) {
-      throw new Error("Please enter a valid service due date");
+    // Handle form submission
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      
+      try {
+        showLoading(true);
+        
+        // Get form values
+        const carTypeValue = carModelSelect.value;
+        const licensePlateValue = carLicensePlate.value.trim();
+        const addressValue = carAddress.value.trim();
+        const directionsValue = carDirections ? carDirections.value.trim() : "";
+        const statusValue = carStatus.value;
+        const serviceDueValue = new Date(serviceDue.value);
+        const insuranceExpiryValue = new Date(insuranceExpiry.value);
+        
+        // Form validation
+        if (!carTypeValue) {
+          throw new Error("Please select a car model");
+        }
+        
+        if (!licensePlateValue) {
+          throw new Error("Please enter a license plate number");
+        }
+        
+        if (!addressValue) {
+          throw new Error("Please enter a car location address");
+        }
+        
+        if (!statusValue) {
+          throw new Error("Please select a car status");
+        }
+        
+        if (isNaN(serviceDueValue.getTime())) {
+          throw new Error("Please enter a valid service due date");
+        }
+        
+        if (isNaN(insuranceExpiryValue.getTime())) {
+          throw new Error("Please enter a valid insurance expiry date");
+        }
+        
+        // Try to get coordinates from address if they're missing
+        let coordinates = null;
+        const latValue = parseFloat(carLatitude.value.trim().replace(/,/g, ""));
+        const lngValue = parseFloat(carLongitude.value.trim().replace(/,/g, ""));
+        
+        if (isNaN(latValue) || isNaN(lngValue)) {
+          coordinates = await ensureCoordinates();
+        } else {
+          coordinates = { lat: latValue, lng: lngValue };
+        }
+        
+        // Get model-specific data and color
+        const modelData = allCarModels[carTypeValue] || {};
+        
+        // Extract color from the model
+        let carColorValue = "";
+        if (modelData.color) {
+          carColorValue = modelData.color;
+        } else if (modelData.colors && Array.isArray(modelData.colors) && modelData.colors.length > 0) {
+          carColorValue = modelData.colors[0];
+        } else {
+          // Default color if none specified
+          carColorValue = "white";
+        }
+        
+        // Create car document
+        const carData = {
+          car_type: carTypeValue,
+          car_color: carColorValue,
+          license_plate: licensePlateValue,
+          address: addressValue,
+          directions: directionsValue,
+          status: statusValue,
+          service_due: serviceDueValue,
+          insurance_expiry: insuranceExpiryValue,
+          created_at: serverTimestamp(),
+          created_by: currentUser?.uid || "unknown",
+          updated_at: serverTimestamp()
+        };
+        
+        // Add coordinates if available
+        if (coordinates) {
+          carData.current_location = {
+            latitude: coordinates.lat,
+            longitude: coordinates.lng
+          };
+        }
+        
+        // Add model-specific data if available
+        if (modelData.fuel_type) {
+          carData.fuel_type = modelData.fuel_type;
+        }
+        
+        if (modelData.seating_capacity !== undefined) {
+          carData.seating_capacity = parseInt(modelData.seating_capacity) || 5;
+        }
+        
+        if (modelData.large_luggage !== undefined) {
+          carData.large_luggage = parseInt(modelData.large_luggage) || 0;
+        }
+        
+        if (modelData.small_luggage !== undefined) {
+          carData.small_luggage = parseInt(modelData.small_luggage) || 0;
+        }
+        
+        console.log("Adding new car with data:", carData);
+        
+        try {
+          // Get the next sequential car ID
+          const nextCarId = await getNextCarId();
+          console.log(`Using sequential car ID: ${nextCarId}`);
+          
+          // Add the car document with the specific ID
+          await setDoc(doc(db, "cars", nextCarId), carData);
+          
+          console.log(`Car added successfully with ID: ${nextCarId}`);
+          showMessage(`Car added successfully with ID: ${nextCarId}`, "success");
+        } catch (idError) {
+          console.error("Error with sequential ID, falling back to auto-generated ID:", idError);
+          
+          // Fallback to auto-generated ID if there's an issue
+          const carRef = await addDoc(collection(db, "cars"), carData);
+          console.log(`Car added with auto-generated ID: ${carRef.id}`);
+          showMessage("Car added successfully!", "success");
+        }
+        
+        // Redirect back to cars page after short delay
+        setTimeout(() => {
+          window.location.href = "admin-cars.html";
+        }, 2000);
+        
+      } catch (error) {
+        console.error("Error adding car:", error);
+        showMessage(error.message, "error");
+      } finally {
+        showLoading(false);
+      }
     }
     
-    if (isNaN(insuranceExpiryValue.getTime())) {
-      throw new Error("Please enter a valid insurance expiry date");
+    // Helper functions
+    function showLoading(show) {
+      if (loadingOverlay) {
+        loadingOverlay.style.display = show ? "flex" : "none";
+      }
     }
     
-    // Try to get coordinates from address if they're missing
-    let coordinates = null;
-    const latValue = parseFloat(carLatitude.value.trim());
-    const lngValue = parseFloat(carLongitude.value.trim());
-    
-    if (isNaN(latValue) || isNaN(lngValue)) {
-      coordinates = await ensureCoordinates();
-    } else {
-      coordinates = { lat: latValue, lng: lngValue };
+    function showError(message) {
+      if (errorContainer) {
+        errorContainer.textContent = message;
+        errorContainer.style.display = "block";
+        formContainer.style.display = "none";
+      } else {
+        alert(message);
+      }
+      
+      showLoading(false);
     }
     
-    // Get model-specific data
-    const modelData = allCarModels[carTypeValue] || {};
-    
-    // Create car document
-    const carData = {
-      car_type: carTypeValue,
-      car_color: carColorValue,
-      license_plate: licensePlateValue,
-      address: addressValue,
-      directions: directionsValue,
-      status: statusValue,
-      service_due: serviceDueValue,
-      insurance_expiry: insuranceExpiryValue,
-      created_at: serverTimestamp(),
-      created_by: currentUser?.uid || "unknown",
-      updated_at: serverTimestamp()
-    };
-    
-    // Add coordinates if available
-    if (coordinates) {
-      carData.current_location = {
-        latitude: coordinates.lat,
-        longitude: coordinates.lng
-      };
-    }
-    
-    // Add model-specific data if available
-    if (modelData.fuel_type) {
-      carData.fuel_type = modelData.fuel_type;
-    }
-    
-    if (modelData.seating_capacity) {
-      carData.seating_capacity = parseInt(modelData.seating_capacity);
-    }
-    
-    if (modelData.large_luggage) {
-      carData.large_luggage = parseInt(modelData.large_luggage);
-    }
-    
-    if (modelData.small_luggage) {
-      carData.small_luggage = parseInt(modelData.small_luggage);
-    }
-    
-    // Get the next sequential car ID
-    const nextCarId = await getNextCarId();
-    console.log(`Adding new car with ID: ${nextCarId}`);
-    
-    // Add the car document with the specific ID
-    await setDoc(doc(db, "cars", nextCarId), carData);
-    
-    console.log(`Car added successfully with ID: ${nextCarId}`);
-    
-    showMessage(`Car added successfully with ID: ${nextCarId}`, "success");
-    
-    // Redirect back to cars page after short delay
-    setTimeout(() => {
-      window.location.href = "admin-cars.html";
-    }, 2000);
-    
-  } catch (error) {
-    console.error("Error adding car:", error);
-    showMessage(error.message, "error");
-    showLoading(false);
-  }
-}
-
-// Helper functions
-function showLoading(show) {
-  if (loadingOverlay) {
-    loadingOverlay.style.display = show ? "flex" : "none";
-  }
-}
-
-function showError(message) {
-  if (errorContainer) {
-    errorContainer.textContent = message;
-    errorContainer.style.display = "block";
-    formContainer.style.display = "none";
-  } else {
-    alert(message);
-  }
-
-  showLoading(false);
-}
-
-function showMessage(message, type = "info") {
-  // Create toast container if it doesn't exist
-  let toastContainer = document.getElementById("toast-container");
-  if (!toastContainer) {
-    toastContainer = document.createElement("div");
-    toastContainer.id = "toast-container";
-    document.body.appendChild(toastContainer);
-  }
-
-  // Create toast message
-  const toast = document.createElement("div");
-  toast.className = `toast toast-${type}`;
-
-  // Set toast icon based on type
-  let icon = "info-circle";
-  if (type === "success") icon = "check-circle";
-  if (type === "warning") icon = "exclamation-triangle";
-  if (type === "error") icon = "x-circle";
-
-  toast.innerHTML = `
+    function showMessage(message, type = "info") {
+      // Create toast container if it doesn't exist
+      let toastContainer = document.getElementById("toast-container");
+      if (!toastContainer) {
+        toastContainer = document.createElement("div");
+        toastContainer.id = "toast-container";
+        document.body.appendChild(toastContainer);
+      }
+      
+      // Create toast message
+      const toast = document.createElement("div");
+      toast.className = `toast toast-${type}`;
+      
+      // Set toast icon based on type
+      let icon = "info-circle";
+      if (type === "success") icon = "check-circle";
+      if (type === "warning") icon = "exclamation-triangle";
+      if (type === "error") icon = "x-circle";
+      
+      toast.innerHTML = `
         <i class="bi bi-${icon}"></i>
         <span>${message}</span>
       `;
-
-  // Add toast to container
-  toastContainer.appendChild(toast);
-
-  // Show toast
-  setTimeout(() => {
-    toast.classList.add("show");
-
-    // Auto-hide after delay
-    setTimeout(() => {
-      toast.classList.remove("show");
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
-  }, 10);
-}
-
-// Check map container
-function checkMapContainer() {
-  console.log("Map container check:");
-  console.log("- Element exists:", !!mapContainer);
-  if (mapContainer) {
-    console.log(
-      "- Size:",
-      mapContainer.clientWidth,
-      "x",
-      mapContainer.clientHeight
-    );
-    console.log(
-      "- Visibility:",
-      window.getComputedStyle(mapContainer).visibility
-    );
-    console.log("- Display:", window.getComputedStyle(mapContainer).display);
-  }
-
-  console.log("Google Maps API status:");
-  console.log(
-    "- google object:",
-    typeof google !== "undefined" ? "Loaded" : "Not loaded"
-  );
-  console.log(
-    "- maps object:",
-    typeof google !== "undefined" && google.maps ? "Loaded" : "Not loaded"
-  );
-}
-
-// Update summary card based on selected car model and color
-function updateSummaryCard(modelId) {
-  console.log("Updating summary card with model ID:", modelId);
-  
-  // If no model ID or model doesn't exist, hide summary
-  if (!modelId || !allCarModels[modelId]) {
-    console.log("No model selected or model data not found");
-    if (summarySection) {
-      summarySection.style.display = "none";
-    }
-    return;
-  }
-  
-  // Get model data
-  const model = allCarModels[modelId];
-  console.log("Model data found:", model);
-  
-  // Get selected color
-  const selectedColor = carColorSelect.value;
-  console.log("Selected color:", selectedColor);
-  
-  // Update car image based on model and color
-  if (summaryCarImage) {
-    let imagePath;
-    
-    // For model-color combination (e.g., modely_black.png)
-    if (selectedColor) {
-      imagePath = `../static/images/car_images/${modelId}_${selectedColor}.png`;
-      console.log("Trying color-specific image path:", imagePath);
-    } else {
-      // Default to just model (e.g., modely.png)
-      imagePath = `../static/images/car_images/${modelId}.png`;
-      console.log("Trying default model image path:", imagePath);
-    }
-    
-    // Set image with error handling
-    summaryCarImage.onerror = function() {
-      console.log("Image not found, trying fallback");
-      this.onerror = function() {
-        console.log("Fallback failed, using placeholder");
-        this.src = "../static/images/assets/car-placeholder.jpg";
-      };
-      this.src = `../static/images/car_images/${modelId}.png`; // Try without color
-    };
-    
-    // Set the initial image source
-    summaryCarImage.src = imagePath;
-  }
-  
-  // Update car name
-  if (summaryCarName) {
-    // Use the model name from the database if available
-    let carName = model.name || modelId;
-    
-    // Add color info
-    if (selectedColor) {
-      const formattedColor = selectedColor.charAt(0).toUpperCase() + selectedColor.slice(1);
-      carName += ` (${formattedColor})`;
-    }
-    
-    console.log("Setting car name to:", carName);
-    summaryCarName.textContent = carName;
-  }
-  
-  // Update specifications from model data
-  console.log("Updating specs with:", {
-    fuelType: model.fuel_type,
-    seatingCapacity: model.seating_capacity,
-    largeLuggage: model.large_luggage,
-    smallLuggage: model.small_luggage
-  });
-  
-  // Update fuel type
-  if (summaryFuelType) {
-    if (model.fuel_type) {
-      const formattedFuel = model.fuel_type.charAt(0).toUpperCase() + model.fuel_type.slice(1);
-      summaryFuelType.textContent = formattedFuel;
-    } else {
-      summaryFuelType.textContent = "Not specified";
-    }
-  }
-  
-  // Update seating capacity
-  if (summarySeating) {
-    if (model.seating_capacity !== undefined && model.seating_capacity !== null) {
-      summarySeating.textContent = `${model.seating_capacity} seats`;
-    } else {
-      summarySeating.textContent = "Not specified";
-    }
-  }
-  
-  // Update luggage capacity
-  if (summaryLargeLuggage) {
-    summaryLargeLuggage.textContent = model.large_luggage !== undefined ? 
-      `${model.large_luggage}` : "Not specified";
-  }
-  
-  if (summarySmallLuggage) {
-    summarySmallLuggage.textContent = model.small_luggage !== undefined ? 
-      `${model.small_luggage}` : "Not specified";
-  }
-  
-  // Finally show the summary section
-  if (summarySection) {
-    console.log("Displaying summary section");
-    summarySection.style.display = "block";
-  }
-}
-
-// Add a car with sequential ID, handling potential conflicts
-async function addCarWithSequentialId(carData) {
-  const maxRetries = 3;
-  let retries = 0;
-  
-  while (retries < maxRetries) {
-    try {
-      const nextId = await getNextCarId();
       
-      // Check if the ID is already taken (double-check)
-      const docRef = doc(db, "cars", nextId);
-      const docSnap = await getDoc(docRef);
+      // Add toast to container
+      toastContainer.appendChild(toast);
       
-      if (docSnap.exists()) {
-        console.warn(`ID ${nextId} already exists, retrying...`);
-        retries++;
-        continue;
+      // Show toast
+      setTimeout(() => {
+        toast.classList.add("show");
+        
+        // Auto-hide after delay
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }, 10);
+    }
+    
+    // Function to manually initialize Google Maps if the callback doesn't work
+    function tryInitializeMap() {
+      console.log("Attempting manual map initialization");
+      
+      // Check if Google Maps API is loaded
+      if (typeof google === "undefined" || !google.maps) {
+        console.error("Google Maps API not loaded yet. Will retry in 1 second.");
+        setTimeout(tryInitializeMap, 1000);
+        return;
       }
       
-      // ID is available, add the document
-      await setDoc(docRef, carData);
-      return nextId;
-    } catch (error) {
-      console.error(`Error adding car (attempt ${retries + 1}):`, error);
-      retries++;
+      // Check if map container exists
+      if (!mapContainer) {
+        console.error("Map container element not found!");
+        return;
+      }
       
-      if (retries >= maxRetries) {
-        throw error; // Re-throw after max retries
+      // Check if map is already initialized
+      if (map) {
+        console.log("Map already initialized");
+        return;
+      }
+      
+      try {
+        console.log("Manually initializing map");
+        initializeMap();
+        console.log("Manual map initialization complete");
+      } catch (error) {
+        console.error("Error in manual map initialization:", error);
       }
     }
-  }
-}
-
-// Debug check after a delay
-setTimeout(checkMapContainer, 2000);
+    
+    // Call this function after a delay to ensure DOM is fully loaded
+    setTimeout(tryInitializeMap, 1500);
