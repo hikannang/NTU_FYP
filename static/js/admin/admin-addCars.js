@@ -426,10 +426,10 @@ function tryInitializeMap() {
 // Call this function after a delay to ensure DOM is fully loaded
 setTimeout(tryInitializeMap, 1500);
 
-// Format coordinate to 6 decimal places
+// Format coordinate to 15 decimal places
 function formatCoordinate(value) {
   if (value === null || value === undefined || isNaN(value)) return "";
-  return value.toFixed(6);
+  return value.toFixed(15);
 }
 
 // Geocode position to get address
@@ -443,46 +443,38 @@ function geocodePosition(position) {
   });
 }
 
-// Improved search for address function
+// Search for address and update map
 function searchAddress() {
-  console.log("Searching for address");
-  
   const address = carAddress.value.trim();
-  
+
   if (!address) {
     showMessage("Please enter an address to search", "warning");
     return;
   }
-  
-  // Check if Google Maps is loaded
-  if (!geocoder) {
-    console.error("Geocoder not initialized");
-    showMessage("Map service is not ready yet. Please try again in a moment.", "error");
-    return;
-  }
-  
+
   showMessage("Searching for address...", "info");
-  
+
   geocoder.geocode({ address }, (results, status) => {
-    console.log("Geocode result:", status, results);
-    
-    if (status === "OK" && results && results[0]) {
+    if (status === "OK" && results[0]) {
       const location = results[0].geometry.location;
-      
+
       // Update map
       map.setCenter(location);
       map.setZoom(16);
       marker.setPosition(location);
-      
+
       // Update form fields
       carLatitude.value = formatCoordinate(location.lat());
       carLongitude.value = formatCoordinate(location.lng());
       carAddress.value = results[0].formatted_address;
-      
+
       showMessage("Location found", "success");
     } else {
       console.warn("Geocode failed:", status);
-      showMessage("Could not find that address. Please try again or use the map to select a location.", "error");
+      showMessage(
+        "Could not find that address. Please try again or use the map to select a location.",
+        "error"
+      );
     }
   });
 }
