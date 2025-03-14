@@ -1,8 +1,8 @@
-/* Layout Adjustments for Admin Portal */
-main {
-    margin-left: var(--sidebar-width, 260px);
+/* admin-cars.css - Modern UI Design for Fleet Management */
+
+/* Layout Adjustments to Work with Admin Header/Sidebar */
+.admin-main {
     padding: 24px 20px 30px 30px;
-    transition: margin-left 0.3s ease, padding 0.3s ease;
     min-height: calc(100vh - var(--header-height, 70px));
     background-color: #f8fafc;
     position: relative;
@@ -16,36 +16,46 @@ main {
     padding-right: 20px;
 }
 
-/* Dashboard Section Styling */
-.dashboard-section {
-    margin-bottom: 32px;
-}
-
-.section-header {
+/* Breadcrumb Navigation */
+.breadcrumb {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    gap: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    color: #64748b;
 }
 
-.section-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #1e293b;
-    margin: 0;
+.breadcrumb a {
+    color: #64748b;
+    text-decoration: none;
+    transition: color 0.2s ease;
 }
 
-/* Page Header with Stats */
-.page-header {
+.breadcrumb a:hover {
+    color: #3b82f6;
+}
+
+.breadcrumb i {
+    font-size: 0.7rem;
+    color: #94a3b8;
+}
+
+.breadcrumb .current {
+    color: #94a3b8;
+}
+
+/* Page Header */
+.page-header-wrapper {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 24px;
     gap: 20px;
 }
 
-.header-content {
+.page-header {
     flex: 1;
     min-width: 250px;
 }
@@ -57,7 +67,7 @@ main {
     margin: 0 0 8px 0;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .page-title i {
@@ -69,6 +79,7 @@ main {
     color: #64748b;
     font-size: 0.95rem;
     margin: 0;
+    max-width: 600px;
 }
 
 .header-actions {
@@ -81,7 +92,7 @@ main {
 /* Stats Summary Cards */
 .stats-summary {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     gap: 20px;
     margin-bottom: 24px;
 }
@@ -92,14 +103,14 @@ main {
     padding: 20px;
     display: flex;
     align-items: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .stat-icon {
@@ -118,14 +129,14 @@ main {
     color: #10b981;
 }
 
-.stat-icon.maintenance {
-    background-color: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
-}
-
 .stat-icon.booked {
     background-color: rgba(59, 130, 246, 0.1);
     color: #3b82f6;
+}
+
+.stat-icon.maintenance {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
 }
 
 .stat-icon.total {
@@ -155,18 +166,19 @@ main {
     margin: 0;
 }
 
-/* Controls Bar with Search, Filters and View Toggle */
+/* Controls Bar */
 .controls-bar {
     background-color: white;
     border-radius: 12px;
-    padding: 16px;
+    padding: 16px 20px;
     margin-bottom: 24px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
-    position: relative;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .controls-left {
@@ -176,6 +188,7 @@ main {
 
 .search-container {
     position: relative;
+    width: 100%;
 }
 
 .search-container i {
@@ -280,7 +293,7 @@ main {
     color: white;
 }
 
-/* Loading States and Empty States */
+/* Loading State */
 .loading-state {
     display: flex;
     flex-direction: column;
@@ -290,7 +303,7 @@ main {
     text-align: center;
     background-color: white;
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
     margin-bottom: 24px;
 }
@@ -315,6 +328,7 @@ main {
     font-size: 1rem;
 }
 
+/* Empty State */
 .empty-state {
     display: flex;
     flex-direction: column;
@@ -324,8 +338,9 @@ main {
     text-align: center;
     background-color: white;
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
+    margin-bottom: 24px;
 }
 
 .empty-illustration {
@@ -365,13 +380,13 @@ main {
     margin-bottom: 24px;
 }
 
-/* Enhanced Car Cards */
+/* Car Card */
 .car-card {
     position: relative;
     background-color: white;
     border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     display: flex;
     flex-direction: column;
@@ -380,7 +395,7 @@ main {
 
 .car-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 15px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05), 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .card-header {
@@ -389,6 +404,7 @@ main {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    z-index: 2;
 }
 
 .car-plate {
@@ -445,12 +461,12 @@ main {
     box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
-.status-badge.unavailable {
+.status-badge.unavailable, .status-badge.unknown {
     background-color: rgba(239, 68, 68, 0.1);
     color: #ef4444;
 }
 
-.status-badge.unavailable::before {
+.status-badge.unavailable::before, .status-badge.unknown::before {
     background-color: #ef4444;
     box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
 }
@@ -490,7 +506,7 @@ main {
     max-height: 100%;
     object-fit: contain;
     transition: transform 0.3s ease;
-    filter: drop-shadow(0 4px 3px rgba(0,0,0,0.07));
+    filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.07));
 }
 
 .car-card:hover .car-image img {
@@ -633,7 +649,7 @@ main {
     background-color: white;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     margin-bottom: 24px;
 }
 
@@ -670,63 +686,94 @@ main {
     background-color: #f8fafc;
 }
 
-.car-row .car-image-cell img {
+.list-col {
+    padding: 0 8px;
+}
+
+.col-image {
+    display: flex;
+    justify-content: center;
+}
+
+.col-image img {
     width: 60px;
     height: 45px;
     object-fit: contain;
 }
 
-.car-row .car-info-cell {
+.col-main {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.car-row .car-plate {
+.col-main .car-plate {
     font-size: 0.9rem;
     padding: 4px 8px;
     margin-bottom: 4px;
 }
 
-.car-row .car-model {
+.col-main .car-model {
     font-size: 0.95rem;
     margin: 0;
 }
 
-.car-row .car-id {
+.col-main .car-id {
     font-size: 0.75rem;
 }
 
-.car-row .car-status-cell .status-badge {
+.col-main .car-location {
+    font-size: 0.8rem;
+    padding-top: 4px;
+    margin-top: 4px;
+}
+
+.col-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.col-status .status-badge {
     position: static;
     display: inline-flex;
 }
 
-.car-row .car-specs-cell {
+.col-status .added-date {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.col-specs {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    font-size: 0.85rem;
 }
 
-.car-row .spec-row {
+.col-specs .spec-row {
     display: flex;
+    align-items: center;
     gap: 8px;
+    font-size: 0.85rem;
+    color: #334155;
 }
 
-.car-row .spec-icon {
-    width: 20px;
-    height: 20px;
+.col-specs .spec-icon {
+    width: 24px;
+    height: 24px;
     font-size: 0.8rem;
 }
 
-.car-row .car-actions-cell {
+.col-actions {
     display: flex;
-    gap: 4px;
+    gap: 8px;
+    justify-content: flex-end;
 }
 
-.car-row .action-btn {
-    padding: 6px;
+.col-actions .action-btn {
+    width: 32px;
+    height: 32px;
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -734,38 +781,112 @@ main {
     transition: all 0.2s ease;
     cursor: pointer;
     border: none;
-    width: 32px;
-    height: 32px;
 }
 
-.car-row .action-btn.edit {
+.action-btn.edit {
     background-color: rgba(59, 130, 246, 0.1);
     color: #3b82f6;
 }
 
-.car-row .action-btn.edit:hover {
+.action-btn.edit:hover {
     background-color: rgba(59, 130, 246, 0.2);
 }
 
-.car-row .action-btn.delete {
+.action-btn.delete {
     background-color: rgba(239, 68, 68, 0.1);
     color: #ef4444;
 }
 
-.car-row .action-btn.delete:hover {
+.action-btn.delete:hover {
     background-color: rgba(239, 68, 68, 0.2);
 }
 
-.car-row .action-btn.view {
+.action-btn.view {
     background-color: rgba(99, 102, 241, 0.1);
     color: #6366f1;
 }
 
-.car-row .action-btn.view:hover {
+.action-btn.view:hover {
     background-color: rgba(99, 102, 241, 0.2);
 }
 
-/* Modal and Toast Styling */
+/* Floating Action Button for Mobile */
+.floating-action-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    display: none;
+}
+
+.action-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: #3b82f6;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background-color: #2563eb;
+    transform: scale(1.05);
+}
+
+.action-btn i {
+    font-size: 1.5rem;
+}
+
+.action-menu {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 8px;
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+}
+
+.floating-action-btn:hover .action-menu {
+    display: flex;
+}
+
+.action-item {
+    padding: 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #334155;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+.action-item:hover {
+    background-color: #f1f5f9;
+    color: #3b82f6;
+}
+
+.action-item i {
+    font-size: 1.2rem;
+}
+
+/* Modal */
 .modal-backdrop {
     position: fixed;
     top: 0;
@@ -773,6 +894,7 @@ main {
     right: 0;
     bottom: 0;
     background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -792,6 +914,11 @@ main {
     transition: all 0.3s ease;
     max-height: 90vh;
     overflow-y: auto;
+}
+
+.modal-content {
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
@@ -874,6 +1001,7 @@ main {
     gap: 12px;
 }
 
+/* Toast Notification */
 .toast {
     position: fixed;
     bottom: 24px;
@@ -972,6 +1100,34 @@ main {
     background-color: #dc2626;
 }
 
+/* Breadcrumb Navigation */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    color: #64748b;
+}
+
+.breadcrumb a {
+    color: #64748b;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: #3b82f6;
+}
+
+.breadcrumb .current {
+    color: #94a3b8;
+}
+
+.breadcrumb i {
+    font-size: 0.7rem;
+    color: #94a3b8;
+}
+
 /* Responsive Design */
 @media (max-width: 1280px) {
     .car-grid {
@@ -1037,6 +1193,10 @@ main {
     .car-row {
         min-width: 800px;
     }
+    
+    .floating-action-btn {
+        display: flex;
+    }
 }
 
 @media (max-width: 640px) {
@@ -1058,5 +1218,184 @@ main {
     
     .toast {
         width: 90%;
+    }
+    
+    .page-title {
+        font-size: 1.5rem;
+    }
+    
+    .subtitle {
+        font-size: 0.85rem;
+    }
+}
+
+/* Mobile Floating Action Button */
+.floating-action-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    display: none;
+}
+
+.floating-action-btn .action-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.floating-action-btn .action-btn:hover {
+    background-color: #2563eb;
+    transform: scale(1.05);
+}
+
+.floating-action-btn .action-menu {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 8px;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 180px;
+}
+
+.floating-action-btn:hover .action-menu,
+.floating-action-btn:focus-within .action-menu {
+    display: flex;
+}
+
+.floating-action-btn .action-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #334155;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-size: 0.95rem;
+    width: 100%;
+    text-align: left;
+}
+
+.floating-action-btn .action-item:hover {
+    background-color: #f1f5f9;
+    color: #3b82f6;
+}
+
+.floating-action-btn .action-item i {
+    font-size: 1.2rem;
+}
+
+/* Animation for Modal */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Template Styles (not visible but for reference) */
+template {
+    display: none;
+}
+
+/* Additional Utility Classes */
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.mt-4 {
+    margin-top: 1rem;
+}
+
+.mb-4 {
+    margin-bottom: 1rem;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.align-center {
+    align-items: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.w-full {
+    width: 100%;
+}
+
+/* Print Styles */
+@media print {
+    .controls-bar,
+    .header-actions,
+    .car-actions,
+    #header,
+    #footer,
+    .floating-action-btn {
+        display: none !important;
+    }
+    
+    .car-grid {
+        display: block;
+    }
+    
+    .car-card {
+        break-inside: avoid;
+        margin-bottom: 20px;
+        box-shadow: none;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .status-badge {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    body {
+        background-color: white;
+    }
+    
+    main {
+        margin: 0;
+        padding: 0;
     }
 }

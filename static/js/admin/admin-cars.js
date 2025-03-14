@@ -1,4 +1,3 @@
-// admin-cars.js - Part 1
 import { db, auth } from "../common/firebase-config.js";
 import {
   collection,
@@ -9,62 +8,70 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy
+  orderBy,
+  Timestamp,
+  writeBatch,
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 import {
   onAuthStateChanged,
-  signOut
+  signOut,
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 
-// Global state
+// Global variables
 let currentUser = null;
-let carsData = [];
+let allCars = [];
 let filteredCars = [];
-let currentView = "grid"; // Default view
-let currentFilter = "all"; // Default filter
-let currentSort = "name-asc"; // Default sort
+let currentView = localStorage.getItem("carViewPreference") || "grid";
+let currentFilter = "all";
+let currentSort = "name-asc";
+let searchQuery = "";
 
 // DOM Elements
 const loadingState = document.getElementById("loading-state");
 const emptyState = document.getElementById("empty-state");
 const gridView = document.getElementById("grid-view");
 const listView = document.getElementById("list-view");
-const listContent = document.getElementById("list-content");
 const searchInput = document.getElementById("search-input");
 const filterSelect = document.getElementById("filter-select");
 const sortSelect = document.getElementById("sort-select");
 const gridViewBtn = document.getElementById("grid-view-btn");
 const listViewBtn = document.getElementById("list-view-btn");
 const addCarBtn = document.getElementById("add-car-btn");
+const statsCardsContainer = document.getElementById("car-stats");
 
 // Initialize the application
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("Admin cars page initialized");
-  
+  console.log("Admin cars page initializing");
+
   try {
-    // Load header and footer
-    await loadHeaderFooter();
-    
-    // Add event listeners for controls
+    // Set active sidebar item
+    setActiveSidebarItem("admin-cars.html");
+
+    // Setup event listeners for controls
     setupEventListeners();
-    
+
     // Check authentication
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          // Verify the user is an admin
+          // Check if user is admin
           const userDoc = await getDoc(doc(db, "users", user.uid));
-          
+
           if (userDoc.exists() && userDoc.data().role === "admin") {
-            // Store current user
             currentUser = {
               uid: user.uid,
-              ...userDoc.data()
+              ...userDoc.data(),
             };
-            
-            console.log("Admin authenticated:", currentUser);
-            
-            // Load cars data
+
+            console.log("Admin authenticated:", currentUser.email);
+
+            // Update welcome message
+            const welcomeMsg = document.getElementById("welcome-message");
+            if (welcomeMsg) {
+              welcomeMsg.textContent = currentUser.firstName || "Admin";
+            }
+
+            // Load car data
             await loadCarsData();
           } else {
             console.error("User is not an admin");
@@ -74,51 +81,30 @@ document.addEventListener("DOMContentLoaded", async () => {
             }, 2000);
           }
         } catch (error) {
-          console.error("Error verifying admin:", error);
-          showErrorMessage("Failed to verify admin permissions: " + error.message);
+          console.error("Error checking admin status:", error);
+          showErrorMessage(
+            "Failed to verify admin permissions: " + error.message
+          );
         }
       } else {
         console.log("User not authenticated, redirecting to login");
         window.location.href = "../index.html";
       }
     });
-    
   } catch (error) {
     console.error("Initialization error:", error);
     showErrorMessage("Failed to initialize page: " + error.message);
   }
 });
 
-// Load header and footer
-async function loadHeaderFooter() {
-  try {
-    // Load header
-    const headerResponse = await fetch("../static/headerFooter/admin-header.html");
-    document.getElementById("header").innerHTML = await headerResponse.text();
-    
-    // Load footer
-    const footerResponse = await fetch("../static/headerFooter/admin-footer.html");
-    document.getElementById("footer").innerHTML = await footerResponse.text();
-    
-    // Setup logout button
-    setTimeout(() => {
-      const logoutBtn = document.getElementById("logout-button");
-      if (logoutBtn) {
-        logoutBtn.addEventListener("click", async () => {
-          try {
-            await signOut(auth);
-            window.location.href = "../index.html";
-          } catch (error) {
-            console.error("Logout error:", error);
-            alert("Failed to log out: " + error.message);
-          }
-        });
-      }
-    }, 100);
-  } catch (error) {
-    console.error("Error loading header/footer:", error);
-    throw error;
-  }
+// Set active sidebar menu item
+function setActiveSidebarItem(page) {
+  document.querySelectorAll(".menu-item").forEach((item) => {
+    item.classList.remove("active");
+    if (item.getAttribute("href") === page) {
+      item.classList.add("active");
+    }
+  });
 }
 
 // Setup event listeners
@@ -126,10 +112,11 @@ function setupEventListeners() {
   // Search input
   if (searchInput) {
     searchInput.addEventListener("input", () => {
+      searchQuery = searchInput.value.trim().toLowerCase();
       filterAndSortCars();
     });
   }
-  
+
   // Filter select
   if (filterSelect) {
     filterSelect.addEventListener("change", () => {
@@ -137,7 +124,7 @@ function setupEventListeners() {
       filterAndSortCars();
     });
   }
-  
+
   // Sort select
   if (sortSelect) {
     sortSelect.addEventListener("change", () => {
@@ -145,451 +132,476 @@ function setupEventListeners() {
       filterAndSortCars();
     });
   }
-  
+
   // View toggle buttons
   if (gridViewBtn) {
     gridViewBtn.addEventListener("click", () => {
       setActiveView("grid");
     });
   }
-  
+
   if (listViewBtn) {
     listViewBtn.addEventListener("click", () => {
       setActiveView("list");
     });
   }
-  
+
   // Add car button
   if (addCarBtn) {
     addCarBtn.addEventListener("click", () => {
-      window.location.href = "admin-add-car.html";
+      window.location.href = "admin-addCars.html";
     });
   }
 }
 
-// Fetch cars data from Firestore
+// Load cars data from Firestore
 async function loadCarsData() {
-  if (!loadingState) {
-    console.error("Loading state element not found");
-    return;
-  }
-  
-  // Show loading state
-  showLoading(true);
-  
   try {
-    console.log("Fetching cars data from Firestore");
-    
-    // Get cars collection reference
-    const carsRef = collection(db, "cars");
-    
-    // Create query - can add filters and ordering here if needed
-    const carsQuery = query(carsRef);
-    
-    // Execute query
-    const querySnapshot = await getDocs(carsQuery);
-    
-    console.log(`Found ${querySnapshot.size} cars`);
-    
-    // Process query results
-    carsData = [];
-    
-    querySnapshot.forEach((doc) => {
+    showLoading(true);
+    console.log("Loading cars data from Firestore");
+
+    // Get all cars
+    const carsQuery = query(collection(db, "cars"));
+    const carSnapshot = await getDocs(carsQuery);
+
+    if (carSnapshot.empty) {
+      console.log("No cars found in database");
+      showEmptyState(true);
+      updateStatCards(0, 0, 0, 0);
+      return;
+    }
+
+    // Process cars
+    allCars = [];
+    let availableCars = 0;
+    let maintenanceCars = 0;
+    let unavailableCars = 0;
+    let bookedCars = 0;
+
+    carSnapshot.forEach((doc) => {
       const car = {
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       };
-      
-      carsData.push(car);
-      console.log("Loaded car:", car.id);
+
+      // Add to the appropriate count
+      switch (car.status) {
+        case "available":
+          availableCars++;
+          break;
+        case "maintenance":
+          maintenanceCars++;
+          break;
+        case "unavailable":
+          unavailableCars++;
+          break;
+        case "booked":
+          bookedCars++;
+          break;
+      }
+
+      allCars.push(car);
     });
-    
-    // Apply initial filtering and sorting
+
+    console.log(`Loaded ${allCars.length} cars`);
+
+    // Update stat cards
+    updateStatCards(
+      availableCars,
+      bookedCars,
+      maintenanceCars,
+      unavailableCars
+    );
+
+    // Apply filters and sorting
     filterAndSortCars();
-    
-    // Show the appropriate view
+
+    // Set initial view
     setActiveView(currentView);
-    
   } catch (error) {
-    console.error("Error loading cars:", error);
+    console.error("Error loading cars data:", error);
     showErrorMessage(`Failed to load cars: ${error.message}`);
   } finally {
     showLoading(false);
   }
 }
 
-// Filter and sort cars based on current settings
+// Update statistics cards
+function updateStatCards(available, booked, maintenance, unavailable) {
+  const total = available + booked + maintenance + unavailable;
+
+  // Update stats in the UI
+  const availableStat = document.getElementById("available-cars");
+  const bookedStat = document.getElementById("booked-cars");
+  const maintenanceStat = document.getElementById("maintenance-cars");
+  const totalStat = document.getElementById("total-cars");
+
+  if (availableStat) availableStat.textContent = available;
+  if (bookedStat) bookedStat.textContent = booked;
+  if (maintenanceStat) maintenanceStat.textContent = maintenance;
+  if (totalStat) totalStat.textContent = total;
+}
+
+// Filter and sort cars
 function filterAndSortCars() {
   console.log("Filtering and sorting cars");
-  console.log("Current filter:", currentFilter);
-  console.log("Current sort:", currentSort);
-  console.log("Search query:", searchInput ? searchInput.value : "null");
-  
+  console.log(
+    `Filter: ${currentFilter}, Sort: ${currentSort}, Search: ${searchQuery}`
+  );
+
   try {
-    // Get search query
-    const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : "";
-    
     // Apply filters
-    filteredCars = carsData.filter(car => {
-      // Apply status filter
+    filteredCars = allCars.filter((car) => {
+      // Status filter
       if (currentFilter !== "all" && car.status !== currentFilter) {
         return false;
       }
-      
-      // Apply search query
+
+      // Search filter
       if (searchQuery) {
-        const make = car.make || "";
-        const model = car.model || "";
-        const licensePlate = car.license_plate || "";
-        const carType = car.car_type || "";
-        const address = car.address || "";
-        
-        return make.toLowerCase().includes(searchQuery) ||
-               model.toLowerCase().includes(searchQuery) ||
-               licensePlate.toLowerCase().includes(searchQuery) ||
-               carType.toLowerCase().includes(searchQuery) ||
-               address.toLowerCase().includes(searchQuery);
+        const make = (car.make || "").toLowerCase();
+        const model = (car.model || "").toLowerCase();
+        const licensePlate = (car.license_plate || "").toLowerCase();
+        const carType = (car.car_type || "").toLowerCase();
+        const address = (car.address || "").toLowerCase();
+
+        const searchTerms = searchQuery.toLowerCase().split(" ");
+
+        // Check if all search terms match at least one field
+        return searchTerms.every((term) => {
+          return (
+            make.includes(term) ||
+            model.includes(term) ||
+            licensePlate.includes(term) ||
+            carType.includes(term) ||
+            address.includes(term)
+          );
+        });
       }
-      
+
       return true;
     });
-    
+
     // Apply sorting
-    switch (currentSort) {
-      case "name-asc":
-        filteredCars.sort((a, b) => {
-          const nameA = `${a.make || ""} ${a.model || ""}`;
-          const nameB = `${b.make || ""} ${b.model || ""}`;
-          return nameA.localeCompare(nameB);
-        });
-        break;
-      case "name-desc":
-        filteredCars.sort((a, b) => {
-          const nameA = `${a.make || ""} ${a.model || ""}`;
-          const nameB = `${b.make || ""} ${b.model || ""}`;
-          return nameB.localeCompare(nameA);
-        });
-        break;
-      case "status":
-        filteredCars.sort((a, b) => {
-          return (a.status || "").localeCompare(b.status || "");
-        });
-        break;
-      case "date-added":
-        filteredCars.sort((a, b) => {
-          const dateA = a.created_at ? new Date(a.created_at.seconds * 1000) : new Date(0);
-          const dateB = b.created_at ? new Date(b.created_at.seconds * 1000) : new Date(0);
-          return dateB - dateA;
-        });
-        break;
-    }
-    
+    sortCars();
+
     // Update the UI
     updateCarsDisplay();
-    
   } catch (error) {
     console.error("Error filtering/sorting cars:", error);
     showErrorMessage(`Failed to process cars data: ${error.message}`);
   }
 }
 
-// Show or hide loading state
-function showLoading(show) {
-  if (loadingState) {
-    loadingState.style.display = show ? "flex" : "none";
+// Sort cars based on current sort selection
+function sortCars() {
+  switch (currentSort) {
+    case "name-asc":
+      filteredCars.sort((a, b) => {
+        const nameA = `${a.make || ""} ${a.model || ""}`.trim().toLowerCase();
+        const nameB = `${b.make || ""} ${b.model || ""}`.trim().toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      break;
+
+    case "name-desc":
+      filteredCars.sort((a, b) => {
+        const nameA = `${a.make || ""} ${a.model || ""}`.trim().toLowerCase();
+        const nameB = `${b.make || ""} ${b.model || ""}`.trim().toLowerCase();
+        return nameB.localeCompare(nameA);
+      });
+      break;
+
+    case "status":
+      filteredCars.sort((a, b) => {
+        const statusPriority = {
+          available: 1,
+          booked: 2,
+          maintenance: 3,
+          unavailable: 4,
+        };
+        const priorityA = statusPriority[a.status] || 9999;
+        const priorityB = statusPriority[b.status] || 9999;
+        return priorityA - priorityB;
+      });
+      break;
+
+    case "licensePlate":
+      filteredCars.sort((a, b) => {
+        const plateA = (a.license_plate || "").toLowerCase();
+        const plateB = (b.license_plate || "").toLowerCase();
+        return plateA.localeCompare(plateB);
+      });
+      break;
   }
 }
 
-// Show error message
-function showErrorMessage(message) {
-  console.error("ERROR:", message);
-  
-  // Hide loading state
-  showLoading(false);
-  
-  // Create error message container if it doesn't exist
-  let errorContainer = document.getElementById("error-container");
-  if (!errorContainer) {
-    errorContainer = document.createElement("div");
-    errorContainer.id = "error-container";
-    errorContainer.className = "error-container";
-    const mainElement = document.querySelector("main");
-    if (mainElement) {
-      mainElement.appendChild(errorContainer);
-    } else {
-      document.body.appendChild(errorContainer);
-    }
-  }
-  
-  // Show error message
-  errorContainer.innerHTML = `
-    <div class="error-message">
-      <i class="bi bi-exclamation-triangle"></i>
-      <p>${message}</p>
-      <button onclick="window.location.reload()">Retry</button>
-    </div>
-  `;
-  errorContainer.style.display = "block";
-}
-
-// Update the cars display based on filtered data and current view
+// Update the cars display based on filtered data
 function updateCarsDisplay() {
-  console.log(`Updating display with ${filteredCars.length} cars`);
-  
-  // Show empty state if no cars
-  if (emptyState) {
-    emptyState.style.display = filteredCars.length === 0 ? "flex" : "none";
+  console.log(`Displaying ${filteredCars.length} cars`);
+
+  // Show empty state if no cars after filtering
+  if (filteredCars.length === 0) {
+    showEmptyState(true);
+  } else {
+    showEmptyState(false);
   }
-  
+
   // Update grid view
   if (gridView) {
-    // Clear existing content
     gridView.innerHTML = "";
-    
-    // Create car cards
-    filteredCars.forEach(car => {
+    filteredCars.forEach((car) => {
       const carCard = createCarCard(car);
       gridView.appendChild(carCard);
     });
   }
-  
+
   // Update list view
-  if (listContent) {
-    // Clear existing content
-    listContent.innerHTML = "";
-    
-    if (filteredCars.length > 0) {
-      // Create table
-      const table = document.createElement("table");
-      table.className = "cars-table";
-      
-      // Create table header
-      const thead = document.createElement("thead");
-      thead.innerHTML = `
-        <tr>
-          <th>Image</th>
-          <th>Details</th>
-          <th>Status</th>
-          <th>Availability</th>
-          <th>Actions</th>
-        </tr>
-      `;
-      table.appendChild(thead);
-      
-      // Create table body
-      const tbody = document.createElement("tbody");
-      
-      // Add car rows
-      filteredCars.forEach(car => {
-        const row = createCarRow(car);
-        tbody.appendChild(row);
-      });
-      
-      table.appendChild(tbody);
-      listContent.appendChild(table);
-    }
+  if (listView) {
+    listView.innerHTML = "";
+
+    // Create list header
+    const listHeader = document.createElement("div");
+    listHeader.className = "list-header";
+    listHeader.innerHTML = `
+      <div class="list-col col-image">Image</div>
+      <div class="list-col col-main">Car Details</div>
+      <div class="list-col col-status">Status</div>
+      <div class="list-col col-specs">Specifications</div>
+      <div class="list-col col-actions">Actions</div>
+    `;
+    listView.appendChild(listHeader);
+
+    // Create list content container
+    const listContent = document.createElement("div");
+    listContent.id = "list-content";
+
+    // Add car rows
+    filteredCars.forEach((car) => {
+      const carRow = createCarRow(car);
+      listContent.appendChild(carRow);
+    });
+
+    listView.appendChild(listContent);
   }
 }
 
 // Create a car card for grid view
 function createCarCard(car) {
-  // Create card container
+  // Create card element
   const card = document.createElement("div");
   card.className = "car-card";
   card.dataset.carId = car.id;
-  
-  // Determine car image path
+
+  // Get car image path
   const carType = car.car_type || "car";
   const imagePath = `../static/images/car_images/${carType}.png`;
   const fallbackPath = "../static/images/assets/car-placeholder.jpg";
-  
-  // Create status badge based on car status
-  let statusBadgeClass = "status-badge";
-  let statusText = "Unknown";
-  
-  switch (car.status) {
-    case "available":
-      statusBadgeClass += " available";
-      statusText = "Available";
-      break;
-    case "unavailable":
-      statusBadgeClass += " unavailable";
-      statusText = "Unavailable";
-      break;
-    case "maintenance":
-      statusBadgeClass += " maintenance";
-      statusText = "Maintenance";
-      break;
-    case "booked":
-      statusBadgeClass += " booked";
-      statusText = "Booked";
-      break;
+
+  // Get license plate or default
+  const licensePlate = car.license_plate || "No Plate";
+
+  // Get car model and make
+  const make = car.make || "";
+  const model = car.model || "Unknown Model";
+  const carName = `${make} ${model}`.trim();
+
+  // Get status class
+  let statusClass = car.status || "unknown";
+
+  // Convert service due date if available
+  let serviceDue = "Not set";
+  if (car.service_due) {
+    if (car.service_due instanceof Timestamp) {
+      serviceDue = car.service_due.toDate().toLocaleDateString();
+    } else if (car.service_due.seconds) {
+      serviceDue = new Date(
+        car.service_due.seconds * 1000
+      ).toLocaleDateString();
+    }
   }
-  
-  // Build car name
-  const carName = `${car.make || ''} ${car.model || 'Car'}`.trim();
-  
-  // Construct card HTML
+
+  // Build card HTML
   card.innerHTML = `
-    <div class="${statusBadgeClass}">${statusText}</div>
+    <div class="card-header">
+      <div class="car-plate">${licensePlate}</div>
+      <div class="car-id">ID: ${car.id.substring(0, 8)}...</div>
+    </div>
+    
+    <div class="status-badge ${statusClass}">${capitalizeFirstLetter(
+    car.status || "unknown"
+  )}</div>
     
     <div class="car-image">
       <img src="${imagePath}" alt="${carName}" onerror="this.onerror=null; this.src='${fallbackPath}'">
     </div>
     
     <div class="car-details">
-      <h3 class="car-name">${carName}</h3>
-      
-      <div class="car-license">${car.license_plate || 'No plate'}</div>
+      <h3 class="car-model">${carName}</h3>
       
       <div class="car-specs">
         <div class="spec-item">
-          <i class="bi bi-people-fill"></i>
-          <span>${car.seating_capacity || '?'} seats</span>
+          <div class="spec-icon"><i class="bi bi-people-fill"></i></div>
+          <div>
+            <span class="spec-value">${car.seating_capacity || "?"}</span>
+            <span class="spec-label">Seats</span>
+          </div>
         </div>
+        
         <div class="spec-item">
-          <i class="bi bi-fuel-pump"></i>
-          <span>${car.fuel_type || 'N/A'}</span>
+          <div class="spec-icon"><i class="bi bi-fuel-pump"></i></div>
+          <div>
+            <span class="spec-value">${car.fuel_type || "N/A"}</span>
+            <span class="spec-label">Fuel</span>
+          </div>
+        </div>
+        
+        <div class="spec-item">
+          <div class="spec-icon"><i class="bi bi-gear"></i></div>
+          <div>
+            <span class="spec-value">${car.transmission || "N/A"}</span>
+            <span class="spec-label">Trans</span>
+          </div>
+        </div>
+        
+        <div class="spec-item">
+          <div class="spec-icon"><i class="bi bi-calendar-check"></i></div>
+          <div>
+            <span class="spec-value">${serviceDue}</span>
+            <span class="spec-label">Service Due</span>
+          </div>
         </div>
       </div>
       
       <div class="car-location">
-        <i class="bi bi-geo-alt"></i>
-        <span>${car.address || 'No location set'}</span>
+        <i class="location-icon bi bi-geo-alt"></i>
+        <span class="location-text">${car.address || "No location set"}</span>
       </div>
     </div>
     
     <div class="car-actions">
-      <a href="admin-edit-car.html?id=${car.id}" class="edit-btn" title="Edit Car">
+      <a href="admin-editCar.html?id=${car.id}" class="edit-btn">
         <i class="bi bi-pencil"></i> Edit
       </a>
-      <button class="delete-btn" data-car-id="${car.id}" title="Delete Car">
+      <button class="delete-btn" data-car-id="${car.id}">
         <i class="bi bi-trash"></i> Delete
       </button>
     </div>
   `;
-  
+
   // Add event listener for delete button
   const deleteBtn = card.querySelector(".delete-btn");
   if (deleteBtn) {
-    deleteBtn.addEventListener("click", (event) => {
-      event.preventDefault();
-      const carId = deleteBtn.dataset.carId;
-      confirmDeleteCar(carId);
+    deleteBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      confirmDeleteCar(car.id);
     });
   }
-  
+
   return card;
 }
 
 // Create a car row for list view
 function createCarRow(car) {
-  // Create row element
-  const row = document.createElement("tr");
+  const row = document.createElement("div");
+  row.className = "car-row";
   row.dataset.carId = car.id;
-  
-  // Determine car image path
+
+  // Get car image path
   const carType = car.car_type || "car";
   const imagePath = `../static/images/car_images/${carType}.png`;
   const fallbackPath = "../static/images/assets/car-placeholder.jpg";
-  
-  // Create status badge HTML based on car status
-  let statusBadgeClass = "status-badge";
-  let statusText = "Unknown";
-  
-  switch (car.status) {
-    case "available":
-      statusBadgeClass += " available";
-      statusText = "Available";
-      break;
-    case "unavailable":
-      statusBadgeClass += " unavailable";
-      statusText = "Unavailable";
-      break;
-    case "maintenance":
-      statusBadgeClass += " maintenance";
-      statusText = "Maintenance";
-      break;
-    case "booked":
-      statusBadgeClass += " booked";
-      statusText = "Booked";
-      break;
-  }
-  
+
+  // Get license plate or default
+  const licensePlate = car.license_plate || "No Plate";
+
+  // Get car model and make
+  const make = car.make || "";
+  const model = car.model || "Unknown Model";
+  const carName = `${make} ${model}`.trim();
+
   // Format date added if available
   let dateAdded = "N/A";
-  if (car.created_at && car.created_at.seconds) {
-    const date = new Date(car.created_at.seconds * 1000);
-    dateAdded = date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+  if (car.created_at) {
+    if (car.created_at instanceof Timestamp) {
+      dateAdded = car.created_at.toDate().toLocaleDateString();
+    } else if (car.created_at.seconds) {
+      dateAdded = new Date(car.created_at.seconds * 1000).toLocaleDateString();
+    }
   }
-  
-  // Construct car name
-  const carName = `${car.make || ''} ${car.model || 'Car'}`.trim();
-  
-  // Set row HTML
+
+  // Build row HTML
   row.innerHTML = `
-    <td class="car-image-cell">
+    <div class="list-col col-image">
       <img src="${imagePath}" alt="${carName}" onerror="this.onerror=null; this.src='${fallbackPath}'">
-    </td>
-    <td class="car-info-cell">
-      <div class="car-name">${carName}</div>
-      <div class="car-license">${car.license_plate || 'No plate'}</div>
-      <div class="car-location">
-        <i class="bi bi-geo-alt"></i>
-        <span>${car.address || 'No location set'}</span>
-      </div>
-    </td>
-    <td class="car-status-cell">
-      <div class="${statusBadgeClass}">${statusText}</div>
+    </div>
+    
+    <div class="list-col col-main">
+      <div class="car-plate">${licensePlate}</div>
+      <div class="car-model">${carName}</div>
+      <div class="car-id">ID: ${car.id.substring(0, 8)}...</div>
+      <div class="car-location"><i class="bi bi-geo-alt"></i> ${
+        car.address || "No location"
+      }</div>
+    </div>
+    
+    <div class="list-col col-status">
+      <div class="status-badge ${
+        car.status || "unknown"
+      }">${capitalizeFirstLetter(car.status || "unknown")}</div>
       <div class="added-date">Added: ${dateAdded}</div>
-    </td>
-    <td class="car-specs-cell">
-      <div class="spec-item">
-        <i class="bi bi-people-fill"></i>
-        <span>${car.seating_capacity || '?'} seats</span>
+    </div>
+    
+    <div class="list-col col-specs">
+      <div class="spec-row">
+        <div class="spec-icon"><i class="bi bi-people-fill"></i></div>
+        <span>${car.seating_capacity || "?"} seats</span>
       </div>
-      <div class="spec-item">
-        <i class="bi bi-fuel-pump"></i>
-        <span>${car.fuel_type || 'N/A'}</span>
+      
+      <div class="spec-row">
+        <div class="spec-icon"><i class="bi bi-fuel-pump"></i></div>
+        <span>${car.fuel_type || "N/A"}</span>
       </div>
-      <div class="spec-item">
-        <i class="bi bi-speedometer2"></i>
-        <span>${car.transmission || 'N/A'}</span>
+      
+      <div class="spec-row">
+        <div class="spec-icon"><i class="bi bi-gear"></i></div>
+        <span>${car.transmission || "N/A"}</span>
       </div>
-    </td>
-    <td class="car-actions-cell">
-      <a href="admin-edit-car.html?id=${car.id}" class="edit-btn" title="Edit Car">
-        <i class="bi bi-pencil"></i> Edit
+    </div>
+    
+    <div class="list-col col-actions">
+      <a href="admin-editCar.html?id=${
+        car.id
+      }" class="action-btn edit" title="Edit Car">
+        <i class="bi bi-pencil"></i>
       </a>
-      <button class="delete-btn" data-car-id="${car.id}" title="Delete Car">
-        <i class="bi bi-trash"></i> Delete
+      <button class="action-btn delete" data-car-id="${
+        car.id
+      }" title="Delete Car">
+        <i class="bi bi-trash"></i>
       </button>
-    </td>
+    </div>
   `;
-  
+
   // Add event listener for delete button
-  const deleteBtn = row.querySelector(".delete-btn");
+  const deleteBtn = row.querySelector(".action-btn.delete");
   if (deleteBtn) {
-    deleteBtn.addEventListener("click", (event) => {
-      event.preventDefault();
-      const carId = deleteBtn.dataset.carId;
-      confirmDeleteCar(carId);
+    deleteBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      confirmDeleteCar(car.id);
     });
   }
-  
+
   return row;
 }
 
 // Set active view (grid or list)
 function setActiveView(view) {
-  // Update current view
+  // Store preference
   currentView = view;
-  
-  // Update view buttons
+  localStorage.setItem("carViewPreference", view);
+
+  // Update button states
   if (gridViewBtn && listViewBtn) {
     if (view === "grid") {
       gridViewBtn.classList.add("active");
@@ -599,8 +611,8 @@ function setActiveView(view) {
       listViewBtn.classList.add("active");
     }
   }
-  
-  // Show/hide appropriate view
+
+  // Show/hide views
   if (gridView && listView) {
     if (view === "grid") {
       gridView.style.display = "grid";
@@ -612,20 +624,19 @@ function setActiveView(view) {
   }
 }
 
-// Show confirmation dialog before deleting a car
+// Confirm delete car
 function confirmDeleteCar(carId) {
-  // Find car data
-  const car = carsData.find(c => c.id === carId);
+  const car = allCars.find((c) => c.id === carId);
   if (!car) {
     console.error(`Car with ID ${carId} not found`);
     return;
   }
-  
+
   // Create modal backdrop
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
   document.body.appendChild(backdrop);
-  
+
   // Create modal
   const modal = document.createElement("div");
   modal.className = "modal";
@@ -635,83 +646,93 @@ function confirmDeleteCar(carId) {
         <h3>Delete Car</h3>
         <button class="close-modal">&times;</button>
       </div>
+      
       <div class="modal-body">
-        <p>Are you sure you want to delete this car?</p>
+        <p>Are you sure you want to delete the following car?</p>
+        
         <div class="car-summary">
-          <p><strong>Make:</strong> ${car.make || 'N/A'}</p>
-          <p><strong>Model:</strong> ${car.model || 'N/A'}</p>
-          <p><strong>License Plate:</strong> ${car.license_plate || 'N/A'}</p>
+          <p><strong>License Plate:</strong> ${
+            car.license_plate || "No Plate"
+          }</p>
+          <p><strong>Car:</strong> ${car.make || ""} ${
+    car.model || "Unknown"
+  }</p>
+          <p><strong>Status:</strong> ${capitalizeFirstLetter(
+            car.status || "unknown"
+          )}</p>
+          <p><strong>ID:</strong> ${car.id}</p>
         </div>
-        <p class="warning-text">This action cannot be undone.</p>
+        
+        <p class="warning-text">
+          <i class="bi bi-exclamation-triangle"></i>
+          This action cannot be undone. All data associated with this car will be permanently deleted.
+        </p>
       </div>
+      
       <div class="modal-footer">
-        <button class="cancel-btn">Cancel</button>
-        <button class="confirm-delete-btn">Delete Car</button>
+        <button class="secondary-btn" id="cancel-btn">Cancel</button>
+        <button class="danger-btn" id="confirm-delete-btn">Delete Car</button>
       </div>
     </div>
   `;
-  
+
   document.body.appendChild(modal);
-  
+
   // Show modal with animation
   setTimeout(() => {
     backdrop.style.opacity = "1";
     modal.style.opacity = "1";
+    modal.style.transform = "translateY(0)";
   }, 10);
-  
+
   // Handle close button
   const closeBtn = modal.querySelector(".close-modal");
-  closeBtn.addEventListener("click", () => {
-    closeModal();
-  });
-  
+  closeBtn.addEventListener("click", closeModal);
+
   // Handle cancel button
-  const cancelBtn = modal.querySelector(".cancel-btn");
-  cancelBtn.addEventListener("click", () => {
-    closeModal();
-  });
-  
+  const cancelBtn = modal.querySelector("#cancel-btn");
+  cancelBtn.addEventListener("click", closeModal);
+
   // Handle click outside modal
-  backdrop.addEventListener("click", () => {
-    closeModal();
-  });
-  
+  backdrop.addEventListener("click", closeModal);
+
   // Handle confirm delete button
-  const confirmBtn = modal.querySelector(".confirm-delete-btn");
+  const confirmBtn = modal.querySelector("#confirm-delete-btn");
   confirmBtn.addEventListener("click", async () => {
     try {
       // Close modal
       closeModal();
-      
-      // Show loading state
+
+      // Show loading
       showLoading(true);
-      
+
       // Delete car from Firestore
       await deleteDoc(doc(db, "cars", carId));
-      
+
       console.log(`Car ${carId} deleted successfully`);
-      
-      // Remove car from local data
-      carsData = carsData.filter(c => c.id !== carId);
-      
-      // Update display
+
+      // Remove from local data
+      allCars = allCars.filter((c) => c.id !== carId);
+
+      // Refresh display
       filterAndSortCars();
-      
-      // Show success message
-      showToast("Car deleted successfully");
+
+      // Show success toast
+      showToast("Car deleted successfully", "success");
     } catch (error) {
       console.error(`Error deleting car ${carId}:`, error);
-      showErrorMessage(`Failed to delete car: ${error.message}`);
+      showToast(`Failed to delete car: ${error.message}`, "error");
     } finally {
       showLoading(false);
     }
   });
-  
+
   // Function to close modal
   function closeModal() {
     backdrop.style.opacity = "0";
     modal.style.opacity = "0";
-    
+    modal.style.transform = "translateY(20px)";
+
     setTimeout(() => {
       backdrop.remove();
       modal.remove();
@@ -719,42 +740,87 @@ function confirmDeleteCar(carId) {
   }
 }
 
-// Show toast notification
-function showToast(message, type = "success") {
-  // Create toast if it doesn't exist
-  let toast = document.getElementById("toast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "toast";
-    toast.className = "toast";
-    document.body.appendChild(toast);
+// Show loading state
+function showLoading(show) {
+  if (loadingState) {
+    loadingState.style.display = show ? "flex" : "none";
   }
-  
-  // Set toast content and type
-  toast.textContent = message;
+}
+
+// Show or hide empty state
+function showEmptyState(show) {
+  if (emptyState) {
+    emptyState.style.display = show ? "flex" : "none";
+  }
+}
+
+// Show error message
+function showErrorMessage(message) {
+  // Create error container
+  const errorContainer = document.createElement("div");
+  errorContainer.className = "error-container";
+  errorContainer.innerHTML = `
+    <div class="error-message">
+      <i class="bi bi-exclamation-triangle"></i>
+      <h3>Error</h3>
+      <p>${message}</p>
+      <button class="primary-btn" onclick="location.reload()">Reload Page</button>
+    </div>
+  `;
+
+  // Hide loading state
+  showLoading(false);
+
+  // Add to page
+  const container = document.querySelector(".container");
+  if (container) {
+    container.prepend(errorContainer);
+  } else {
+    document.body.prepend(errorContainer);
+  }
+}
+
+// Show toast notification
+function showToast(message, type = "info") {
+  // Remove existing toast
+  const existingToast = document.querySelector(".toast");
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  // Create toast element
+  const toast = document.createElement("div");
   toast.className = `toast ${type}`;
-  
-  // Show toast
-  toast.style.display = "block";
-  
-  // Animate toast
+
+  // Set icon based on type
+  let icon = "info-circle";
+  if (type === "success") icon = "check-circle";
+  if (type === "error") icon = "exclamation-triangle";
+
+  toast.innerHTML = `
+    <i class="bi bi-${icon}"></i>
+    <span>${message}</span>
+  `;
+
+  document.body.appendChild(toast);
+
+  // Show toast with animation
   setTimeout(() => {
     toast.classList.add("show");
-    
-    // Hide toast after delay
+
+    // Hide after delay
     setTimeout(() => {
       toast.classList.remove("show");
-      
-      setTimeout(() => {
-        toast.style.display = "none";
-      }, 300);
+      setTimeout(() => toast.remove(), 300);
     }, 3000);
   }, 10);
 }
 
-// Export functions for external use
-export {
-  loadCarsData,
-  filterAndSortCars,
-  setActiveView
-};
+// Helper function to capitalize first letter
+function capitalizeFirstLetter(string) {
+  if (!string) return "";
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+// Export functions that might be needed elsewhere
+export { loadCarsData, filterAndSortCars, setActiveView };

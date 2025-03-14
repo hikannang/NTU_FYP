@@ -9,82 +9,89 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body class="admin-body">
+    <!-- Admin Header will be loaded here -->
     <div id="header"></div>
     
     <main class="admin-main">
         <div class="container">
-            <!-- Page Header with Analytics -->
+            <!-- Page Header -->
             <div class="page-header-wrapper">
                 <div class="page-header">
                     <div class="breadcrumb">
-                        <span><i class="bi bi-house"></i> Dashboard</span>
+                        <a href="admin-dashboard.html"><i class="bi bi-house"></i> Dashboard</a>
                         <i class="bi bi-chevron-right"></i>
                         <span class="current">Fleet Management</span>
                     </div>
-                    <h1>Fleet Management</h1>
-                    <p class="subtitle">Oversee your vehicle inventory, monitor status, and manage availability</p>
+                    <h1 class="page-title">
+                        <i class="bi bi-car-front"></i> Fleet Management
+                    </h1>
+                    <p class="subtitle">Manage your fleet of vehicles, track maintenance, and update availability</p>
                 </div>
                 
-                <div class="fleet-stats">
-                    <div class="stat-card available-stat">
-                        <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-                        <div class="stat-info">
-                            <span class="stat-count" id="available-count">0</span>
-                            <span class="stat-label">Available</span>
-                        </div>
-                    </div>
-                    <div class="stat-card booked-stat">
-                        <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
-                        <div class="stat-info">
-                            <span class="stat-count" id="booked-count">0</span>
-                            <span class="stat-label">Booked</span>
-                        </div>
-                    </div>
-                    <div class="stat-card maintenance-stat">
-                        <div class="stat-icon"><i class="bi bi-tools"></i></div>
-                        <div class="stat-info">
-                            <span class="stat-count" id="maintenance-count">0</span>
-                            <span class="stat-label">Maintenance</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Action Bar -->
-            <div class="action-bar">
-                <button id="add-car-btn" class="primary-btn">
-                    <i class="bi bi-plus-lg"></i> Add Vehicle
-                </button>
-                
-                <div class="action-controls">
-                    <button id="bulk-action-btn" class="secondary-btn bulk-action-btn" disabled>
-                        <i class="bi bi-three-dots"></i> Bulk Actions
+                <div class="header-actions">
+                    <button id="add-car-btn" class="primary-btn">
+                        <i class="bi bi-plus-lg"></i> Add New Vehicle
                     </button>
-                    
-                    <div class="view-switcher">
-                        <button id="grid-view-btn" class="view-btn active" title="Grid View">
-                            <i class="bi bi-grid-3x3-gap-fill"></i>
-                        </button>
-                        <button id="list-view-btn" class="view-btn" title="List View">
-                            <i class="bi bi-list-ul"></i>
-                        </button>
+                </div>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="stats-summary" id="car-stats">
+                <div class="stat-card available">
+                    <div class="stat-icon available">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-value" id="available-cars">0</div>
+                        <div class="stat-label">Available Cars</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card booked">
+                    <div class="stat-icon booked">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-value" id="booked-cars">0</div>
+                        <div class="stat-label">Booked Cars</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card maintenance">
+                    <div class="stat-icon maintenance">
+                        <i class="bi bi-tools"></i>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-value" id="maintenance-cars">0</div>
+                        <div class="stat-label">In Maintenance</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card total">
+                    <div class="stat-icon total">
+                        <i class="bi bi-car-front"></i>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-value" id="total-cars">0</div>
+                        <div class="stat-label">Total Fleet Size</div>
                     </div>
                 </div>
             </div>
             
-            <!-- Search & Filters -->
-            <div class="search-filters-bar">
-                <div class="search-container">
-                    <i class="bi bi-search"></i>
-                    <input type="text" id="search-input" placeholder="Search by license plate, model, location..." autofocus>
-                    <button class="clear-search" id="clear-search"><i class="bi bi-x"></i></button>
+            <!-- Controls Bar -->
+            <div class="controls-bar">
+                <div class="controls-left">
+                    <div class="search-container">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="search-input" placeholder="Search by make, model, license plate..." autofocus>
+                    </div>
                 </div>
                 
-                <div class="filters-container">
-                    <div class="filter-group">
-                        <label for="filter-select">Status:</label>
+                <div class="controls-right">
+                    <div class="filter-container">
+                        <label class="filter-label" for="filter-select">Filter:</label>
                         <select id="filter-select" class="filter-select">
-                            <option value="all">All Vehicles</option>
+                            <option value="all">All Cars</option>
                             <option value="available">Available</option>
                             <option value="booked">Booked</option>
                             <option value="maintenance">Maintenance</option>
@@ -92,87 +99,31 @@
                         </select>
                     </div>
                     
-                    <div class="filter-group">
-                        <label for="sort-select">Sort by:</label>
+                    <div class="filter-container">
+                        <label class="filter-label" for="sort-select">Sort by:</label>
                         <select id="sort-select" class="sort-select">
-                            <option value="name-asc">License Plate (A-Z)</option>
-                            <option value="name-desc">License Plate (Z-A)</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
                             <option value="status">Status</option>
-                            <option value="date-added">Date Added</option>
+                            <option value="licensePlate">License Plate</option>
                         </select>
                     </div>
                     
-                    <button id="filter-toggle" class="filter-toggle">
-                        <i class="bi bi-sliders"></i>
-                        <span>More Filters</span>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Advanced Filters Panel (hidden by default) -->
-            <div id="advanced-filters" class="advanced-filters" style="display: none;">
-                <div class="filters-grid">
-                    <div class="filter-item">
-                        <label for="type-filter">Vehicle Type</label>
-                        <select id="type-filter" class="form-select">
-                            <option value="all">All Types</option>
-                            <option value="sedan">Sedan</option>
-                            <option value="suv">SUV</option>
-                            <option value="model3">Tesla Model 3</option>
-                            <option value="modely">Tesla Model Y</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label for="seats-filter">Seating Capacity</label>
-                        <select id="seats-filter" class="form-select">
-                            <option value="all">Any Seats</option>
-                            <option value="2">2 Seats</option>
-                            <option value="4">4 Seats</option>
-                            <option value="5">5 Seats</option>
-                            <option value="7">7+ Seats</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label for="transmission-filter">Transmission</label>
-                        <select id="transmission-filter" class="form-select">
-                            <option value="all">All Types</option>
-                            <option value="automatic">Automatic</option>
-                            <option value="manual">Manual</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label for="location-filter">Location</label>
-                        <select id="location-filter" class="form-select">
-                            <option value="all">All Locations</option>
-                            <option value="north">North</option>
-                            <option value="south">South</option>
-                            <option value="east">East</option>
-                            <option value="west">West</option>
-                            <option value="central">Central</option>
-                        </select>
+                    <div class="view-switcher">
+                        <button id="grid-view-btn" class="view-btn active" title="Grid View">
+                            <i class="bi bi-grid-3x3-gap"></i>
+                        </button>
+                        <button id="list-view-btn" class="view-btn" title="List View">
+                            <i class="bi bi-list"></i>
+                        </button>
                     </div>
                 </div>
-                
-                <div class="filter-actions">
-                    <button id="reset-filters" class="text-btn">Reset All</button>
-                    <button id="apply-filters" class="primary-btn">Apply Filters</button>
-                </div>
-            </div>
-            
-            <!-- Results Summary -->
-            <div class="results-summary">
-                <p><span id="results-count">0</span> vehicles found</p>
             </div>
             
             <!-- Loading State -->
             <div id="loading-state" class="loading-state">
-                <div class="spinner-container">
-                    <div class="spinner"></div>
-                </div>
-                <p>Loading vehicle inventory...</p>
+                <div class="spinner"></div>
+                <p>Loading vehicles data...</p>
             </div>
             
             <!-- Empty State -->
@@ -181,8 +132,8 @@
                     <i class="bi bi-car-front"></i>
                 </div>
                 <h2>No vehicles found</h2>
-                <p>Add your first vehicle or adjust your filters to see vehicles</p>
-                <button id="add-first-car-btn" class="primary-btn">
+                <p id="empty-message">Your fleet is empty or there are no vehicles matching your search criteria.</p>
+                <button id="empty-add-car-btn" class="primary-btn">
                     <i class="bi bi-plus-lg"></i> Add Your First Vehicle
                 </button>
             </div>
@@ -191,64 +142,78 @@
             <div id="grid-view" class="car-grid" style="display: none;"></div>
             
             <!-- List View -->
-            <div id="list-view" class="car-list" style="display: none;">
-                <div id="list-content"></div>
+            <div id="list-view" class="car-list" style="display: none;"></div>
+            
+            <!-- Quick Actions Floating Button (for mobile) -->
+            <div class="floating-action-btn" id="mobile-actions-btn">
+                <button class="action-btn">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                <div class="action-menu">
+                    <a href="admin-addCars.html" class="action-item">
+                        <i class="bi bi-plus-square"></i>
+                        <span>New Vehicle</span>
+                    </a>
+                    <button class="action-item" id="scroll-top-btn">
+                        <i class="bi bi-arrow-up-circle"></i>
+                        <span>Back to Top</span>
+                    </button>
+                </div>
             </div>
         </div>
     </main>
     
+    <!-- Admin Footer will be loaded here -->
     <div id="footer"></div>
     
-    <!-- Car Card Template -->
+    <!-- Card Template (Hidden) -->
     <template id="car-card-template">
         <div class="car-card">
             <div class="card-header">
-                <div class="license-plate"></div>
-                <div class="status-badge"></div>
+                <div class="car-plate">ABC123</div>
+                <div class="car-id">ID: 123abc...</div>
             </div>
             
+            <div class="status-badge">Available</div>
+            
             <div class="car-image">
-                <img src="" alt="Vehicle image">
+                <img src="../static/images/car_images/car.png" alt="Car">
             </div>
             
             <div class="car-details">
-                <div class="car-name"></div>
+                <h3 class="car-model">Tesla Model Y</h3>
                 
                 <div class="car-specs">
-                    <div class="spec-item seats-spec">
-                        <i class="bi bi-people-fill"></i>
-                        <span></span>
+                    <div class="spec-item">
+                        <div class="spec-icon"><i class="bi bi-people-fill"></i></div>
+                        <div>
+                            <span class="spec-value">5</span>
+                            <span class="spec-label">Seats</span>
+                        </div>
                     </div>
-                    <div class="spec-item fuel-spec">
-                        <i class="bi bi-fuel-pump"></i>
-                        <span></span>
-                    </div>
-                    <div class="spec-item id-spec">
-                        <i class="bi bi-upc-scan"></i>
-                        <span></span>
+                    
+                    <div class="spec-item">
+                        <div class="spec-icon"><i class="bi bi-lightning-charge"></i></div>
+                        <div>
+                            <span class="spec-value">Electric</span>
+                            <span class="spec-label">Fuel</span>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="car-location">
-                    <i class="bi bi-geo-alt"></i>
-                    <span></span>
+                    <i class="location-icon bi bi-geo-alt"></i>
+                    <span class="location-text">Location address here</span>
                 </div>
             </div>
             
-            <div class="car-status-info"></div>
-            
             <div class="car-actions">
-                <div class="action-buttons">
-                    <a href="#" class="edit-btn" title="Edit Vehicle">
-                        <i class="bi bi-pencil"></i> Edit
-                    </a>
-                    <button class="status-btn" title="Change Status">
-                        <i class="bi bi-arrow-repeat"></i> Status
-                    </button>
-                    <button class="delete-btn" title="Delete Vehicle">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
+                <a href="#" class="edit-btn">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+                <button class="delete-btn">
+                    <i class="bi bi-trash"></i> Delete
+                </button>
             </div>
         </div>
     </template>
