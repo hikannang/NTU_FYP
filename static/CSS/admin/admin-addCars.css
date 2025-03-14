@@ -643,10 +643,13 @@ textarea:focus-visible,
   }
 }
 
-/* Car Specifications Summary */
+/* Car Specifications Summary - Complete CSS */
 .summary-section {
-    grid-column: 1 / -1;
+    grid-column: 1 / -1; /* Span all columns */
     margin-top: 20px;
+    margin-bottom: 20px;
+    width: 100%;
+    display: none; /* Hidden by default, will be shown via JavaScript */
 }
 
 .summary-card {
@@ -654,17 +657,50 @@ textarea:focus-visible,
     border: 1px solid #e2e8f0;
     border-radius: 10px;
     padding: 20px;
+    width: 100%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.car-image-container {
+    margin-bottom: 20px;
+    text-align: center;
+    position: relative;
+    padding: 16px;
+    background-color: white;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.car-image-container img {
+    max-width: 100%;
+    max-height: 150px;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.car-image-container img:hover {
+    transform: scale(1.05);
+}
+
+.car-model-name {
+    margin-top: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
 }
 
 .summary-content {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    width: 100%;
 }
 
 .specs-row {
     display: flex;
     gap: 20px;
+    width: 100%;
 }
 
 .spec-item {
@@ -725,33 +761,16 @@ textarea:focus-visible,
     color: #3b82f6;
 }
 
-.car-image-container {
-    margin-bottom: 20px;
-    text-align: center;
-    position: relative;
-    padding: 16px;
-    background-color: white;
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
+/* Animation for showing the summary card */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.car-image-container img {
-    max-width: 100%;
-    max-height: 150px;
-    object-fit: contain;
-    transition: transform 0.3s ease;
-}
-
-.car-image-container img:hover {
-    transform: scale(1.05);
-}
-
-.car-model-name {
-    margin-top: 12px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #1e293b;
+/* Important! This is how we show the summary section */
+.summary-section.show {
+    display: block !important;
+    animation: fadeIn 0.4s ease-out;
 }
 
 /* Create a nice transition when the image changes */
@@ -764,15 +783,11 @@ textarea:focus-visible,
     animation: imageFadeIn 0.5s ease;
 }
 
-/* Animate the summary card appearance */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.summary-section.show {
-    display: block !important;
-    animation: fadeIn 0.4s ease-out;
+/* Make sure the section works in all form layouts */
+.form-section.summary-section {
+    display: none; /* Initially hidden */
+    width: 100%;
+    clear: both;
 }
 
 /* Responsive adjustments */

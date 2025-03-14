@@ -846,28 +846,31 @@ function checkMapContainer() {
 
 // Update summary card based on selected car model and color
 function updateSummaryCard(modelId) {
+  // Log for debugging
+  console.log("updateSummaryCard called with modelId:", modelId);
+  console.log("summarySection element:", summarySection);
+  
   // If no model ID or model doesn't exist, hide summary
   if (!modelId || !allCarModels[modelId]) {
+    console.log("No model selected or model data not found");
     if (summarySection) {
       summarySection.style.display = "none";
+      summarySection.classList.remove("show");
     }
     return;
   }
   
   // Get model data
   const model = allCarModels[modelId];
-  console.log("Updating summary with model data:", model);
+  console.log("Model data for summary:", model);
   
   // Get selected color
-  const selectedColor = carColorSelect.value;
+  const selectedColor = carColorSelect ? carColorSelect.value : "";
+  console.log("Selected color:", selectedColor);
   
   // Update car image based on model and color
   if (summaryCarImage) {
-    // Add a class for transition effect
-    summaryCarImage.classList.add("changing");
-    
     // Try to load image based on model_id and color
-    // If model is "modely" and color is "white", try "modely_white.png"
     let imagePath = `../static/images/car_images/${modelId}`;
     
     if (selectedColor) {
@@ -875,23 +878,21 @@ function updateSummaryCard(modelId) {
     }
     
     imagePath += ".png";
+    console.log("Trying image path:", imagePath);
     
     // Set image with fallback
     summaryCarImage.src = imagePath;
     summaryCarImage.onerror = function() {
+      console.log("Color-specific image not found, trying model-only image");
       // If color-specific image fails, try just the model
       this.src = `../static/images/car_images/${modelId}.png`;
       
       // If that fails too, use placeholder
       this.onerror = function() {
+        console.log("Model image not found, using placeholder");
         this.src = "../static/images/assets/car-placeholder.jpg";
       };
     };
-    
-    // Remove transition class after animation completes
-    setTimeout(() => {
-      summaryCarImage.classList.remove("changing");
-    }, 500);
   }
   
   // Update car name
@@ -930,13 +931,16 @@ function updateSummaryCard(modelId) {
       "Not specified";
   }
   
-  // Show the summary section with animation
+  // Force the summary section to be visible with !important style
   if (summarySection) {
+    console.log("Showing summary section");
     summarySection.style.display = "block";
-    
-    // Trigger reflow for animation
-    void summarySection.offsetWidth;
+    summarySection.style.visibility = "visible";
+    summarySection.style.opacity = "1";
     summarySection.classList.add("show");
+    
+    // Force a reflow
+    void summarySection.offsetHeight;
   }
 }
 
