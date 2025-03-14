@@ -553,7 +553,10 @@ function setupFormHandlers() {
     carModelSelect.addEventListener("change", (e) => {
       const selectedModelId = e.target.value;
       updateColorOptions(selectedModelId);
-      updateSummaryCard(selectedModelId);
+      // Call with slight delay to ensure color options are updated first
+      setTimeout(() => {
+        updateSummaryCard(selectedModelId);
+      }, 50);
     });
   }
 
@@ -841,7 +844,7 @@ function checkMapContainer() {
   );
 }
 
-// Update summary card based on selected car model
+// Update summary card based on selected car model and color
 function updateSummaryCard(modelId) {
   // If no model ID or model doesn't exist, hide summary
   if (!modelId || !allCarModels[modelId]) {
@@ -850,40 +853,89 @@ function updateSummaryCard(modelId) {
     }
     return;
   }
-
+  
   // Get model data
   const model = allCarModels[modelId];
   console.log("Updating summary with model data:", model);
-
+  
+  // Get selected color
+  const selectedColor = carColorSelect.value;
+  
+  // Update car image based on model and color
+  if (summaryCarImage) {
+    // Add a class for transition effect
+    summaryCarImage.classList.add("changing");
+    
+    // Try to load image based on model_id and color
+    // If model is "modely" and color is "white", try "modely_white.png"
+    let imagePath = `../static/images/car_images/${modelId}`;
+    
+    if (selectedColor) {
+      imagePath += `_${selectedColor}`;
+    }
+    
+    imagePath += ".png";
+    
+    // Set image with fallback
+    summaryCarImage.src = imagePath;
+    summaryCarImage.onerror = function() {
+      // If color-specific image fails, try just the model
+      this.src = `../static/images/car_images/${modelId}.png`;
+      
+      // If that fails too, use placeholder
+      this.onerror = function() {
+        this.src = "../static/images/assets/car-placeholder.jpg";
+      };
+    };
+    
+    // Remove transition class after animation completes
+    setTimeout(() => {
+      summaryCarImage.classList.remove("changing");
+    }, 500);
+  }
+  
+  // Update car name
+  if (summaryCarName) {
+    let carName = model.name || modelId;
+    if (selectedColor) {
+      // Capitalize the first letter of the color
+      const formattedColor = selectedColor.charAt(0).toUpperCase() + selectedColor.slice(1);
+      carName += ` (${formattedColor})`;
+    }
+    summaryCarName.textContent = carName;
+  }
+  
   // Update summary values if elements exist
   if (summaryFuelType) {
-    summaryFuelType.textContent = model.fuel_type
-      ? model.fuel_type.charAt(0).toUpperCase() + model.fuel_type.slice(1)
-      : "Not specified";
+    summaryFuelType.textContent = model.fuel_type ? 
+      (model.fuel_type.charAt(0).toUpperCase() + model.fuel_type.slice(1)) : 
+      "Not specified";
   }
-
+  
   if (summarySeating) {
-    summarySeating.textContent = model.seating_capacity
-      ? `${model.seating_capacity} seats`
-      : "Not specified";
+    summarySeating.textContent = model.seating_capacity ? 
+      `${model.seating_capacity} seats` : 
+      "Not specified";
   }
-
+  
   if (summaryLargeLuggage) {
-    summaryLargeLuggage.textContent =
-      model.large_luggage !== undefined
-        ? `${model.large_luggage}`
-        : "Not specified";
+    summaryLargeLuggage.textContent = model.large_luggage !== undefined ? 
+      `${model.large_luggage}` : 
+      "Not specified";
   }
-
+  
   if (summarySmallLuggage) {
-    summarySmallLuggage.textContent =
-      model.small_luggage !== undefined
-        ? `${model.small_luggage}`
-        : "Not specified";
+    summarySmallLuggage.textContent = model.small_luggage !== undefined ? 
+      `${model.small_luggage}` : 
+      "Not specified";
   }
-
+  
   // Show the summary section with animation
   if (summarySection) {
+    summarySection.style.display = "block";
+    
+    // Trigger reflow for animation
+    void summarySection.offsetWidth;
     summarySection.classList.add("show");
   }
 }
