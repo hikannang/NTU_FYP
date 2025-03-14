@@ -15,10 +15,10 @@ Root
 │       └── (Same structure as bookingID_1)
 ├── car_models (Collection)
 │   ├── model_name_1 (Document)
-│   │   ├── color: string
-│   │   ├── fuel_type: string
+│   │   ├── color: string [White/ Black/ Blue]
+│   │   ├── fuel_type: string [Electric/ Petrol]
 │   │   ├── large_luggage: integer
-│   │   ├── name: string
+│   │   ├── name: string [Tesla Model Y/ Honda Vezel]
 │   │   ├── seating_capacity: integer
 │   │   ├── small_luggage: integer
 │   ├── model_name_2 (Document)
@@ -38,7 +38,7 @@ Root
 │   │   ├── seating_capacity: integer
 │   │   ├── service_due: datetime
 │   │   ├── small_luggage: integer
-│   │   ├── status: string
+│   │   ├── status: string 
 │   │   ├── directions: string
 │   ├── carID_2 (Document)
 │       └── (Same structure as carID_1)

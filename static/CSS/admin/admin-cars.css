@@ -1,12 +1,21 @@
-/* admin-cars.css - Modern UI Design for Fleet Management */
-
 /* Layout Adjustments to Work with Admin Header/Sidebar */
+:root {
+  --sidebar-width: 250px;
+  --header-height: 70px;
+}
+
+body.admin-body {
+  padding-top: var(--header-height);
+  background-color: #f8fafc;
+  margin: 0;
+  min-height: 100vh;
+}
+
 .admin-main {
-    padding: 24px 20px 30px 30px;
-    min-height: calc(100vh - var(--header-height, 70px));
-    background-color: #f8fafc;
-    position: relative;
-    overflow-x: hidden;
+  margin-left: var(--sidebar-width);
+  padding: 24px 20px 30px 30px;
+  min-height: calc(100vh - var(--header-height));
+  transition: margin-left 0.3s ease;
 }
 
 .container {
@@ -430,17 +439,8 @@
 }
 
 .status-badge {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    z-index: 1;
+  position: static;
+  display: inline-flex;
 }
 
 .status-badge::before {
@@ -1159,6 +1159,13 @@
     }
 }
 
+@media (max-width: 992px) {
+  .admin-main {
+    margin-left: 0;
+    padding-bottom: 80px; /* For mobile footer */
+  }
+}
+
 @media (max-width: 768px) {
     main {
         margin-left: 0;
@@ -1398,4 +1405,25 @@ template {
         margin: 0;
         padding: 0;
     }
+}
+
+/* New CSS for car name with status badge */
+.car-name-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.car-name-status .car-model {
+  margin: 0;
+  flex: 1;
+}
+
+.car-name-status .status-badge {
+  position: static;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  white-space: nowrap;
 }

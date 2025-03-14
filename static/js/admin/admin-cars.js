@@ -25,6 +25,7 @@ let currentView = localStorage.getItem("carViewPreference") || "grid";
 let currentFilter = "all";
 let currentSort = "name-asc";
 let searchQuery = "";
+let carModels = {};
 
 // DOM Elements
 const loadingState = document.getElementById("loading-state");
@@ -44,6 +45,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log("Admin cars page initializing");
 
   try {
+    // First load header and footer
+    await Promise.all([
+      fetch("../static/headerFooter/admin-header.html")
+        .then((response) => response.text())
+        .then((html) => {
+          document.getElementById("header").innerHTML = html;
+        }),
+      fetch("../static/headerFooter/admin-footer.html")
+        .then((response) => response.text())
+        .then((html) => {
+          document.getElementById("footer").innerHTML = html;
+        }),
+    ]);
+
+    console.log("Header and footer loaded");
+
+    // Set active sidebar item
+    setActiveSidebarItem("admin-cars.html");
+
     // Set active sidebar item
     setActiveSidebarItem("admin-cars.html");
 
@@ -152,6 +172,35 @@ function setupEventListeners() {
       window.location.href = "admin-addCars.html";
     });
   }
+
+    // Add at the end of your setupEventListeners function
+  const emptyAddCarBtn = document.getElementById("empty-add-car-btn");
+  if (emptyAddCarBtn) {
+    emptyAddCarBtn.addEventListener("click", () => {
+      window.location.href = "admin-addCars.html";
+    });
+  }
+}
+
+// Add this function to fetch car models
+async function loadCarModels() {
+  try {
+    console.log("Loading car models data");
+    
+    const carModelsSnapshot = await getDocs(collection(db, "car_models"));
+    
+    if (!carModelsSnapshot.empty) {
+      carModelsSnapshot.forEach(doc => {
+        // Store models with model_name as the key
+        carModels[doc.id] = doc.data();
+        console.log(`Loaded car model: ${doc.id} (${doc.data().name})`);
+      });
+    }
+    
+    console.log(`Loaded ${Object.keys(carModels).length} car models`);
+  } catch (error) {
+    console.error("Error loading car models:", error);
+  }
 }
 
 // Load cars data from Firestore
@@ -159,6 +208,8 @@ async function loadCarsData() {
   try {
     showLoading(true);
     console.log("Loading cars data from Firestore");
+
+    await loadCarModels();
 
     // Get all cars
     const carsQuery = query(collection(db, "cars"));
@@ -223,6 +274,52 @@ async function loadCarsData() {
     showErrorMessage(`Failed to load cars: ${error.message}`);
   } finally {
     showLoading(false);
+  }
+}
+
+// Enhanced getCarDisplayName function to handle both string and reference car_type
+function getCarDisplayName(car) {
+  // Default fallback
+  let displayName = "Unknown Car";
+  
+  try {
+    if (car.car_type) {
+      // car_type might be either the model ID or a direct string
+      const modelId = car.car_type;
+      
+      // Check if we have this model in our loaded models
+      const modelData = carModels[modelId];
+      
+      if (modelData && modelData.name) {
+        // Use the proper name from car_models collection
+        displayName = modelData.name;
+        
+        // Add color if available in car
+        if (car.car_color) {
+          displayName += ` (${car.car_color})`;
+        }
+        // If no car_color but model has color
+        else if (modelData.color) {
+          displayName += ` (${modelData.color})`;
+        }
+      } else {  
+        // Fallback: Format car_type as a readable string
+        displayName = modelId
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      }
+    }
+    
+    // Add make if available and not already part of the name
+    if (car.make && !displayName.toLowerCase().includes(car.make.toLowerCase())) {
+      displayName = `${car.make} ${displayName}`;
+    }
+    
+    return displayName;
+  } catch (error) {
+    console.error("Error formatting car name:", error);
+    return car.car_type || "Unknown Car";
   }
 }
 
@@ -401,43 +498,35 @@ function createCarCard(car) {
   // Get license plate or default
   const licensePlate = car.license_plate || "No Plate";
 
-  // Get car model and make
-  const make = car.make || "";
-  const model = car.model || "Unknown Model";
-  const carName = `${make} ${model}`.trim();
+  const carName = getCarDisplayName(car);
 
   // Get status class
   let statusClass = car.status || "unknown";
 
-  // Convert service due date if available
-  let serviceDue = "Not set";
-  if (car.service_due) {
-    if (car.service_due instanceof Timestamp) {
-      serviceDue = car.service_due.toDate().toLocaleDateString();
-    } else if (car.service_due.seconds) {
-      serviceDue = new Date(
-        car.service_due.seconds * 1000
-      ).toLocaleDateString();
-    }
+  // Convert insurance expiry date if available
+  let insuranceExpiry = "Not set";
+  if (car.insurance_expiry) {
+    insuranceExpiry = formatDate(car.insurance_expiry);
   }
 
-  // Build card HTML
+  // Build card HTML - With updated structure
   card.innerHTML = `
     <div class="card-header">
       <div class="car-plate">${licensePlate}</div>
-      <div class="car-id">ID: ${car.id.substring(0, 8)}...</div>
+      <div class="car-id">ID: ${car.id}</div>
     </div>
-    
-    <div class="status-badge ${statusClass}">${capitalizeFirstLetter(
-    car.status || "unknown"
-  )}</div>
     
     <div class="car-image">
       <img src="${imagePath}" alt="${carName}" onerror="this.onerror=null; this.src='${fallbackPath}'">
     </div>
     
     <div class="car-details">
-      <h3 class="car-model">${carName}</h3>
+      <div class="car-name-status">
+        <h3 class="car-model">${carName}</h3>
+        <span class="status-badge ${statusClass}">${capitalizeFirstLetter(
+    car.status || "unknown"
+  )}</span>
+      </div>
       
       <div class="car-specs">
         <div class="spec-item">
@@ -457,17 +546,17 @@ function createCarCard(car) {
         </div>
         
         <div class="spec-item">
-          <div class="spec-icon"><i class="bi bi-gear"></i></div>
+          <div class="spec-icon"><i class="bi bi-shield-check"></i></div>
           <div>
-            <span class="spec-value">${car.transmission || "N/A"}</span>
-            <span class="spec-label">Trans</span>
+            <span class="spec-value">${insuranceExpiry}</span>
+            <span class="spec-label">Insurance</span>
           </div>
         </div>
         
         <div class="spec-item">
           <div class="spec-icon"><i class="bi bi-calendar-check"></i></div>
           <div>
-            <span class="spec-value">${serviceDue}</span>
+            <span class="spec-value">${formatDate(car.service_due)}</span>
             <span class="spec-label">Service Due</span>
           </div>
         </div>
@@ -515,19 +604,12 @@ function createCarRow(car) {
   // Get license plate or default
   const licensePlate = car.license_plate || "No Plate";
 
-  // Get car model and make
-  const make = car.make || "";
-  const model = car.model || "Unknown Model";
-  const carName = `${make} ${model}`.trim();
+  const carName = getCarDisplayName(car);
 
   // Format date added if available
   let dateAdded = "N/A";
   if (car.created_at) {
-    if (car.created_at instanceof Timestamp) {
-      dateAdded = car.created_at.toDate().toLocaleDateString();
-    } else if (car.created_at.seconds) {
-      dateAdded = new Date(car.created_at.seconds * 1000).toLocaleDateString();
-    }
+    dateAdded = formatDate(car.created_at);
   }
 
   // Build row HTML
@@ -539,7 +621,7 @@ function createCarRow(car) {
     <div class="list-col col-main">
       <div class="car-plate">${licensePlate}</div>
       <div class="car-model">${carName}</div>
-      <div class="car-id">ID: ${car.id.substring(0, 8)}...</div>
+      <div class="car-id">ID: ${car.id}</div>
       <div class="car-location"><i class="bi bi-geo-alt"></i> ${
         car.address || "No location"
       }</div>
@@ -564,8 +646,8 @@ function createCarRow(car) {
       </div>
       
       <div class="spec-row">
-        <div class="spec-icon"><i class="bi bi-gear"></i></div>
-        <span>${car.transmission || "N/A"}</span>
+        <div class="spec-icon"><i class="bi bi-shield-check"></i></div>
+        <span>Insurance: ${formatDate(car.insurance_expiry)}</span>
       </div>
     </div>
     
@@ -777,6 +859,28 @@ function showErrorMessage(message) {
     container.prepend(errorContainer);
   } else {
     document.body.prepend(errorContainer);
+  }
+}
+
+function formatDate(dateField) {
+  if (!dateField) return "N/A";
+
+  try {
+    let date;
+    if (dateField instanceof Timestamp) {
+      date = dateField.toDate();
+    } else if (dateField.seconds) {
+      date = new Date(dateField.seconds * 1000);
+    } else if (dateField instanceof Date) {
+      date = dateField;
+    } else {
+      date = new Date(dateField);
+    }
+
+    return date.toLocaleDateString();
+  } catch (e) {
+    console.error("Error formatting date:", e);
+    return "Invalid date";
   }
 }
 
