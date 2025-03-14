@@ -42,10 +42,24 @@ const submitButton = document.getElementById("submit-button");
 const cancelButton = document.getElementById("cancel-button");
 // Summary card elements
 const summarySection = document.getElementById("summary-section");
+const summaryCarImage = document.getElementById("summary-car-image");
+const summaryCarName = document.getElementById("summary-car-name");
 const summaryFuelType = document.getElementById("summary-fuel-type");
 const summarySeating = document.getElementById("summary-seating");
 const summaryLargeLuggage = document.getElementById("summary-large-luggage");
 const summarySmallLuggage = document.getElementById("summary-small-luggage");
+
+// Add this debugging function to check elements
+function debugSummaryElements() {
+  console.log("Debugging summary elements:");
+  console.log("summarySection exists:", !!summarySection);
+  console.log("summaryCarImage exists:", !!summaryCarImage);
+  console.log("summaryCarName exists:", !!summaryCarName);
+  console.log("summaryFuelType exists:", !!summaryFuelType);
+  console.log("summarySeating exists:", !!summarySeating);
+  console.log("summaryLargeLuggage exists:", !!summaryLargeLuggage);
+  console.log("summarySmallLuggage exists:", !!summarySmallLuggage);
+}
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", async () => {
@@ -128,7 +142,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Check map state after initialization
     setTimeout(checkMapContainer, 500);
   };
+  setTimeout(debugSummaryElements, 1000);
 });
+
 
 // Initialize form
 async function initializeForm() {
@@ -239,43 +255,57 @@ async function loadCarModels() {
 
 // Update color options based on selected model
 function updateColorOptions(modelId) {
+  console.log("Updating color options for model:", modelId);
+  
   // Clear existing options
-  carColorSelect.innerHTML =
-    '<option value="" disabled selected>Select a color</option>';
-
+  carColorSelect.innerHTML = '<option value="" disabled selected>Select a color</option>';
+  
   if (modelId && allCarModels[modelId]) {
     const model = allCarModels[modelId];
-
+    console.log("Model data for color options:", model);
+    
+    let hasAddedColor = false;
+    
     // If model has specific colors
-    if (
-      model.colors &&
-      Array.isArray(model.colors) &&
-      model.colors.length > 0
-    ) {
-      model.colors.forEach((color) => {
+    if (model.colors && Array.isArray(model.colors) && model.colors.length > 0) {
+      console.log("Model has colors array:", model.colors);
+      model.colors.forEach(color => {
         const option = document.createElement("option");
         option.value = color;
         option.textContent = color.charAt(0).toUpperCase() + color.slice(1);
         carColorSelect.appendChild(option);
+        hasAddedColor = true;
       });
-    }
+    } 
     // If model has a single color
     else if (model.color) {
+      console.log("Model has single color:", model.color);
       const option = document.createElement("option");
       option.value = model.color;
-      option.textContent =
-        model.color.charAt(0).toUpperCase() + model.color.slice(1);
+      option.textContent = model.color.charAt(0).toUpperCase() + model.color.slice(1);
       carColorSelect.appendChild(option);
-    }
+      hasAddedColor = true;
+      
+      // If there's only one color, auto-select it
+      carColorSelect.value = model.color;
+    } 
     // Default colors
     else {
+      console.log("Using default colors");
       const defaultColors = ["White", "Black", "Silver", "Blue", "Red"];
-      defaultColors.forEach((color) => {
+      defaultColors.forEach(color => {
         const option = document.createElement("option");
         option.value = color.toLowerCase();
         option.textContent = color;
         carColorSelect.appendChild(option);
+        hasAddedColor = true;
       });
+    }
+    
+    // If we added colors and there's only one option (plus the disabled default),
+    // select it automatically
+    if (hasAddedColor && carColorSelect.options.length === 2) {
+      carColorSelect.selectedIndex = 1;
     }
   }
 }
@@ -549,16 +579,29 @@ function useCurrentLocation() {
 // Setup form event handlers
 function setupFormHandlers() {
   // Car model change event
-  if (carModelSelect) {
-    carModelSelect.addEventListener("change", (e) => {
-      const selectedModelId = e.target.value;
-      updateColorOptions(selectedModelId);
-      // Call with slight delay to ensure color options are updated first
-      setTimeout(() => {
-        updateSummaryCard(selectedModelId);
-      }, 50);
-    });
-  }
+  // Car model change event
+if (carModelSelect) {
+  carModelSelect.addEventListener("change", (e) => {
+    const selectedModelId = e.target.value;
+    updateColorOptions(selectedModelId);
+    
+    // Slight delay to ensure colors are populated
+    setTimeout(() => {
+      // If there's only one color option, it will be auto-selected
+      updateSummaryCard(selectedModelId);
+    }, 100);
+  });
+}
+
+// Car color change event
+if (carColorSelect) {
+  carColorSelect.addEventListener("change", (e) => {
+    const selectedModelId = carModelSelect.value;
+    if (selectedModelId) {
+      updateSummaryCard(selectedModelId);
+    }
+  });
+}
 
   // Updated event listener for search button
   if (searchAddressBtn) {
@@ -846,101 +889,110 @@ function checkMapContainer() {
 
 // Update summary card based on selected car model and color
 function updateSummaryCard(modelId) {
-  // Log for debugging
-  console.log("updateSummaryCard called with modelId:", modelId);
-  console.log("summarySection element:", summarySection);
+  console.log("Updating summary card with model ID:", modelId);
   
   // If no model ID or model doesn't exist, hide summary
   if (!modelId || !allCarModels[modelId]) {
     console.log("No model selected or model data not found");
     if (summarySection) {
       summarySection.style.display = "none";
-      summarySection.classList.remove("show");
     }
     return;
   }
   
   // Get model data
   const model = allCarModels[modelId];
-  console.log("Model data for summary:", model);
+  console.log("Model data found:", model);
   
   // Get selected color
-  const selectedColor = carColorSelect ? carColorSelect.value : "";
+  const selectedColor = carColorSelect.value;
   console.log("Selected color:", selectedColor);
   
   // Update car image based on model and color
   if (summaryCarImage) {
-    // Try to load image based on model_id and color
-    let imagePath = `../static/images/car_images/${modelId}`;
+    let imagePath;
     
+    // For model-color combination (e.g., modely_black.png)
     if (selectedColor) {
-      imagePath += `_${selectedColor}`;
+      imagePath = `../static/images/car_images/${modelId}_${selectedColor}.png`;
+      console.log("Trying color-specific image path:", imagePath);
+    } else {
+      // Default to just model (e.g., modely.png)
+      imagePath = `../static/images/car_images/${modelId}.png`;
+      console.log("Trying default model image path:", imagePath);
     }
     
-    imagePath += ".png";
-    console.log("Trying image path:", imagePath);
-    
-    // Set image with fallback
-    summaryCarImage.src = imagePath;
+    // Set image with error handling
     summaryCarImage.onerror = function() {
-      console.log("Color-specific image not found, trying model-only image");
-      // If color-specific image fails, try just the model
-      this.src = `../static/images/car_images/${modelId}.png`;
-      
-      // If that fails too, use placeholder
+      console.log("Image not found, trying fallback");
       this.onerror = function() {
-        console.log("Model image not found, using placeholder");
+        console.log("Fallback failed, using placeholder");
         this.src = "../static/images/assets/car-placeholder.jpg";
       };
+      this.src = `../static/images/car_images/${modelId}.png`; // Try without color
     };
+    
+    // Set the initial image source
+    summaryCarImage.src = imagePath;
   }
   
   // Update car name
   if (summaryCarName) {
+    // Use the model name from the database if available
     let carName = model.name || modelId;
+    
+    // Add color info
     if (selectedColor) {
-      // Capitalize the first letter of the color
       const formattedColor = selectedColor.charAt(0).toUpperCase() + selectedColor.slice(1);
       carName += ` (${formattedColor})`;
     }
+    
+    console.log("Setting car name to:", carName);
     summaryCarName.textContent = carName;
   }
   
-  // Update summary values if elements exist
+  // Update specifications from model data
+  console.log("Updating specs with:", {
+    fuelType: model.fuel_type,
+    seatingCapacity: model.seating_capacity,
+    largeLuggage: model.large_luggage,
+    smallLuggage: model.small_luggage
+  });
+  
+  // Update fuel type
   if (summaryFuelType) {
-    summaryFuelType.textContent = model.fuel_type ? 
-      (model.fuel_type.charAt(0).toUpperCase() + model.fuel_type.slice(1)) : 
-      "Not specified";
+    if (model.fuel_type) {
+      const formattedFuel = model.fuel_type.charAt(0).toUpperCase() + model.fuel_type.slice(1);
+      summaryFuelType.textContent = formattedFuel;
+    } else {
+      summaryFuelType.textContent = "Not specified";
+    }
   }
   
+  // Update seating capacity
   if (summarySeating) {
-    summarySeating.textContent = model.seating_capacity ? 
-      `${model.seating_capacity} seats` : 
-      "Not specified";
+    if (model.seating_capacity !== undefined && model.seating_capacity !== null) {
+      summarySeating.textContent = `${model.seating_capacity} seats`;
+    } else {
+      summarySeating.textContent = "Not specified";
+    }
   }
   
+  // Update luggage capacity
   if (summaryLargeLuggage) {
     summaryLargeLuggage.textContent = model.large_luggage !== undefined ? 
-      `${model.large_luggage}` : 
-      "Not specified";
+      `${model.large_luggage}` : "Not specified";
   }
   
   if (summarySmallLuggage) {
     summarySmallLuggage.textContent = model.small_luggage !== undefined ? 
-      `${model.small_luggage}` : 
-      "Not specified";
+      `${model.small_luggage}` : "Not specified";
   }
   
-  // Force the summary section to be visible with !important style
+  // Finally show the summary section
   if (summarySection) {
-    console.log("Showing summary section");
+    console.log("Displaying summary section");
     summarySection.style.display = "block";
-    summarySection.style.visibility = "visible";
-    summarySection.style.opacity = "1";
-    summarySection.classList.add("show");
-    
-    // Force a reflow
-    void summarySection.offsetHeight;
   }
 }
 
