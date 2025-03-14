@@ -1,4 +1,4 @@
-\// admin-addCars.js - Part 1
+// admin-addCars.js - Part 1
 import { db, auth } from '../common/firebase-config.js';
 import { 
   collection, 
