@@ -642,3 +642,104 @@ textarea:focus-visible,
     transform: scale(40, 40);
   }
 }
+
+/* Car Specifications Summary */
+.summary-section {
+    grid-column: 1 / -1;
+    margin-top: 20px;
+}
+
+.summary-card {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.specs-row {
+    display: flex;
+    gap: 20px;
+}
+
+.spec-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.spec-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.spec-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.spec-label {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.spec-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.summary-footer {
+    margin-top: 15px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 15px;
+}
+
+.info-note {
+    font-size: 0.85rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.info-note i {
+    color: #3b82f6;
+}
+
+/* Animate the summary card appearance */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.summary-section.show {
+    display: block !important;
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .specs-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

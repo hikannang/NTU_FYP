@@ -40,6 +40,12 @@ const serviceDue = document.getElementById("service-due");
 const insuranceExpiry = document.getElementById("insurance-expiry");
 const submitButton = document.getElementById("submit-button");
 const cancelButton = document.getElementById("cancel-button");
+// Summary card elements
+const summarySection = document.getElementById("summary-section");
+const summaryFuelType = document.getElementById("summary-fuel-type");
+const summarySeating = document.getElementById("summary-seating");
+const summaryLargeLuggage = document.getElementById("summary-large-luggage");
+const summarySmallLuggage = document.getElementById("summary-small-luggage");
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", async () => {
@@ -175,6 +181,30 @@ async function loadCarModels() {
     console.log("Loading car models");
 
     const carModelsSnapshot = await getDocs(collection(db, "car_models"));
+
+    // Add this inside your loadCarModels function where you process each model
+    carModelsSnapshot.forEach((doc) => {
+      const model = doc.data();
+      const modelId = doc.id;
+
+      // Log model data for debugging
+      console.log(`Model ${modelId} data:`, {
+        name: model.name,
+        fuel_type: model.fuel_type,
+        seating_capacity: model.seating_capacity,
+        large_luggage: model.large_luggage,
+        small_luggage: model.small_luggage,
+      });
+
+      // Store model data for later use
+      allCarModels[modelId] = model;
+
+      // Add option to select
+      const option = document.createElement("option");
+      option.value = modelId;
+      option.textContent = model.name || modelId;
+      carModelSelect.appendChild(option);
+    });
 
     if (!carModelsSnapshot.empty) {
       // Clear car model select options
@@ -521,7 +551,9 @@ function setupFormHandlers() {
   // Car model change event
   if (carModelSelect) {
     carModelSelect.addEventListener("change", (e) => {
-      updateColorOptions(e.target.value);
+      const selectedModelId = e.target.value;
+      updateColorOptions(selectedModelId);
+      updateSummaryCard(selectedModelId);
     });
   }
 
@@ -807,6 +839,53 @@ function checkMapContainer() {
     "- maps object:",
     typeof google !== "undefined" && google.maps ? "Loaded" : "Not loaded"
   );
+}
+
+// Update summary card based on selected car model
+function updateSummaryCard(modelId) {
+  // If no model ID or model doesn't exist, hide summary
+  if (!modelId || !allCarModels[modelId]) {
+    if (summarySection) {
+      summarySection.style.display = "none";
+    }
+    return;
+  }
+
+  // Get model data
+  const model = allCarModels[modelId];
+  console.log("Updating summary with model data:", model);
+
+  // Update summary values if elements exist
+  if (summaryFuelType) {
+    summaryFuelType.textContent = model.fuel_type
+      ? model.fuel_type.charAt(0).toUpperCase() + model.fuel_type.slice(1)
+      : "Not specified";
+  }
+
+  if (summarySeating) {
+    summarySeating.textContent = model.seating_capacity
+      ? `${model.seating_capacity} seats`
+      : "Not specified";
+  }
+
+  if (summaryLargeLuggage) {
+    summaryLargeLuggage.textContent =
+      model.large_luggage !== undefined
+        ? `${model.large_luggage}`
+        : "Not specified";
+  }
+
+  if (summarySmallLuggage) {
+    summarySmallLuggage.textContent =
+      model.small_luggage !== undefined
+        ? `${model.small_luggage}`
+        : "Not specified";
+  }
+
+  // Show the summary section with animation
+  if (summarySection) {
+    summarySection.classList.add("show");
+  }
 }
 
 // Debug check after a delay
