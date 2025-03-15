@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Details | BaoCarLiao Admin</title>
+  <link rel="stylesheet" href="../static/css/admin/admin.css">
+  <link rel="stylesheet" href="../static/css/admin/admin-users.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body class="admin-body">
+  <!-- Admin header will be loaded here -->
+  <div id="header"></div>
+
+  <main class="admin-main">
+    <div class="container">
+      <!-- Page Header -->
+      <div class="page-header-wrapper">
+        <div class="page-header">
+          <div class="breadcrumb">
+            <a href="admin-dashboard.html"><i class="bi bi-house"></i> Dashboard</a>
+            <i class="bi bi-chevron-right"></i>
+            <a href="admin-users.html">User Management</a>
+            <i class="bi bi-chevron-right"></i>
+            <span class="current">User Details</span>
+          </div>
+          <h1 class="page-title" id="user-detail-title">
+            <i class="bi bi-person"></i> User Details
+          </h1>
+        </div>
+        
+        <div class="header-actions">
+          <a href="admin-users.html" class="secondary-btn">
+            <i class="bi bi-arrow-left"></i> Back to Users
+          </a>
+        </div>
+      </div>
+
+      <!-- Loading Overlay -->
+      <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Loading user details...</p>
+      </div>
+      
+      <!-- User Not Found -->
+      <div id="user-not-found" class="error-container" style="display: none;">
+        <i class="bi bi-exclamation-triangle"></i>
+        <span>User not found or you don't have permission to view this user.</span>
+      </div>
+
+      <!-- User Details Container -->
+      <div id="user-detail-container" class="user-detail-container">
+        <!-- Profile Section -->
+        <div class="detail-section">
+          <div class="detail-header">
+            <h2><i class="bi bi-person-badge"></i> Profile Information</h2>
+          </div>
+          
+          <div class="profile-content">
+            <div class="profile-image-container">
+              <div class="profile-image" id="user-avatar">--</div>
+            </div>
+            
+            <div class="profile-details">
+              <div class="detail-row">
+                <div class="detail-group">
+                  <label>First Name</label>
+                  <div class="detail-value" id="user-firstname">--</div>
+                </div>
+                
+                <div class="detail-group">
+                  <label>Last Name</label>
+                  <div class="detail-value" id="user-lastname">--</div>
+                </div>
+              </div>
+              
+              <div class="detail-row">
+                <div class="detail-group">
+                  <label>Email</label>
+                  <div class="detail-value" id="user-email">--</div>
+                </div>
+                
+                <div class="detail-group">
+                  <label>Phone</label>
+                  <div class="detail-value" id="user-phone">--</div>
+                </div>
+              </div>
+              
+              <div class="detail-row">
+                <div class="detail-group">
+                  <label>Role</label>
+                  <div class="detail-value" id="user-role">--</div>
+                </div>
+                
+                <div class="detail-group">
+                  <label>User ID</label>
+                  <div class="detail-value id-value" id="user-id">--</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Account Section -->
+        <div class="detail-section">
+          <div class="detail-header">
+            <h2><i class="bi bi-clock-history"></i> Account Information</h2>
+          </div>
+          
+          <div class="account-content">
+            <div class="detail-row">
+              <div class="detail-group">
+                <label>Account Created</label>
+                <div class="detail-value" id="user-created">--</div>
+              </div>
+              
+              <div class="detail-group">
+                <label>Last Login</label>
+                <div class="detail-value" id="user-last-login">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Bookings Section -->
+        <div class="detail-section full-width">
+          <div class="detail-header">
+            <h2><i class="bi bi-calendar-check"></i> Bookings</h2>
+          </div>
+          
+          <div class="bookings-content">
+            <div id="bookings-container" class="bookings-container">
+              <!-- Booking items will be added here by JavaScript -->
+            </div>
+            
+            <div id="no-bookings" class="no-bookings" style="display: none;">
+              <i class="bi bi-calendar"></i>
+              <p>No bookings found for this user</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Admin footer will be loaded here -->
+  <div id="footer"></div>
+
+  <!-- Firebase Scripts -->
+  <script src="../static/js/common/firebase-config.js" type="module"></script>
+  <script src="../static/js/common/auth.js" type="module"></script>
+
+  <!-- Custom Scripts -->
+  <script src="../static/js/admin/admin-users.js" type="module"></script>
+
+  <!-- Header and Footer Loading -->
+  <script type="module">
+    import { checkAdmin } from '../static/js/common/auth.js';
+    
+    // Load header and footer
+    document.addEventListener("DOMContentLoaded", async function() {
+      try {
+        // Load header and footer
+        document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html')
+          .then(response => response.text());
+        document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html')
+          .then(response => response.text());
+        
+        // Check admin status
+        const userData = await checkAdmin();
+        if (userData) {
+          const welcomeMsg = document.getElementById("welcome-message");
+          if (welcomeMsg) welcomeMsg.textContent = userData.firstName || "Admin";
+        }
+      } catch (error) {
+        console.error("Error loading interface:", error);
+      }
+    });
+  </script>
+</body>
+</html>
