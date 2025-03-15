@@ -1,139 +1,147 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Management | BaoCarLiao Admin</title>
-  <link rel="stylesheet" href="../static/css/admin/admin.css">
-  <link rel="stylesheet" href="../static/css/admin/admin-users.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-</head>
-<body class="admin-body">
-  <!-- Admin header will be loaded here -->
-  <div id="header"></div>
-
-  <main class="admin-main">
-    <div class="container">
-      <!-- Page Header -->
-      <div class="page-header-wrapper">
-        <div class="page-header">
-          <div class="breadcrumb">
-            <a href="admin-dashboard.html"><i class="bi bi-house"></i> Dashboard</a>
-            <i class="bi bi-chevron-right"></i>
-            <span class="current">User Management</span>
-          </div>
-          <h1 class="page-title">
-            <i class="bi bi-people"></i> User Management
-          </h1>
-        </div>
-      </div>
-
-      <!-- Stats and Search Bar -->
-      <div class="top-section">
-        <div class="stat-card">
-          <div class="stat-icon">
-            <i class="bi bi-people-fill"></i>
-          </div>
-          <div class="stat-details">
-            <div class="stat-value" id="user-stats-total">0</div>
-            <div class="stat-label">Total Users</div>
+    <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management | BaoCarLiao Admin</title>
+    <link rel="stylesheet" href="../static/css/admin/admin.css">
+    <link rel="stylesheet" href="../static/css/admin/admin-users.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+  </head>
+  <body class="admin-body">
+    <!-- Admin header will be loaded here -->
+    <div id="header"></div>
+  
+    <main class="admin-main">
+      <div class="container">
+        <!-- Page Header -->
+        <div class="page-header-wrapper">
+          <div class="page-header">
+            <div class="breadcrumb">
+              <a href="admin-dashboard.html"><i class="bi bi-house"></i> Dashboard</a>
+              <i class="bi bi-chevron-right"></i>
+              <span class="current">User Management</span>
+            </div>
+            <h1 class="page-title">
+              <i class="bi bi-people"></i> User Management
+            </h1>
           </div>
         </div>
-        
-        <div class="search-container">
-          <i class="bi bi-search search-icon"></i>
-          <input type="text" id="user-search" class="search-input" placeholder="Search users by name, email or phone...">
+  
+        <!-- Stats and Search Bar -->
+        <div class="top-section">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="stat-details">
+              <div class="stat-value" id="user-stats-total">0</div>
+              <div class="stat-label">Total Users</div>
+            </div>
+          </div>
+          
+          <div class="search-container">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" id="user-search" class="search-input" placeholder="Search users by name, email or phone...">
+          </div>
+        </div>
+  
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay">
+          <div class="spinner"></div>
+          <p>Loading users...</p>
+        </div>
+  
+        <!-- No Results Message -->
+        <div id="no-results-message" class="no-results-message" style="display: none;">
+          <i class="bi bi-search"></i>
+          <p>No users found matching your criteria</p>
+        </div>
+  
+        <!-- Users Table -->
+        <div id="table-wrapper" class="table-wrapper">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>
+                  <button class="sort-btn" data-field="name">
+                    User <i class="bi bi-sort-down"></i>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort-btn" data-field="phone">
+                    Phone <i class="bi bi-sort-down"></i>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort-btn" data-field="role">
+                    Role <i class="bi bi-sort-down"></i>
+                  </button>
+                </th>
+                <th>
+                  <button class="sort-btn" data-field="created">
+                    Created <i class="bi bi-sort-down"></i>
+                  </button>
+                </th>
+                <th class="actions-column">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body">
+              <!-- User rows will be added here by JavaScript -->
+              <tr class="loading-row">
+                <td colspan="5">
+                  <div class="table-loading">
+                    <div class="spinner small"></div>
+                    <p>Loading users...</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+  
+        <!-- Load More Button -->
+        <div class="load-more-container">
+          <button id="load-more-btn" class="secondary-btn load-more-btn" style="display: none;">
+            <i class="bi bi-plus-circle"></i> Load More Users
+          </button>
         </div>
       </div>
-
-      <!-- Loading Overlay -->
-      <div id="loading-overlay" class="loading-overlay">
-        <div class="spinner"></div>
-        <p>Loading users...</p>
-      </div>
-
-      <!-- No Results Message -->
-      <div id="no-results-message" class="no-results-message" style="display: none;">
-        <i class="bi bi-search"></i>
-        <p>No users found matching your criteria</p>
-      </div>
-
-      <!-- Users Table -->
-      <div id="table-wrapper" class="table-wrapper">
-        <table class="users-table">
-          <thead>
-            <tr>
-              <th>
-                <button class="sort-btn" data-field="name">
-                  User <i class="bi bi-sort-down"></i>
-                </button>
-              </th>
-              <th>
-                <button class="sort-btn" data-field="phone">
-                  Phone <i class="bi bi-sort-down"></i>
-                </button>
-              </th>
-              <th>
-                <button class="sort-btn" data-field="role">
-                  Role <i class="bi bi-sort-down"></i>
-                </button>
-              </th>
-              <th>
-                <button class="sort-btn" data-field="created">
-                  Created <i class="bi bi-sort-down"></i>
-                </button>
-              </th>
-              <th class="actions-column">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="users-table-body">
-            <!-- User rows will be added here by JavaScript -->
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Load More Button -->
-      <div class="load-more-container">
-        <button id="load-more-btn" class="secondary-btn load-more-btn" style="display: none;">
-          Load More
-        </button>
-      </div>
-    </div>
-  </main>
-
-  <!-- Admin footer will be loaded here -->
-  <div id="footer"></div>
-
-  <!-- Firebase Scripts -->
-  <script src="../static/js/common/firebase-config.js" type="module"></script>
-  <script src="../static/js/common/auth.js" type="module"></script>
-
-  <!-- Custom Scripts -->
-  <script src="../static/js/admin/admin-users.js" type="module"></script>
-
-  <!-- Header and Footer Loading -->
-  <script type="module">
-    import { checkAdmin } from '../static/js/common/auth.js';
-    
-    // Load header and footer
-    document.addEventListener("DOMContentLoaded", async function() {
-      try {
-        // Load header and footer
-        document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html')
-          .then(response => response.text());
-        document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html')
-          .then(response => response.text());
-        
-        // Check admin status
-        const userData = await checkAdmin();
-        if (userData) {
-          const welcomeMsg = document.getElementById("welcome-message");
-          if (welcomeMsg) welcomeMsg.textContent = userData.firstName || "Admin";
+    </main>
+  
+    <!-- Admin footer will be loaded here -->
+    <div id="footer"></div>
+  
+    <!-- Firebase Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
+  
+    <!-- Custom Scripts -->
+    <script src="../static/js/admin/admin-users.js" type="module"></script>
+  
+    <!-- Header and Footer Loading -->
+    <script type="module">
+      import { checkAdmin } from '../static/js/common/auth.js';
+      
+      // Load header and footer
+      document.addEventListener("DOMContentLoaded", async function() {
+        try {
+          // Load header and footer
+          document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html')
+            .then(response => response.text());
+          document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html')
+            .then(response => response.text());
+          
+          // Check admin status
+          const userData = await checkAdmin();
+          if (userData) {
+            const welcomeMsg = document.getElementById("welcome-message");
+            if (welcomeMsg) welcomeMsg.textContent = userData.firstName || "Admin";
+          }
+        } catch (error) {
+          console.error("Error loading interface:", error);
         }
-      } catch (error) {
-        console.error("Error loading interface:", error);
-      }
-    });
-  </script>
-</body>
-</html>
+      });
+    </script>
+  </body>
+  </html>
