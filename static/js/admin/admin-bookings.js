@@ -43,6 +43,24 @@ let bookingModal = null;
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("Bookings page initializing");
 
+  // Add this check to validate Firebase config
+  console.log("Checking Firebase configuration...");
+  try {
+    // Test database connection
+    const testQuery = query(collection(db, "bookings"), limit(1));
+
+    await getDocs(testQuery);
+    console.log("Firebase connection successful");
+  } catch (error) {
+    console.error("Firebase configuration error:", error);
+    showMessage(
+      `Database connection error: ${error.message}. Check console for details.`,
+      "error"
+    );
+  }
+
+  // Continue with rest of initialization...
+
   // Initialize DOM elements
   initializeElements();
 
@@ -155,12 +173,13 @@ function initializeDateRangePickers() {
   }
 }
 
-// Load bookings data
+// Enhanced loadBookingsData function with better error handling
 async function loadBookingsData(isLoadMore = false) {
   try {
     if (isLoading) return;
 
     setLoading(true);
+    console.log("Loading bookings data...");
 
     if (!isLoadMore) {
       bookingsData = [];
@@ -170,13 +189,22 @@ async function loadBookingsData(isLoadMore = false) {
       }
     }
 
-    // Create query
+    // Create query with debug logging
     let bookingsQuery = createBookingsQuery();
+    console.log(
+      "Bookings query created with filter:",
+      currentFilter,
+      "sort:",
+      currentSort
+    );
 
     // Execute query
+    console.log("Executing Firestore query...");
     const querySnapshot = await getDocs(bookingsQuery);
+    console.log("Query executed, results:", querySnapshot.size);
 
     if (querySnapshot.empty && !isLoadMore) {
+      console.log("No bookings found matching criteria");
       showNoBookingsMessage();
       setLoading(false);
       return;
@@ -192,16 +220,19 @@ async function loadBookingsData(isLoadMore = false) {
         id: doc.id,
         ...doc.data(),
       };
+      console.log("Processing booking:", bookingData.id);
       newBookings.push(bookingData);
     }
 
     // Load associated data (cars and users)
+    console.log("Loading associated data for", newBookings.length, "bookings");
     await loadAssociatedData(newBookings);
 
     // Add to main array
     bookingsData = [...bookingsData, ...newBookings];
 
     // Render bookings
+    console.log("Rendering", newBookings.length, "bookings");
     renderBookings(newBookings, isLoadMore);
 
     // Show/hide load more button
@@ -212,9 +243,14 @@ async function loadBookingsData(isLoadMore = false) {
     }
 
     setLoading(false);
+    console.log("Bookings data loaded successfully");
   } catch (error) {
     console.error("Error loading bookings:", error);
-    showMessage("Failed to load bookings data", "error");
+    // More detailed error info
+    if (error.code) {
+      console.error("Firebase error code:", error.code);
+    }
+    showMessage(`Failed to load bookings data: ${error.message}`, "error");
     setLoading(false);
   }
 }
@@ -310,42 +346,62 @@ function createBookingsQuery() {
   return bookingsQuery;
 }
 
-// Load associated car and user data
+// Load associated car and user data with more details
 async function loadAssociatedData(bookings) {
   try {
     // Get unique car IDs and user IDs
-    const carIds = [...new Set(bookings.map((booking) => booking.carID))];
-    const userIds = [...new Set(bookings.map((booking) => booking.userID))];
-
+    const carIds = [...new Set(bookings.map(booking => booking.carID))];
+    const userIds = [...new Set(bookings.map(booking => booking.userID))];
+    
     // Load car data if not already loaded
-    const carsToFetch = carIds.filter((id) => !carsData.has(id));
+    const carsToFetch = carIds.filter(id => !carsData.has(id));
     if (carsToFetch.length > 0) {
       for (const carId of carsToFetch) {
         try {
           const carDoc = await getDoc(doc(db, "cars", String(carId)));
           if (carDoc.exists()) {
-            carsData.set(carId, {
+            // Store basic car data
+            const carData = {
               id: carId,
-              ...carDoc.data(),
-            });
+              ...carDoc.data()
+            };
+            
+            // Also try to get car model details if available
+            if (carData.car_type) {
+              try {
+                const modelDoc = await getDoc(doc(db, "car_models", carData.car_type));
+                if (modelDoc.exists()) {
+                  // Add model info to car data
+                  carData.model_details = modelDoc.data();
+                }
+              } catch (modelErr) {
+                console.log(`Could not fetch model details for ${carData.car_type}:`, modelErr);
+              }
+            }
+            
+            // Store the enhanced car data
+            carsData.set(carId, carData);
+            console.log(`Loaded car data for ID ${carId}:`, carData);
           }
         } catch (err) {
           console.error(`Error loading car data for ID ${carId}:`, err);
         }
       }
     }
-
+    
     // Load user data if not already loaded
-    const usersToFetch = userIds.filter((id) => !usersData.has(id));
+    const usersToFetch = userIds.filter(id => !usersData.has(id));
     if (usersToFetch.length > 0) {
       for (const userId of usersToFetch) {
         try {
           const userDoc = await getDoc(doc(db, "users", userId));
           if (userDoc.exists()) {
+            // Store user data with all fields
             usersData.set(userId, {
               id: userId,
-              ...userDoc.data(),
+              ...userDoc.data()
             });
+            console.log(`Loaded user data for ID ${userId}`);
           }
         } catch (err) {
           console.error(`Error loading user data for ID ${userId}:`, err);
@@ -357,9 +413,12 @@ async function loadAssociatedData(bookings) {
   }
 }
 
-// Render bookings to table
+// Fix render bookings function - remove typo
 function renderBookings(bookings, isAppend = false) {
-  if (!bookingsTableBody) return;
+  if (!bookingsTableBody) {
+    console.error("bookingsTableBody element not found");
+    return;
+  }
 
   if (!isAppend) {
     bookingsTableBody.innerHTML = "";
@@ -371,7 +430,9 @@ function renderBookings(bookings, isAppend = false) {
   }
 
   hideNoBookingsMessage();
-  a;
+  // Remove this typo that was causing issues
+  // a; <-- This was causing a JavaScript error!
+
   bookings.forEach((booking) => {
     const row = createBookingRow(booking);
     bookingsTableBody.appendChild(row);
@@ -383,6 +444,11 @@ function renderBookings(bookings, isAppend = false) {
 
 // Create a single booking table row
 function createBookingRow(booking) {
+  if (!booking) {
+    console.error("Attempted to create row with null booking data");
+    return document.createElement("tr"); // Return empty row instead of failing
+  }
+
   const row = document.createElement("tr");
   row.className = "booking-row";
   row.dataset.id = booking.id;
@@ -391,124 +457,153 @@ function createBookingRow(booking) {
   const user = usersData.get(booking.userID) || {};
   const car = carsData.get(booking.carID) || {};
 
-  // Format dates
-  const startDate =
-    booking.start_time instanceof Timestamp
-      ? booking.start_time.toDate()
-      : new Date(booking.start_time);
-  const endDate =
-    booking.end_time instanceof Timestamp
-      ? booking.end_time.toDate()
-      : new Date(booking.end_time);
+  // Safely extract booking ID
+  let displayBookingId = "Unknown";
+  if (booking.bookingID) {
+    // Extract just the numeric part without 'booking_' prefix
+    const numericPart = booking.bookingID.replace(/^booking_/, '');
+    displayBookingId = numericPart;
+  } else if (booking.id) {
+    // Fallback to using document ID
+    displayBookingId = booking.id;
+  }
+
+  // Safely get dates with error handling
+  let startDate, endDate;
+  try {
+    startDate =
+      booking.start_time instanceof Timestamp
+        ? booking.start_time.toDate()
+        : new Date(booking.start_time);
+
+    if (isNaN(startDate.getTime())) throw new Error("Invalid start date");
+  } catch (error) {
+    console.error("Error parsing start date:", error);
+    startDate = new Date(); // Fallback to current date
+  }
+
+  try {
+    endDate =
+      booking.end_time instanceof Timestamp
+        ? booking.end_time.toDate()
+        : new Date(booking.end_time);
+
+    if (isNaN(endDate.getTime())) throw new Error("Invalid end date");
+  } catch (error) {
+    console.error("Error parsing end date:", error);
+    endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Fallback to start + 1 hour
+  }
 
   // Format status class
   const statusClass = getStatusClass(booking.status);
 
-  // Calculate duration in hours and minutes
-  const durationMs = endDate - startDate;
-  const hours = Math.floor(durationMs / (1000 * 60 * 60));
-  const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-
-  row.innerHTML = `
-    <td class="booking-id">
-    <span class="id-badge">${
-      booking.bookingID
-        ? booking.bookingID.replace(/^booking_/, "")
-        : booking.id.substring(0, 6)
-    }</span>
-  </td>
-    <td>
-  <div class="user-cell">
-    <div class="user-avatar">${getUserInitials(user)}</div>
-    <div class="user-info">
-      <div class="user-name">${getUserFullName(user)}</div>
-      <div class="user-email">${user.email || "N/A"}</div>
-      <div class="user-id">ID: ${
-        booking.userID ? booking.userID.substring(0, 6) : "N/A"
-      }</div>
-    </div>
-  </div>
-</td>
-    <td>
-  <div class="car-cell">
-    <div class="car-icon"><i class="bi bi-car-front-fill"></i></div>
-    <div class="car-info">
-      <div class="car-plate">${car.license_plate || "N/A"}</div>
-      <div class="car-name">${booking.car_type || car.car_type || "N/A"}</div>
-    </div>
-  </div>
-</td>
-    <td>
-      <div class="date-cell">
-        <div class="date">${formatDate(startDate)}</div>
-        <div class="time">${formatTime(startDate)}</div>
-      </div>
-    </td>
-    <td>
-      <div class="date-cell">
-        <div class="date">${formatDate(endDate)}</div>
-        <div class="time">${formatTime(endDate)}</div>
-      </div>
-    </td>
-    <td>
-      <div class="duration-cell">
-        ${hours > 0 ? `${hours}h` : ""} ${minutes}m
-      </div>
-    </td>
-    <td>
-      <div class="price-cell">$${formatPrice(booking.total_price)}</div>
-    </td>
-    <td>
-      <div class="status-cell">
-        <span class="status-badge ${statusClass}">${formatStatus(
-    booking.status
-  )}</span>
-      </div>
-    </td>
-    <td>
-      <div class="actions-cell">
-        <button class="view-btn" data-id="${
-          booking.id
-        }" data-tooltip="View Details">
-          <i class="bi bi-eye"></i>
-        </button>
-        <button class="edit-btn" data-id="${
-          booking.id
-        }" data-tooltip="Edit Booking">
-          <i class="bi bi-pencil"></i>
-        </button>
-        <div class="dropdown">
-          <button class="dropdown-toggle" data-tooltip="More Actions">
-            <i class="bi bi-three-dots-vertical"></i>
-          </button>
-          <div class="dropdown-menu">
-            <button class="dropdown-item status-btn" data-status="active" data-id="${
-              booking.id
-            }">
-              <i class="bi bi-check-circle"></i> Mark Active
-            </button>
-            <button class="dropdown-item status-btn" data-status="completed" data-id="${
-              booking.id
-            }">
-              <i class="bi bi-check2-all"></i> Mark Completed
-            </button>
-            <button class="dropdown-item status-btn" data-status="cancelled" data-id="${
-              booking.id
-            }">
-              <i class="bi bi-x-circle"></i> Mark Cancelled
-            </button>
-            <div class="dropdown-divider"></div>
-            <button class="dropdown-item delete-btn" data-id="${booking.id}">
-              <i class="bi bi-trash"></i> Delete
-            </button>
+  // Build row HTML with error handling for all data points
+  try {
+    row.innerHTML = `
+      <td class="booking-id">
+        <span class="id-badge">${displayBookingId}</span>
+      </td>
+      <td>
+        <div class="user-cell">
+          <div class="user-avatar">${getUserInitials(user)}</div>
+          <div class="user-info">
+            <div class="user-name">${user.firstName || 'Unknown'}</div>
+            <div class="user-id">${booking.userID ? booking.userID.substring(0, 8) : 'N/A'}</div>
           </div>
         </div>
+      </td>
+      <td>
+    <div class="car-cell">
+      <div class="car-icon"><i class="bi bi-car-front-fill"></i></div>
+      <div class="car-info">
+        <div class="car-name">${car.car_type || booking.car_type || 'Unknown'}</div>
+        <div class="car-plate">${booking.carID}(${car.license_plate || 'N/A'})</div>
       </div>
-    </td>
-  `;
+    </div>
+  </td>
+      <td>
+        <div class="date-cell">
+          <div class="date">${formatDate(startDate)}</div>
+          <div class="time">${formatTime(startDate)}</div>
+        </div>
+      </td>
+      <td>
+        <div class="date-cell">
+          <div class="date">${formatDate(endDate)}</div>
+          <div class="time">${formatTime(endDate)}</div>
+        </div>
+      </td>
+      <td>
+        <div class="duration-cell">
+          ${formatDuration(startDate, endDate)}
+        </div>
+      </td>
+      <td>
+        <div class="price-cell">$${formatPrice(booking.total_price)}</div>
+      </td>
+      <td>
+        <div class="status-cell">
+          <span class="status-badge ${statusClass}">${formatStatus(
+      booking.status
+    )}</span>
+        </div>
+      </td>
+      <td>
+        <div class="actions-cell">
+          <button class="view-btn" data-id="${
+            booking.id
+          }" data-tooltip="View Details">
+            <i class="bi bi-eye"></i>
+          </button>
+          <button class="edit-btn" data-id="${
+            booking.id
+          }" data-tooltip="Edit Booking">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <div class="dropdown">
+            <button class="dropdown-toggle" data-tooltip="More Actions">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <div class="dropdown-menu">
+              <button class="dropdown-item status-btn" data-status="active" data-id="${
+                booking.id
+              }">
+                <i class="bi bi-check-circle"></i> Mark Active
+              </button>
+              <button class="dropdown-item status-btn" data-status="completed" data-id="${
+                booking.id
+              }">
+                <i class="bi bi-check2-all"></i> Mark Completed
+              </button>
+              <button class="dropdown-item status-btn" data-status="cancelled" data-id="${
+                booking.id
+              }">
+                <i class="bi bi-x-circle"></i> Mark Cancelled
+              </button>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item delete-btn" data-id="${booking.id}">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </td>
+    `;
+  } catch (error) {
+    console.error("Error creating booking row:", error);
+    row.innerHTML = `
+      <td colspan="9" class="error-cell">
+        Error loading booking data: ${error.message}
+      </td>
+    `;
+  }
 
   // Add event listeners to row buttons
-  addRowEventListeners(row);
+  try {
+    addRowEventListeners(row);
+  } catch (error) {
+    console.error("Error adding row event listeners:", error);
+  }
 
   return row;
 }
@@ -625,7 +720,7 @@ async function viewBookingDetails(bookingId) {
         const userDoc = await getDoc(doc(db, "users", booking.userID));
         if (userDoc.exists()) {
           usersData.set(booking.userID, {
-            id: booking.userID,
+            id: userDoc.id,
             ...userDoc.data(),
           });
         }
@@ -655,93 +750,141 @@ async function viewBookingDetails(bookingId) {
     const modalBody = document.getElementById("modal-body");
 
     // In the viewBookingDetails function
-if (modalTitle) {
-    modalTitle.innerHTML = `
-      <i class="bi bi-calendar3"></i>
-      Booking #${booking.bookingID ? booking.bookingID.replace(/^booking_/, '') : booking.id.substring(0, 6)}
-    `;
-  }
-  
-  if (modalBody) {
-    modalBody.innerHTML = `
-      <div class="modal-sections">
-        <!-- Customer Contact Section -->
-        <div class="modal-section">
-          <h4><i class="bi bi-person-circle"></i> Contact Information</h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="info-label">Customer</div>
-              <div class="info-value">${getUserFullName(user)}</div>
+    if (modalTitle) {
+      const displayBookingId = booking.bookingID
+        ? booking.bookingID.replace(/^booking_/, "")
+        : booking.id.substring(0, 6);
+
+      modalTitle.innerHTML = `
+          <i class="bi bi-calendar3"></i>
+          Booking #${displayBookingId}
+        `;
+    }
+
+    // In viewBookingDetails function - updated modal for detailed information
+    if (modalBody) {
+      // Get car model details if available
+      const carModelInfo = car.model_details || {};
+      
+      modalBody.innerHTML = `
+        <div class="modal-sections">
+          <!-- Contact Information Section -->
+          <div class="modal-section">
+            <h4><i class="bi bi-person-circle"></i> Contact Information</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Customer Name</div>
+                <div class="info-value">${user.firstName || ''} ${user.lastName || ''}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Customer ID</div>
+                <div class="info-value user-id-value">${booking.userID || 'N/A'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Email</div>
+                <div class="info-value">${user.email || 'Not provided'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Phone</div>
+                <div class="info-value">${user.phone || 'Not provided'}</div>
+              </div>
+              ${user.licenseNumber ? `
+              <div class="info-item">
+                <div class="info-label">License Number</div>
+                <div class="info-value">${user.licenseNumber}</div>
+              </div>
+              ` : ''}
             </div>
-            <div class="info-item">
-              <div class="info-label">Email</div>
-              <div class="info-value">${user.email || 'Not provided'}</div>
+          </div>
+          
+          <!-- Vehicle Information Section -->
+          <div class="modal-section">
+            <h4><i class="bi bi-car-front"></i> Vehicle Information</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Vehicle Model</div>
+                <div class="info-value">${car.car_type || booking.car_type || 'N/A'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Car ID & License</div>
+                <div class="info-value">${booking.carID}(${car.license_plate || 'N/A'})</div>
+              </div>
+              ${car.car_color ? `
+              <div class="info-item">
+                <div class="info-label">Color</div>
+                <div class="info-value">
+                  <span class="car-color-dot" style="background-color: ${colorNameToHex(car.car_color)}"></span>${car.car_color}
+                </div>
+              </div>
+              ` : ''}
+              ${car.fuel_type ? `
+              <div class="info-item">
+                <div class="info-label">Fuel Type</div>
+                <div class="info-value">${car.fuel_type}</div>
+              </div>
+              ` : ''}
+              ${carModelInfo.seating_capacity ? `
+              <div class="info-item">
+                <div class="info-label">Seating Capacity</div>
+                <div class="info-value">${carModelInfo.seating_capacity} seats</div>
+              </div>
+              ` : ''}
             </div>
-            <div class="info-item">
-              <div class="info-label">Phone</div>
-              <div class="info-value">${user.phone || 'Not provided'}</div>
+          </div>
+          
+          <!-- Booking Details Section -->
+          <div class="modal-section">
+            <h4><i class="bi bi-clock-history"></i> Booking Details</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Booking ID</div>
+                <div class="info-value">
+                  <span class="id-badge">${displayBookingId}</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Status</div>
+                <div class="info-value">
+                  <span class="status-badge ${statusClass}">${formatStatus(booking.status)}</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Start Time</div>
+                <div class="info-value">
+                  ${formatDate(startDate)} at ${formatTime(startDate)}
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">End Time</div>
+                <div class="info-value">
+                  ${formatDate(endDate)} at ${formatTime(endDate)}
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Duration</div>
+                <div class="info-value">
+                  ${formatDuration(startDate, endDate)}
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Price</div>
+                <div class="info-value price-value">
+                  $${formatPrice(booking.total_price)}
+                </div>
+              </div>
+              ${booking.created_at ? `
+              <div class="info-item">
+                <div class="info-label">Created At</div>
+                <div class="info-value">
+                  ${formatDateTime(booking.created_at)}
+                </div>
+              </div>
+              ` : ''}
             </div>
           </div>
         </div>
-        
-        <!-- Vehicle Section - Simplified -->
-        <div class="modal-section">
-          <h4><i class="bi bi-car-front"></i> Vehicle</h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="info-label">License Plate</div>
-              <div class="info-value">${car.license_plate || 'N/A'}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Car Type</div>
-              <div class="info-value">${booking.car_type || car.car_type || 'N/A'}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Car ID</div>
-              <div class="info-value">${booking.carID || 'N/A'}</div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Booking Details remain the same -->
-        <div class="modal-section">
-          <h4><i class="bi bi-clock-history"></i> Booking Details</h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="info-label">Status</div>
-              <div class="info-value">
-                <span class="status-badge ${statusClass}">${formattedStatus}</span>
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Start Time</div>
-              <div class="info-value">
-                ${formatDate(startDate)} at ${formatTime(startDate)}
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">End Time</div>
-              <div class="info-value">
-                ${formatDate(endDate)} at ${formatTime(endDate)}
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Duration</div>
-              <div class="info-value">
-                ${formatDuration(startDate, endDate)}
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Price</div>
-              <div class="info-value price-value">
-                $${formatPrice(booking.total_price)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
+      `;
+    }
 
     // Show modal
     openModal();
@@ -922,29 +1065,7 @@ function setLoading(loading) {
   }
 }
 
-// Utility functions
-function getUserInitials(user) {
-  if (!user || (!user.firstName && !user.lastName)) {
-    return "U";
-  }
-
-  const firstName = user.firstName || "";
-  const lastName = user.lastName || "";
-
-  return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
-}
-
-function getUserFullName(user) {
-  if (!user) return "Unknown User";
-
-  const firstName = user.firstName || "";
-  const lastName = user.lastName || "";
-
-  if (!firstName && !lastName) return "Unknown User";
-
-  return `${firstName} ${lastName}`.trim();
-}
-
+// Utility functions with better error handling
 function formatDate(date) {
   if (!date) return "N/A";
 
@@ -960,6 +1081,48 @@ function formatDate(date) {
   }
 }
 
+function formatPrice(price) {
+  if (price === undefined || price === null) return "0.00";
+
+  try {
+    return Number(price).toFixed(2);
+  } catch (error) {
+    return "0.00";
+  }
+}
+
+function getUserFullName(user) {
+  if (!user) return "Unknown User";
+
+  try {
+    const firstName = user.firstName || "";
+    const lastName = user.lastName || "";
+
+    if (!firstName && !lastName) return "Unknown User";
+
+    return `${firstName} ${lastName}`.trim();
+  } catch (error) {
+    return "Unknown User";
+  }
+}
+
+// Get user initials with better handling
+function getUserInitials(user) {
+  if (!user) return "?";
+  
+  if (user.firstName && user.lastName) {
+    return (user.firstName.charAt(0) + user.lastName.charAt(0)).toUpperCase();
+  } else if (user.firstName) {
+    return user.firstName.charAt(0).toUpperCase();
+  } else if (user.lastName) {
+    return user.lastName.charAt(0).toUpperCase();
+  } else if (user.email) {
+    return user.email.charAt(0).toUpperCase();
+  } else {
+    return "?";
+  }
+}
+
 function formatTime(date) {
   if (!date) return "N/A";
 
@@ -972,12 +1135,6 @@ function formatTime(date) {
     console.error("Error formatting time:", error);
     return "Invalid Time";
   }
-}
-
-function formatPrice(price) {
-  if (price === undefined || price === null) return "0.00";
-
-  return Number(price).toFixed(2);
 }
 
 function formatStatus(status) {
@@ -1047,6 +1204,27 @@ function colorNameToHex(colorName) {
   };
 
   return colors[colorName?.toLowerCase()] || "#cccccc";
+}
+
+// Format complete date and time
+function formatDateTime(timestamp) {
+  if (!timestamp) return "N/A";
+  
+  try {
+    const date = timestamp instanceof Timestamp ? 
+      timestamp.toDate() : 
+      new Date(timestamp);
+      
+    return date.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    return "Invalid Date/Time";
+  }
 }
 
 // Initialize tooltips

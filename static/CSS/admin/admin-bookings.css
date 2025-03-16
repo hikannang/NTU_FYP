@@ -34,7 +34,9 @@ body.admin-body {
   padding: 0;
   background-color: var(--gray-50);
   min-height: 100vh;
-  padding-top: var(--header-height); /* Add padding to account for fixed header */
+  padding-top: var(
+    --header-height
+  ); /* Add padding to account for fixed header */
 }
 
 .admin-main {
@@ -153,7 +155,7 @@ body.sidebar-collapsed .admin-main {
   visibility: hidden;
 }
 
-.filter-select, 
+.filter-select,
 .search-input-wrapper input,
 .filter-group input[type="date"] {
   width: 100%;
@@ -166,7 +168,7 @@ body.sidebar-collapsed .admin-main {
   transition: all var(--transition);
 }
 
-.filter-select:focus, 
+.filter-select:focus,
 .search-input-wrapper input:focus,
 .filter-group input[type="date"]:focus {
   border-color: var(--primary-color);
@@ -301,6 +303,11 @@ body.sidebar-collapsed .admin-main {
   font-weight: 600;
   font-family: monospace;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* User Cell */
@@ -339,10 +346,17 @@ body.sidebar-collapsed .admin-main {
   color: var(--text-light);
 }
 
+/* User ID display */
 .user-id {
   font-size: 0.75rem;
   color: var(--text-light);
   font-family: monospace;
+  letter-spacing: 0.3px;
+}
+
+.user-id-value {
+  font-family: monospace;
+  letter-spacing: 0.5px;
 }
 
 /* Car Cell */
@@ -370,15 +384,15 @@ body.sidebar-collapsed .admin-main {
 }
 
 .car-name {
-  font-size: 0.85rem;
-  color: var(--text-medium);
+  font-weight: 500;
+  color: var(--text-dark);
+  margin-bottom: 2px;
 }
 
 .car-plate {
-  font-weight: 600;
-  color: var(--text-dark);
+  font-size: 0.85rem;
+  color: var(--text-medium);
   font-family: monospace;
-  margin-bottom: 2px;
 }
 
 /* Date Cell */
@@ -509,7 +523,7 @@ body.sidebar-collapsed .admin-main {
   background-color: white;
   border-radius: var(--button-radius);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-              0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
   padding: 8px 0;
   opacity: 0;
   visibility: hidden;
@@ -660,7 +674,9 @@ body.sidebar-collapsed .admin-main {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-overlay p {
@@ -825,6 +841,11 @@ body.sidebar-collapsed .admin-main {
   border-radius: var(--button-radius);
   background-color: var(--gray-50);
   border: 1px solid var(--gray-200);
+  margin-bottom: 16px;
+}
+
+.modal-section:last-child {
+  margin-bottom: 0;
 }
 
 .modal-section h4 {
@@ -843,18 +864,19 @@ body.sidebar-collapsed .admin-main {
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  gap: 16px;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
+  padding: 4px 0;
 }
 
 .info-label {
   font-size: 0.85rem;
   color: var(--text-light);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .info-value {
@@ -864,7 +886,7 @@ body.sidebar-collapsed .admin-main {
 
 .price-value {
   font-weight: 600;
-  color: var(--success-color);
+  color: var (--success-color);
 }
 
 /* Car Color Dot */
@@ -1006,7 +1028,7 @@ body.sidebar-collapsed .admin-main {
     flex-wrap: wrap;
     gap: 16px;
   }
-  
+
   .filter-group {
     min-width: 150px;
   }
@@ -1017,53 +1039,54 @@ body.sidebar-collapsed .admin-main {
     margin-left: 0;
     padding: 20px 16px;
   }
-  
+
   body.sidebar-collapsed .admin-main {
     margin-left: 0;
   }
-  
+
   .page-header-wrapper {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-  
+
   .header-actions {
     width: 100%;
     justify-content: flex-start;
   }
-  
+
   .filters-section {
     padding: 16px;
   }
-  
+
   .filter-group {
     flex: 1 1 calc(50% - 16px);
   }
-  
+
   .search-group {
     flex: 1 1 100%;
   }
-  
+
   .modal-content {
     width: 95%;
   }
-  
+
   .modal-footer {
     flex-direction: column-reverse;
     gap: 12px;
   }
-  
+
   .modal-footer button {
     width: 100%;
     justify-content: center;
   }
-  
+
   .modal-actions {
     width: 100%;
   }
-  
-  .modal-actions a, .modal-actions button {
+
+  .modal-actions a,
+  .modal-actions button {
     flex: 1;
     justify-content: center;
   }
@@ -1073,26 +1096,26 @@ body.sidebar-collapsed .admin-main {
   .filter-group {
     flex: 1 1 100%;
   }
-  
+
   .data-table {
     min-width: 800px;
   }
-  
+
   #toast-container {
     left: 16px;
     right: 16px;
     bottom: 16px;
   }
-  
+
   .toast {
     min-width: 0;
     width: 100%;
   }
-  
+
   .modal-content {
     max-height: 80vh;
   }
-  
+
   .info-grid {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -1103,7 +1126,7 @@ body.sidebar-collapsed .admin-main {
   .page-title {
     font-size: 1.4rem;
   }
-  
+
   .filters-section {
     padding: 12px;
   }
@@ -1114,12 +1137,12 @@ body.sidebar-collapsed .admin-main {
   body.admin-body {
     padding-top: 0;
   }
-  
+
   .admin-main {
     margin-left: 0 !important;
     padding: 0;
   }
-  
+
   #header,
   #footer,
   .filters-section,
@@ -1128,12 +1151,12 @@ body.sidebar-collapsed .admin-main {
   .header-actions {
     display: none !important;
   }
-  
+
   .table-responsive {
     box-shadow: none;
     border: 1px solid var(--gray-200);
   }
-  
+
   .data-table {
     min-width: 100% !important;
   }
@@ -1144,4 +1167,24 @@ body.sidebar-collapsed .admin-main {
   .filter-group input[type="date"] {
     padding: 9px 12px;
   }
+}
+
+/* Add styling for error cells */
+.error-cell {
+  padding: 24px !important;
+  text-align: center;
+  color: var(--danger-color);
+  background-color: var(--danger-light);
+}
+
+/* ID Badge in modal */
+.modal .id-badge {
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: monospace;
+  letter-spacing: 0.5px;
 }
