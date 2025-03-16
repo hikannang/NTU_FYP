@@ -1,6 +1,6 @@
 /* admin-user-edit.css */
 
-/* Core variables - matching admin.css with extensions */
+/* Core variables - matching admin.css with enhancements */
 :root {
   --sidebar-width: 250px;
   --header-height: 70px;
@@ -29,6 +29,9 @@
   --button-radius: 8px;
   --transition: 0.2s ease;
   --admin-padding: 24px 20px 30px 30px;
+  --content-spacing: 32px;
+  --section-spacing: 24px;
+  --item-spacing: 16px;
 }
 
 /* Admin layout integration - Fixed header positioning */
@@ -37,9 +40,7 @@ body.admin-body {
   padding: 0;
   background-color: var(--gray-50);
   min-height: 100vh;
-  padding-top: var(
-    --header-height
-  ); /* Add padding to account for fixed header */
+  padding-top: var(--header-height); /* Add padding for fixed header */
 }
 
 .admin-main {
@@ -81,7 +82,7 @@ body.sidebar-collapsed .admin-main {
 }
 
 .section-header {
-  padding: 18px 24px;
+  padding: 20px 24px;
   background-color: var(--gray-50);
   border-bottom: 1px solid var(--gray-200);
   display: flex;
@@ -114,6 +115,10 @@ body.sidebar-collapsed .admin-main {
   gap: 24px;
 }
 
+.mt-16 {
+  margin-top: 16px;
+}
+
 .form-group {
   margin-bottom: 8px;
   position: relative;
@@ -136,7 +141,7 @@ body.sidebar-collapsed .admin-main {
 .form-group select,
 .form-group textarea {
   width: 100%;
-  padding: 12px 16px;
+  padding: 12px 14px;
   border: 1px solid var(--gray-200);
   border-radius: var(--button-radius);
   background-color: white;
@@ -159,23 +164,15 @@ body.sidebar-collapsed .admin-main {
   border-color: var(--primary-color);
 }
 
-.form-group input:disabled,
-.form-group select:disabled {
-  background-color: var(--gray-50);
-  cursor: not-allowed;
+/* Disabled input styling */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: var(--gray-100) !important;
+  color: var(--text-light) !important;
+  cursor: not-allowed !important;
+  border-color: var(--gray-200) !important;
   opacity: 0.7;
-}
-
-.password-input-group input:disabled + .toggle-password-btn {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.help-text {
-  display: block;
-  margin-top: 6px;
-  font-size: 0.8rem;
-  color: var(--text-light);
 }
 
 /* Form section animations */
@@ -232,160 +229,56 @@ body.sidebar-collapsed .admin-main {
   color: var(--primary-color);
 }
 
-/* Password Strength Indicator */
-.password-strength-container {
-  margin-top: 12px;
+input:disabled + .toggle-password-btn {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
-.password-strength-meter {
-  height: 6px;
-  background-color: var(--gray-200);
-  border-radius: 3px;
-  margin-bottom: 6px;
-  overflow: hidden;
-}
-
-.password-strength {
-  height: 100%;
-  width: 0;
-  transition: width 0.3s ease, background-color 0.3s ease;
-}
-
-.password-strength.weak {
-  background-color: var(--danger-color);
-  width: 25%;
-}
-
-.password-strength.medium {
-  background-color: var(--warning-color);
-  width: 50%;
-}
-
-.password-strength.strong {
-  background-color: var(--primary-color);
-  width: 75%;
-}
-
-.password-strength.very-strong {
-  background-color: var(--success-color);
-  width: 100%;
-}
-
-.password-strength-text {
-  font-size: 0.8rem;
-  color: var(--text-light);
-  display: block;
-}
-
-/* Password Match Indicator */
-.match-indicator {
-  display: block;
-  font-size: 0.8rem;
-  margin-top: 6px;
-}
-
-.match-indicator.match {
-  color: var(--success-color);
-}
-
-.match-indicator.no-match {
-  color: var(--danger-color);
-}
-
-/* Password Requirements */
-.password-requirements {
-  margin-top: 24px;
-  padding: 16px;
-  background-color: var(--gray-50);
-  border-radius: var(--button-radius);
-}
-
-.password-requirements h4 {
-  font-size: 0.9rem;
-  margin-top: 0;
-  margin-bottom: 12px;
-  color: var(--text-dark);
+/* Toggle Container for Password */
+.toggle-container {
   display: flex;
   align-items: center;
-  gap: 6px;
+  margin-bottom: 16px;
 }
 
-.password-requirements h4 i {
-  color: var(--primary-color);
+.toggle-container input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
 }
 
-.password-requirements ul {
-  margin: 0;
-  padding: 0 0 0 24px;
-  list-style-type: none;
-}
-
-.requirement {
-  position: relative;
-  padding: 4px 0;
-  font-size: 0.85rem;
-  color: var(--text-light);
-  transition: color 0.2s ease;
-}
-
-.requirement::before {
-  content: "\F26C";
-  font-family: "bootstrap-icons";
-  position: absolute;
-  left: -24px;
-  color: var(--text-light);
-}
-
-.requirement.met {
-  color: var(--success-color);
-}
-
-.requirement.met::before {
-  content: "\F26E";
-  color: var(--success-color);
-}
-
-/* Toggle Switch */
-.toggle-switch {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
+.toggle-container label {
+  font-weight: 500;
+  color: var(--text-medium);
   cursor: pointer;
 }
 
-.toggle-switch input {
+/* Toggle Switch Styling */
+.toggle-switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  user-select: none;
+}
+
+.toggle-switch input[type="checkbox"] {
   opacity: 0;
   width: 0;
   height: 0;
   position: absolute;
 }
 
-.toggle-switch .text-success {
-  color: var(--success-color);
-  font-weight: 600;
-}
-
-.toggle-switch .text-warning {
-  color: var(--warning-color);
-  font-weight: 600;
-}
-
 .toggle-label {
   position: relative;
   display: inline-block;
-  width: 48px;
-  height: 24px;
+  width: 52px;
+  height: 26px;
+  cursor: pointer;
 }
 
 .toggle-switch.large .toggle-label {
   width: 60px;
   height: 30px;
-}
-
-.toggle-switch .toggle-text {
-  margin-left: 10px;
-  font-size: 0.9rem;
-  font-weight: 500;
 }
 
 .toggle-inner {
@@ -395,20 +288,16 @@ body.sidebar-collapsed .admin-main {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: var(--gray-200);
-  transition: var(--transition);
+  background-color: var(--gray-300);
   border-radius: 34px;
+  transition: var(--transition);
 }
 
-.toggle-switch input:checked + .toggle-label .toggle-inner {
-  background-color: var(--primary-color);
-}
-
-.toggle-inner:before {
+.toggle-inner::before {
   position: absolute;
   content: "";
-  height: 18px;
-  width: 18px;
+  height: 20px;
+  width: 20px;
   left: 3px;
   bottom: 3px;
   background-color: white;
@@ -416,25 +305,39 @@ body.sidebar-collapsed .admin-main {
   transition: var(--transition);
 }
 
-.toggle-switch.large .toggle-inner:before {
+.toggle-switch.large .toggle-inner::before {
   height: 24px;
   width: 24px;
 }
 
-.toggle-switch input:checked + .toggle-label .toggle-inner:before {
-  transform: translateX(24px);
+.toggle-switch input:checked + .toggle-label .toggle-inner {
+  background-color: var(--primary-color);
 }
 
-.toggle-switch.large input:checked + .toggle-label .toggle-inner:before {
+.toggle-switch input:checked + .toggle-label .toggle-inner::before {
+  transform: translateX(26px);
+}
+
+.toggle-switch.large input:checked + .toggle-label .toggle-inner::before {
   transform: translateX(30px);
 }
 
-.toggle-switch input:focus + .toggle-label .toggle-inner {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+.toggle-text {
+  margin-left: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
-/* Danger Zone Styling */
-.danger-zone .danger-header h2 i {
+.text-success {
+  color: var(--success-color) !important;
+}
+
+.text-warning {
+  color: var(--warning-color) !important;
+}
+
+/* Danger Zone Section */
+.danger-header h2 i {
   color: var(--danger-color);
 }
 
@@ -445,8 +348,8 @@ body.sidebar-collapsed .admin-main {
   padding: 20px;
   border: 1px solid var(--gray-200);
   border-radius: var(--button-radius);
-  margin-bottom: 16px;
   background-color: white;
+  margin-bottom: 16px;
   transition: all var(--transition);
 }
 
@@ -456,40 +359,53 @@ body.sidebar-collapsed .admin-main {
 
 .action-card:hover {
   border-color: var(--gray-300);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
-.action-card.danger {
-  border-color: rgba(239, 68, 68, 0.3);
+/* Status card styles */
+#status-action-card.active {
+  border-left: 4px solid var(--success-color);
 }
 
-.action-card.danger:hover {
-  border-color: var(--danger-color);
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
+#status-action-card.suspended {
+  border-left: 4px solid var(--warning-color);
+}
+
+.danger-card {
+  border-left: 4px solid var(--danger-color);
+  background-color: rgba(239, 68, 68, 0.02);
 }
 
 .action-content h3 {
-  font-size: 1.05rem;
-  margin: 0 0 8px 0;
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--text-dark);
 }
 
 .action-content h3 i {
-  font-size: 1.1em;
+  font-size: 1rem;
+}
+
+#status-action-card.active h3 i {
+  color: var(--success-color);
+}
+
+#status-action-card.suspended h3 i {
   color: var(--warning-color);
 }
 
-.action-content p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--text-light);
-  max-width: 500px;
+.danger-card h3 i {
+  color: var(--danger-color);
 }
 
-.action-card.danger .action-content h3 i {
-  color: var(--danger-color);
+.action-content p {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  margin: 0;
 }
 
 /* Button Styles */
@@ -505,22 +421,19 @@ body.sidebar-collapsed .admin-main {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  text-decoration: none;
   border: none;
 }
 
 .primary-btn {
-  background: linear-gradient(
-    to bottom right,
-    var(--primary-color),
-    var(--primary-dark)
-  );
+  background: linear-gradient(to bottom right, var(--primary-color), var(--primary-dark));
   color: white;
-  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
 
 .primary-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
 }
 
 .primary-btn:active {
@@ -543,7 +456,7 @@ body.sidebar-collapsed .admin-main {
 .danger-btn {
   background: linear-gradient(to bottom right, var(--danger-color), #dc2626);
   color: white;
-  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.5);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
 }
 
 .danger-btn:hover {
@@ -555,77 +468,12 @@ body.sidebar-collapsed .admin-main {
   transform: translateY(0);
 }
 
-.text-btn {
-  background: none;
-  border: none;
-  padding: 6px 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition);
-  border-radius: var(--button-radius);
-}
-
-.text-primary {
-  color: var(--primary-color);
-}
-
-.text-danger {
-  color: var(--danger-color);
-}
-
-.text-btn:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
 /* Form Actions */
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 16px;
-  padding: 24px 0;
   margin-top: 16px;
-}
-
-/* Warning Banner */
-.warning-banner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background-color: var(--warning-light);
-  border-left: 4px solid var(--warning-color);
-  padding: 12px 20px;
-  margin-bottom: 24px;
-  border-radius: var(--button-radius);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  animation: slideDown 0.3s ease;
-}
-
-.warning-banner i {
-  font-size: 1.2rem;
-  color: var(--warning-color);
-}
-
-.warning-banner span {
-  font-weight: 600;
-  color: var(--text-dark);
-  flex: 1;
-}
-
-.banner-actions {
-  display: flex;
-  gap: 12px;
-}
-
-@keyframes slideDown {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
 }
 
 /* Loading Overlay */
@@ -636,12 +484,12 @@ body.sidebar-collapsed .admin-main {
   right: 0;
   bottom: 0;
   background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(4px);
   display: none;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 1050; /* Above header */
+  z-index: 1050;
 }
 
 .spinner {
@@ -655,9 +503,7 @@ body.sidebar-collapsed .admin-main {
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 .loading-overlay p {
@@ -665,8 +511,8 @@ body.sidebar-collapsed .admin-main {
   font-weight: 500;
   background-color: white;
   padding: 8px 20px;
-  border-radius: 50px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Error Container */
@@ -674,331 +520,215 @@ body.sidebar-collapsed .admin-main {
   background-color: var(--danger-light);
   color: #b91c1c;
   padding: 16px;
-  border-radius: var(--button-radius);
+  border-radius: var(--card-radius);
   margin-bottom: 24px;
   display: flex;
   align-items: center;
   gap: 12px;
+  animation: fadeIn 0.3s ease;
 }
 
 .error-container i {
   font-size: 1.5rem;
 }
 
-/* Modal Styling */
-.modal {
-  display: none;
+/* Toast Messages */
+#toast-container {
   position: fixed;
-  z-index: 1050;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  align-items: center;
-  justify-content: center;
-}
-
-.modal.show {
-  display: flex !important;
-}
-
-.modal-content {
-  background-color: white;
-  border-radius: var(--card-radius);
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  transform: translateY(20px);
-  transition: transform var(--transition);
-}
-
-.modal.show .modal-content {
-  transform: translateY(0);
-}
-
-.modal-header {
-  padding: 20px;
-  border-bottom: 1px solid var(--gray-200);
+  bottom: 24px;
+  left: 24px;
+  z-index: 1060;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: var(--text-dark);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.modal-header h3 i {
-  color: var(--warning-color);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: var(--text-light);
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.modal-close:hover {
-  color: var(--danger-color);
-  transform: rotate(90deg);
-}
-
-.modal-body {
-  padding: 24px 20px;
-  font-size: 1rem;
-  color: var(--text-medium);
-}
-
-.modal-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--gray-200);
-  display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
   gap: 12px;
 }
 
-#status-action-card {
-  transition: border-color 0.3s ease, background-color 0.3s ease;
+.toast {
+  min-width: 300px;
+  max-width: 400px;
+  padding: 12px 16px;
+  border-radius: var(--button-radius);
+  background-color: white;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+              0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
 }
 
-#status-action-card.active {
-  border-left: 3px solid var(--success-color);
-  background-color: rgba(16, 185, 129, 0.05);
+.toast.show {
+  transform: translateX(0);
 }
 
-#status-action-card.suspended {
-  border-left: 3px solid var(--warning-color);
-  background-color: rgba(245, 158, 11, 0.05);
+.toast i {
+  font-size: 1.2rem;
+}
+
+.toast-success {
+  border-left: 4px solid var(--success-color);
+}
+
+.toast-success i {
+  color: var(--success-color);
+}
+
+.toast-error {
+  border-left: 4px solid var(--danger-color);
+}
+
+.toast-error i {
+  color: var(--danger-color);
+}
+
+.toast-warning {
+  border-left: 4px solid var(--warning-color);
+}
+
+.toast-warning i {
+  color: var(--warning-color);
+}
+
+.toast-info {
+  border-left: 4px solid var(--primary-color);
+}
+
+.toast-info i {
+  color: var(--primary-color);
+}
+
+/* Error Banner */
+.error-banner {
+  background-color: var(--danger-light);
+  color: #b91c1c;
+  padding: 12px 20px;
+  border-radius: var(--button-radius);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideDown 0.3s ease;
+}
+
+.error-banner i {
+  font-size: 1.2rem;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Responsive Styles */
 @media (max-width: 1200px) {
   .form-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: 1fr 1fr;
   }
 }
 
 @media (max-width: 992px) {
   .admin-main {
     margin-left: 0;
-    padding: 20px;
+    padding: 20px 16px;
   }
-
+  
   body.sidebar-collapsed .admin-main {
     margin-left: 0;
   }
-
+  
   .form-grid {
     grid-template-columns: 1fr;
   }
-
-  .section-header {
+  
+  .action-card {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 16px;
+  }
+  
+  .action-control {
+    width: 100%;
+  }
+  
+  .toggle-switch {
+    justify-content: flex-start;
   }
 }
 
 @media (max-width: 768px) {
-  .action-card {
+  .page-header-wrapper {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
     gap: 16px;
   }
-
-  .action-control {
-    display: flex;
-    justify-content: flex-start;
+  
+  .header-actions {
+    width: 100%;
   }
-
+  
   .form-actions {
-    flex-direction: column-reverse;
+    flex-direction: column;
   }
-
+  
   .form-actions button {
     width: 100%;
+  }
+  
+  #toast-container {
+    left: 16px;
+    right: 16px;
+  }
+  
+  .toast {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
   }
 }
 
 @media (max-width: 576px) {
-  .admin-main {
-    padding: 16px;
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
-
+  
   .section-content {
     padding: 16px;
   }
-
-  .password-requirements ul {
-    padding-left: 16px;
-  }
-
-  .modal-content {
-    width: 95%;
-  }
 }
 
-/* Print Styles */
+/* Print styles */
 @media print {
-  body.admin-body {
-    padding-top: 0;
-  }
-
   .admin-main {
     margin-left: 0 !important;
     padding: 0;
   }
-
-  .form-actions,
-  .form-section.danger-zone,
-  .password-management .section-content,
-  #header,
-  #footer,
-  .loading-overlay,
-  .modal,
-  .toggle-switch {
-    display: none !important;
-  }
-
+  
   .form-section {
-    box-shadow: none;
-    margin-bottom: 20px;
     break-inside: avoid;
     page-break-inside: avoid;
-    border: 1px solid var(--gray-200);
-  }
-
-  .form-section:hover {
-    transform: none;
     box-shadow: none;
+    border: 1px solid var(--gray-200);
+    margin-bottom: 16px;
   }
-
-  .form-grid {
-    display: block;
+  
+  .form-actions, 
+  .action-card.danger-card,
+  #header,
+  #footer,
+  .header-actions {
+    display: none !important;
   }
-
-  .form-group {
-    margin-bottom: 15px;
+  
+  .form-group input, 
+  .form-group select {
+    border-color: var(--gray-300);
   }
-
-  input,
-  select,
-  textarea {
-    border: 1px solid var(--gray-300) !important;
-  }
-
-  .help-text {
-    display: none;
-  }
-}
-
-/* Add these styles to admin-user-edit.css */
-
-/* Disabled Password Fields */
-input:disabled {
-  background-color: #f1f5f9;
-  color: #64748b;
-  cursor: not-allowed;
-}
-
-.toggle-password-btn {
-  opacity: 0.7;
-}
-
-/* Toggle Container for Password */
-.toggle-container {
-  display: flex;
-  align-items: center;
-}
-
-.toggle-container input[type="checkbox"] {
-  margin-right: 8px;
-}
-
-.toggle-container label {
-  font-weight: 500;
-  color: var(--text-medium);
-  cursor: pointer;
-}
-
-/* Status Card Styling */
-#status-action-card.active {
-  border-left: 3px solid var(--success-color);
-}
-
-#status-action-card.suspended {
-  border-left: 3px solid var(--warning-color);
-}
-
-/* Status Text Styling */
-.text-success {
-  color: var(--success-color);
-}
-
-.text-warning {
-  color: var(--warning-color);
-}
-
-/* Danger Card Styling */
-.danger-card {
-  border-left: 3px solid var(--danger-color);
-  background-color: rgba(239, 68, 68, 0.05);
-}
-
-/* Modal Styling Fix */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 1050;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  align-items: center;
-  justify-content: center;
-}
-
-.modal.show {
-  display: flex !important;
-}
-
-/* Disabled input styling */
-input:disabled {
-  background-color: #f1f5f9;
-  color: #64748b;
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-input:disabled + .toggle-password-btn {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Properly style the toggle-container */
-.toggle-container {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.toggle-container input[type="checkbox"] {
-  margin-right: 8px;
-  width: auto; /* Override any width: 100% from other styles */
-}
-
-.toggle-container label {
-  font-weight: 500;
-  color: var(--text-medium);
-  cursor: pointer;
 }
