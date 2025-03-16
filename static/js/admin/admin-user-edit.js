@@ -380,13 +380,14 @@ function setupEventListeners() {
   }
 }
 
-// FIXED: Toggle password fields with direct element access
+// Enhanced togglePasswordFields function
 function togglePasswordFields(enabled) {
   console.log(`Toggling password fields: ${enabled ? "enabled" : "disabled"}`);
   
   // Get password fields directly
   const newPasswordField = document.getElementById("new-password");
   const confirmPasswordField = document.getElementById("confirm-password");
+  const passwordToggleMessage = document.getElementById("password-toggle-message");
   
   if (!newPasswordField || !confirmPasswordField) {
     console.error("Password fields not found for toggling");
@@ -396,6 +397,11 @@ function togglePasswordFields(enabled) {
   // Enable/disable password fields
   newPasswordField.disabled = !enabled;
   confirmPasswordField.disabled = !enabled;
+  
+  // Show/hide helper message
+  if (passwordToggleMessage) {
+    passwordToggleMessage.style.display = enabled ? "block" : "none";
+  }
   
   // Reset values when disabled
   if (!enabled) {
