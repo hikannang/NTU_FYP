@@ -265,186 +265,181 @@ function setupEventListeners() {
 
 // Load user data
 async function loadUserData() {
-  try {
-    safeSetLoading(true);
-
-    // Get user document
-    const userDoc = await getDoc(doc(db, "users", userId));
-
-    if (!userDoc.exists()) {
-      safeSetDisplay(userNotFound, "flex");
-      safeSetDisplay(editFormContainer, "none");
+    try {
+      safeSetLoading(true);
+      
+      // Get user document
+      const userDoc = await getDoc(doc(db, "users", userId));
+      
+      if (!userDoc.exists()) {
+        safeSetDisplay(userNotFound, "flex");
+        safeSetDisplay(editFormContainer, "none");
+        safeSetLoading(false);
+        return;
+      }
+      
+      // Store user data globally and include the ID
+      userData = {
+        id: userId,
+        ...userDoc.data()
+      };
+      
+      console.log("User data loaded:", userData);
+      
+      // Store original email for comparison
+      originalEmail = userData.email;
+      
+      // Update page title with user name
+      const firstName = userData.firstName || '';
+      const lastName = userData.lastName || '';
+      const userName = firstName || lastName ? `${firstName} ${lastName}`.trim() : "User";
+      
+      if (editUserTitle) {
+        editUserTitle.innerHTML = `
+          <i class="bi bi-pencil-square"></i> 
+          Edit User: ${safeText(userName)}
+        `;
+      }
+      
+      document.title = `Edit ${userName} | BaoCarLiao Admin`;
+      
+      // Populate form with user data - using setTimeout to ensure DOM is ready
+      setTimeout(() => {
+        populateForm(userData);
+      }, 100);
+      
       safeSetLoading(false);
-      return;
+    } catch (error) {
+      console.error("Error loading user data:", error);
+      showError(`Failed to load user data: ${error.message}`);
+      safeSetLoading(false);
     }
-
-    // Store user data globally and include the ID
-    userData = {
-      id: userId,
-      ...userDoc.data(),
-    };
-
-    console.log("User data loaded:", userData);
-
-    // Store original email for comparison
-    originalEmail = userData.email;
-
-    // Update page title with user name
-    const firstName = userData.firstName || "";
-    const lastName = userData.lastName || "";
-    const userName =
-      firstName || lastName ? `${firstName} ${lastName}`.trim() : "User";
-
-    if (editUserTitle) {
-      editUserTitle.innerHTML = `
-        <i class="bi bi-pencil-square"></i> 
-        Edit User: ${safeText(userName)}
-      `;
-    }
-
-    document.title = `Edit ${userName} | Admin Dashboard`;
-
-    // Populate form with user data
-    populateForm(userData);
-
-    safeSetLoading(false);
-  } catch (error) {
-    console.error("Error loading user data:", error);
-    showError(`Failed to load user data: ${error.message}`);
-    safeSetLoading(false);
   }
-}
 
 // Populate form with user data
 function populateForm(userData) {
-  // Set hidden user ID
-  if (userIdInput) userIdInput.value = userData.id;
-
-  // Set text inputs
-  if (firstNameInput) firstNameInput.value = userData.firstName || "";
-  if (lastNameInput) lastNameInput.value = userData.lastName || "";
-  if (emailInput) emailInput.value = userData.email || "";
-  if (phoneInput) phoneInput.value = userData.phone || "";
-
-  // Set license information
-  if (licenseNumberInput)
-    licenseNumberInput.value = userData.licenseNumber || "";
-
-  if (licenseIssueDateInput && userData.licenseIssueDate) {
-    let licenseDate;
-
-    if (userData.licenseIssueDate instanceof Date) {
-      licenseDate = userData.licenseIssueDate;
-    } else if (userData.licenseIssueDate.toDate) {
-      licenseDate = userData.licenseIssueDate.toDate();
-    } else if (typeof userData.licenseIssueDate === "string") {
-      licenseDate = new Date(userData.licenseIssueDate);
+    console.log("Populating form with data:", userData);
+    
+    // Set hidden user ID
+    if (userIdInput) {
+      userIdInput.value = userData.id || '';
+      console.log("Set user ID:", userIdInput.value);
     }
-
-    if (licenseDate && !isNaN(licenseDate)) {
-      // Format date as YYYY-MM-DD for input[type="date"]
-      const year = licenseDate.getFullYear();
-      const month = String(licenseDate.getMonth() + 1).padStart(2, "0");
-      const day = String(licenseDate.getDate()).padStart(2, "0");
-      licenseIssueDateInput.value = `${year}-${month}-${day}`;
+    
+    // Set text inputs - with more verbose logging
+    if (firstNameInput) {
+      firstNameInput.value = userData.firstName || '';
+      console.log("Set firstName:", firstNameInput.value);
     }
-  }
-
-  // Set role select
-  if (roleSelect) {
-    const userRole = userData.role || "user";
-
-    // Find and select the option with the matching value
-    for (let i = 0; i < roleSelect.options.length; i++) {
-      if (roleSelect.options[i].value === userRole) {
-        roleSelect.options[i].selected = true;
-        break;
+    
+    if (lastNameInput) {
+      lastNameInput.value = userData.lastName || '';
+      console.log("Set lastName:", lastNameInput.value);
+    }
+    
+    if (emailInput) {
+      emailInput.value = userData.email || '';
+      console.log("Set email:", emailInput.value);
+    }
+    
+    if (phoneInput) {
+      phoneInput.value = userData.phone || '';
+      console.log("Set phone:", phoneInput.value);
+    }
+    
+    // Set license information
+    if (licenseNumberInput) {
+      licenseNumberInput.value = userData.licenseNumber || '';
+      console.log("Set licenseNumber:", licenseNumberInput.value);
+    }
+    
+    if (licenseIssueDateInput && userData.licenseIssueDate) {
+      let licenseDate;
+      
+      if (userData.licenseIssueDate instanceof Date) {
+        licenseDate = userData.licenseIssueDate;
+      } else if (userData.licenseIssueDate.toDate) {
+        licenseDate = userData.licenseIssueDate.toDate();
+      } else if (typeof userData.licenseIssueDate === 'string') {
+        licenseDate = new Date(userData.licenseIssueDate);
+      }
+      
+      if (licenseDate && !isNaN(licenseDate)) {
+        // Format date as YYYY-MM-DD for input[type="date"]
+        const year = licenseDate.getFullYear();
+        const month = String(licenseDate.getMonth() + 1).padStart(2, '0');
+        const day = String(licenseDate.getDate()).padStart(2, '0');
+        licenseIssueDateInput.value = `${year}-${month}-${day}`;
+        console.log("Set licenseIssueDate:", licenseIssueDateInput.value);
       }
     }
-
-    // If no matching option, add one
-    if (
-      !Array.from(roleSelect.options).some(
-        (option) => option.value === userRole
-      )
-    ) {
-      const newOption = document.createElement("option");
-      newOption.value = userRole;
-      newOption.textContent =
-        userRole.charAt(0).toUpperCase() + userRole.slice(1);
-      newOption.selected = true;
-      roleSelect.appendChild(newOption);
+    
+    // Set role select
+    if (roleSelect && roleSelect.options) {
+      const userRole = userData.role || 'user';
+      console.log("Setting role to:", userRole);
+      
+      let roleFound = false;
+      
+      // Find and select the option with the matching value
+      for (let i = 0; i < roleSelect.options.length; i++) {
+        if (roleSelect.options[i].value === userRole) {
+          roleSelect.options[i].selected = true;
+          roleFound = true;
+          console.log("Role option found and selected");
+          break;
+        }
+      }
+      
+      // If no matching option, add one
+      if (!roleFound) {
+        console.log("Adding new role option:", userRole);
+        const newOption = document.createElement('option');
+        newOption.value = userRole;
+        newOption.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+        newOption.selected = true;
+        roleSelect.appendChild(newOption);
+      }
     }
+    
+    // Set account status
+    if (accountStatusToggle) {
+      // Default to active if suspended is not specifically set to true
+      const isActive = userData.suspended !== true;
+      accountStatusToggle.checked = isActive;
+      console.log("Set account status:", isActive ? "Active" : "Suspended");
+      updateStatusText();
+    }
+    
+    // Reset password fields
+    if (changePasswordCheckbox) changePasswordCheckbox.checked = false;
+    if (newPasswordInput) newPasswordInput.disabled = true;
+    if (confirmPasswordInput) confirmPasswordInput.disabled = true;
+    
+    console.log("Form population completed");
   }
 
-  // Set account status
-  if (accountStatusToggle) {
-    // Default to active if suspended is not specifically set to true
-    const isActive = userData.suspended !== true;
-    accountStatusToggle.checked = isActive;
-    updateStatusText();
-  }
-
-  // Reset password fields
-  if (changePasswordCheckbox) changePasswordCheckbox.checked = false;
-  if (passwordFields) safeSetDisplay(passwordFields, "none");
-  if (newPasswordInput) newPasswordInput.value = "";
-  if (confirmPasswordInput) confirmPasswordInput.value = "";
-  if (passwordStrengthMeter) {
-    passwordStrengthMeter.style.width = "0%";
-    passwordStrengthMeter.className = "password-strength";
-  }
-
-  // Reset form change state
-  hasChanges = false;
-  safeSetDisplay(unsavedChanges, "none");
-}
-
-// Toggle password fields visibility
+// Toggle password fields enable/disable
 function togglePasswordFields() {
-  if (!passwordFields || !changePasswordCheckbox) return;
-
-  const isChecked = changePasswordCheckbox.checked;
-
-  // Update aria-expanded attribute
-  changePasswordCheckbox.setAttribute(
-    "aria-expanded",
-    isChecked ? "true" : "false"
-  );
-
-  safeSetDisplay(passwordFields, isChecked ? "block" : "none");
-
-  // Enable/disable password fields based on toggle
-  if (newPasswordInput) newPasswordInput.disabled = !isChecked;
-  if (confirmPasswordInput) confirmPasswordInput.disabled = !isChecked;
-
-  // Reset password fields when hiding
-  if (!isChecked) {
-    if (newPasswordInput) newPasswordInput.value = "";
-    if (confirmPasswordInput) confirmPasswordInput.value = "";
-    if (passwordStrengthMeter) {
-      passwordStrengthMeter.style.width = "0%";
-      passwordStrengthMeter.className = "password-strength";
-    }
-
-    // Reset requirement indicators
-    if (passwordRequirements) {
-      passwordRequirements.forEach((req) => {
-        req.classList.remove("met");
-      });
-    }
-
-    // Reset match indicator
-    const matchIndicator = document.getElementById("password-match-indicator");
-    if (matchIndicator) {
-      matchIndicator.textContent = "";
-      matchIndicator.className = "match-indicator";
+    if (!newPasswordInput || !confirmPasswordInput || !changePasswordCheckbox) return;
+    
+    const isChecked = changePasswordCheckbox.checked;
+    
+    console.log("Password toggle changed:", isChecked ? "enabled" : "disabled");
+    
+    // Enable/disable password fields
+    newPasswordInput.disabled = !isChecked;
+    confirmPasswordInput.disabled = !isChecked;
+    
+    // Reset fields when disabled
+    if (!isChecked) {
+      newPasswordInput.value = '';
+      confirmPasswordInput.value = '';
+    } else {
+      // Focus on the password field when enabled
+      setTimeout(() => newPasswordInput.focus(), 10);
     }
   }
-
-  // Mark form as changed
-  handleFormChange();
-}
 
 // Handle form changes
 function handleFormChange() {
@@ -455,10 +450,30 @@ function handleFormChange() {
   if (saveUserBtn) saveUserBtn.disabled = false;
 }
 
+// Helper function to safely handle element display
+function safeSetDisplay(element, displayValue) {
+    if (element && element.style) {
+      element.style.display = displayValue;
+    }
+  }
+
 // Handle form submission
 async function handleFormSubmit(e) {
   e.preventDefault();
-
+  
+  // Only include password if change-password is checked
+  const changePassword = document.getElementById("change-password").checked;
+  const newPassword = document.getElementById("new-password").value;
+  const confirmPassword = document.getElementById("confirm-password").value;
+  
+  if (changePassword) {
+    // Validate password fields
+    if (!newPassword || newPassword !== confirmPassword) {
+      showMessage("Passwords don't match or are empty", "error");
+      return;
+    }
+  }
+  
   try {
     // Validate form
     if (!validateForm()) {
@@ -758,23 +773,23 @@ function togglePasswordVisibility(e) {
   }
 }
 
+// Update account status text and styling
 function updateStatusText() {
-  if (!accountStatusToggle || !statusText) return;
-
-  const isActive = accountStatusToggle.checked;
-  statusText.textContent = isActive ? "Active" : "Suspended";
-  statusText.className = `toggle-text ${
-    isActive ? "text-success" : "text-warning"
-  }`;
-
-  // Add status card styling
-  const statusCard = document.getElementById("status-action-card");
-  if (statusCard) {
-    statusCard.className = `action-card ${isActive ? "active" : "suspended"}`;
+    if (!accountStatusToggle || !statusText) return;
+    
+    const isActive = accountStatusToggle.checked;
+    
+    if (statusText) {
+      statusText.textContent = isActive ? 'Active' : 'Suspended';
+      statusText.className = `toggle-text ${isActive ? 'text-success' : 'text-warning'}`;
+    }
+    
+    // Update status card styling if element exists
+    const statusCard = document.getElementById('status-action-card');
+    if (statusCard) {
+      statusCard.className = `action-card ${isActive ? 'active' : 'suspended'}`;
+    }
   }
-
-  handleFormChange();
-}
 
 // Handle cancel button click
 function handleCancel() {

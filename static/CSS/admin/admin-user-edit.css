@@ -689,22 +689,18 @@ body.sidebar-collapsed .admin-main {
 .modal {
   display: none;
   position: fixed;
-  top: 0;
+  z-index: 1050;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(5px);
-  z-index: 1100; /* Above everything */
-  justify-content: center;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
   align-items: center;
-  opacity: 0;
-  transition: opacity var(--transition);
+  justify-content: center;
 }
 
 .modal.show {
-  opacity: 1;
-  display: flex !important; /* Add !important to override any display:none */
+  display: flex !important;
 }
 
 .modal-content {
@@ -903,4 +899,75 @@ body.sidebar-collapsed .admin-main {
   .help-text {
     display: none;
   }
+}
+
+/* Add these styles to admin-user-edit.css */
+
+/* Disabled Password Fields */
+input:disabled {
+  background-color: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.toggle-password-btn {
+  opacity: 0.7;
+}
+
+/* Toggle Container for Password */
+.toggle-container {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-container input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.toggle-container label {
+  font-weight: 500;
+  color: var(--text-medium);
+  cursor: pointer;
+}
+
+/* Status Card Styling */
+#status-action-card.active {
+  border-left: 3px solid var(--success-color);
+}
+
+#status-action-card.suspended {
+  border-left: 3px solid var(--warning-color);
+}
+
+/* Status Text Styling */
+.text-success {
+  color: var(--success-color);
+}
+
+.text-warning {
+  color: var(--warning-color);
+}
+
+/* Danger Card Styling */
+.danger-card {
+  border-left: 3px solid var(--danger-color);
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+/* Modal Styling Fix */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1050;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.show {
+  display: flex !important;
 }

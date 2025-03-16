@@ -30,9 +30,9 @@
         </div>
         
         <div class="header-actions">
-          <button id="cancel-btn" class="secondary-btn">
-            <i class="bi bi-x-lg"></i> Cancel
-          </button>
+          <a href="admin-users.html" class="secondary-btn">
+            <i class="bi bi-arrow-left"></i> Back to Users
+          </a>
         </div>
       </div>
 
@@ -46,16 +46,6 @@
       <div id="user-not-found" class="error-container" style="display: none;">
         <i class="bi bi-exclamation-triangle"></i>
         <span>User not found or you don't have permission to edit this user.</span>
-      </div>
-
-      <!-- Unsaved Changes Warning -->
-      <div id="unsaved-changes" class="warning-banner" style="display: none;">
-        <i class="bi bi-exclamation-triangle"></i>
-        <span>You have unsaved changes</span>
-        <div class="banner-actions">
-          <button id="discard-changes" class="text-btn text-danger">Discard</button>
-          <button id="save-changes-btn" class="text-btn text-primary">Save</button>
-        </div>
       </div>
 
       <!-- User Edit Form -->
@@ -74,25 +64,21 @@
                 <div class="form-group">
                   <label for="first-name">First Name</label>
                   <input type="text" id="first-name" name="first-name" placeholder="Enter first name">
-                  <span class="help-text">User's first name</span>
                 </div>
                 
                 <div class="form-group">
                   <label for="last-name">Last Name</label>
                   <input type="text" id="last-name" name="last-name" placeholder="Enter last name">
-                  <span class="help-text">User's last name</span>
                 </div>
                 
                 <div class="form-group">
                   <label for="email">Email <span class="required">*</span></label>
                   <input type="email" id="email" name="email" placeholder="Enter email address" required>
-                  <span class="help-text">User's email address (required for login)</span>
                 </div>
                 
                 <div class="form-group">
                   <label for="phone">Phone Number</label>
                   <input type="tel" id="phone" name="phone" placeholder="Enter phone number">
-                  <span class="help-text">User's contact number (optional)</span>
                 </div>
                 
                 <div class="form-group">
@@ -101,7 +87,6 @@
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
                   </select>
-                  <span class="help-text">User's permission level in the system</span>
                 </div>
               </div>
             </div>
@@ -118,75 +103,53 @@
                 <div class="form-group">
                   <label for="license-number">License Number</label>
                   <input type="text" id="license-number" name="license-number" placeholder="Enter license number">
-                  <span class="help-text">User's driver license number</span>
                 </div>
                 
                 <div class="form-group">
                   <label for="license-issue-date">License Issue Date</label>
                   <input type="date" id="license-issue-date" name="license-issue-date">
-                  <span class="help-text">Date when license was issued</span>
                 </div>
               </div>
             </div>
           </div>
           
           <!-- Password Management -->
-          <div class="form-section password-management">
+          <div class="form-section">
             <div class="section-header">
               <h2><i class="bi bi-lock"></i> Password Management</h2>
-              <div class="toggle-switch">
-                <input type="checkbox" id="change-password" name="change-password" aria-expanded="false">
-                <label for="change-password" class="toggle-label">
-                  <span class="toggle-inner"></span>
-                  <span class="toggle-switch"></span>
-                </label>
-                <span class="toggle-text">Change Password</span>
+              <div class="toggle-container">
+                <input type="checkbox" id="change-password" name="change-password">
+                <label for="change-password">Change Password</label>
               </div>
             </div>
             
-            <div id="password-fields" class="section-content" style="display: none;">
+            <div class="section-content">
               <div class="form-grid">
                 <div class="form-group">
-                  <label for="new-password">New Password <span class="required">*</span></label>
+                  <label for="new-password">New Password</label>
                   <div class="password-input-group">
-                    <input type="password" id="new-password" name="new-password" placeholder="Enter new password" minlength="8">
-                    <button type="button" class="toggle-password-btn" type="button" aria-label="Show password">                      <i class="bi bi-eye"></i>
+                    <input type="password" id="new-password" name="new-password" placeholder="Enter new password" disabled>
+                    <button type="button" class="toggle-password-btn" aria-label="Show password">
+                      <i class="bi bi-eye"></i>
                     </button>
-                  </div>
-                  <div class="password-strength-container">
-                    <div class="password-strength-meter">
-                      <div id="password-strength" class="password-strength"></div>
-                    </div>
-                    <span id="password-strength-text" class="password-strength-text">Password strength</span>
                   </div>
                 </div>
                 
                 <div class="form-group">
-                  <label for="confirm-password">Confirm Password <span class="required">*</span></label>
+                  <label for="confirm-password">Confirm Password</label>
                   <div class="password-input-group">
-                    <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm new password" minlength="8">
-                    <button type="button" class="toggle-password-btn" type="button" aria-label="Show password">                      <i class="bi bi-eye"></i>
+                    <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm new password" disabled>
+                    <button type="button" class="toggle-password-btn" aria-label="Show password">
+                      <i class="bi bi-eye"></i>
                     </button>
                   </div>
-                  <span class="match-indicator" id="password-match-indicator"></span>
                 </div>
-              </div>
-              
-              <div class="password-requirements">
-                <h4><i class="bi bi-shield-lock"></i> Password Requirements</h4>
-                <ul>
-                  <li id="req-length" class="requirement">At least 8 characters long</li>
-                  <li id="req-uppercase" class="requirement">At least one uppercase letter</li>
-                  <li id="req-lowercase" class="requirement">At least one lowercase letter</li>
-                  <li id="req-number" class="requirement">At least one number</li>
-                  <li id="req-special" class="requirement">At least one special character</li>
-                </ul>
               </div>
             </div>
           </div>
           
           <!-- Account Actions -->
-          <div class="form-section danger-zone">
+          <div class="form-section">
             <div class="section-header danger-header">
               <h2><i class="bi bi-exclamation-triangle"></i> Account Actions</h2>
             </div>
@@ -199,16 +162,17 @@
                 </div>
                 <div class="action-control">
                   <div class="toggle-switch large">
-                    <input type="checkbox" id="account-status" name="account-status">
+                    <input type="checkbox" id="account-status" name="account-status" checked>
                     <label for="account-status" class="toggle-label">
                       <span class="toggle-inner"></span>
                       <span class="toggle-switch"></span>
                     </label>
-                    <span id="status-text" class="toggle-text text-success">Active</span>                  </div>
+                    <span id="status-text" class="toggle-text text-success">Active</span>
+                  </div>
                 </div>
               </div>
               
-              <div class="action-card danger">
+              <div class="action-card danger-card">
                 <div class="action-content">
                   <h3><i class="bi bi-trash"></i> Delete Account</h3>
                   <p>This action cannot be undone. All user data will be permanently deleted.</p>
@@ -224,9 +188,6 @@
           
           <!-- Form Actions -->
           <div class="form-actions">
-            <button type="button" id="cancel-form-btn" class="secondary-btn">
-              <i class="bi bi-x-lg"></i> Cancel
-            </button>
             <button type="submit" id="save-user-btn" class="primary-btn">
               <i class="bi bi-save"></i> Save Changes
             </button>
@@ -236,19 +197,19 @@
     </div>
   </main>
 
-  <!-- Confirmation Modal -->
+  <!-- Confirmation Modal for Delete -->
   <div id="confirmation-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="modal-title"><i class="bi bi-question-circle"></i> Confirm Action</h3>
-        <button class="modal-close" aria-label="Close modal">&times;</button>
+        <h3 id="modal-title"><i class="bi bi-question-circle"></i> Confirm Deletion</h3>
+        <button class="modal-close">&times;</button>
       </div>
       <div class="modal-body" id="modal-body">
-        Are you sure you want to perform this action?
+        Are you sure you want to delete this user account? This action cannot be undone.
       </div>
       <div class="modal-footer">
         <button class="secondary-btn" id="modal-cancel-btn">Cancel</button>
-        <button class="danger-btn" id="modal-confirm-btn">Confirm</button>
+        <button class="danger-btn" id="modal-confirm-btn">Delete Account</button>
       </div>
     </div>
   </div>
