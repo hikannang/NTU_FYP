@@ -1,4 +1,3 @@
-// admin-user-edit.js - Updated with fixes
 import { db, auth, functions } from "../common/firebase-config.js";
 import {
   doc,
@@ -225,31 +224,42 @@ function setupEventListeners() {
   }
 }
 
-// Load user data
+// Load user data - completely rewritten to match your database structure
 async function loadUserData() {
   try {
-    safeSetLoading(true);
+    if (!userId) {
+      console.error("No user ID provided");
+      showError("No user ID provided");
+      return;
+    }
     
-    // Get user document
-    const userDoc = await getDoc(doc(db, "users", userId));
+    safeSetLoading(true);
+    console.log(`Loading user data for ID: ${userId}`);
+    
+    // Get user document from correct path
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
     
     if (!userDoc.exists()) {
+      console.error("User document not found");
       safeSetDisplay(userNotFound, "flex");
       safeSetDisplay(editFormContainer, "none");
       safeSetLoading(false);
       return;
     }
     
-    // Store user data globally and include the ID
+    // Store user data globally with exact field names from schema
     userData = {
       id: userId,
       ...userDoc.data()
     };
     
-    console.log("User data loaded:", userData);
+    // Log the exact data we received
+    console.log("Raw user data from Firestore:", userDoc.data());
+    console.log("Processed user data object:", userData);
     
     // Store original email for comparison
-    originalEmail = userData.email;
+    originalEmail = userData.email || '';
     
     // Update page title with user name
     const firstName = userData.firstName || '';
@@ -265,8 +275,9 @@ async function loadUserData() {
     
     document.title = `Edit ${userName} | BaoCarLiao Admin`;
     
-    // Populate form with user data AFTER UI is ready
-    populateForm(userData);
+    // Call the populate function directly (with debug logging)
+    console.log("About to populate form fields...");
+    populateFormWithDebug(userData);
     
     safeSetLoading(false);
   } catch (error) {
@@ -276,133 +287,242 @@ async function loadUserData() {
   }
 }
 
-// Populate form with user data
-function populateForm(userData) {
-  console.log("Populating form with data:", userData);
+// Enhanced populate form function with detailed debugging
+function populateFormWithDebug(userData) {
+  console.log("==== FORM POPULATION DEBUG ====");
   
-  // Manually set each field with direct property access
+  // Check if userData is valid
+  if (!userData) {
+    console.error("Cannot populate form: userData is null or undefined");
+    return;
+  }
+  
+  // Check for form elements
+  console.log("Checking for form elements...");
+  if (!firstNameInput) console.error("firstNameInput element not found in DOM");
+  if (!lastNameInput) console.error("lastNameInput element not found in DOM");
+  if (!emailInput) console.error("emailInput element not found in DOM");
+  if (!phoneInput) console.error("phoneInput element not found in DOM");
+  if (!roleSelect) console.error("roleSelect element not found in DOM");
+  if (!licenseNumberInput) console.error("licenseNumberInput element not found in DOM");
+  if (!licenseIssueDateInput) console.error("licenseIssueDateInput element not found in DOM");
+  if (!accountStatusToggle) console.error("accountStatusToggle element not found in DOM");
+  
+  // Set user ID (hidden field)
+  if (userIdInput) {
+    userIdInput.value = userData.id || '';
+    console.log("userIdInput set to:", userIdInput.value);
+  }
+  
+  // Basic user information
+  console.log("Setting basic user information...");
+  
+  // First name
   if (firstNameInput) {
     firstNameInput.value = userData.firstName || '';
-    console.log("Set firstName:", firstNameInput.value);
+    console.log(`firstName: "${userData.firstName || ''}" → field value: "${firstNameInput.value}"`);
   }
   
+  // Last name
   if (lastNameInput) {
     lastNameInput.value = userData.lastName || '';
-    console.log("Set lastName:", lastNameInput.value);
+    console.log(`lastName: "${userData.lastName || ''}" → field value: "${lastNameInput.value}"`);
   }
   
+  // Email
   if (emailInput) {
     emailInput.value = userData.email || '';
-    console.log("Set email:", emailInput.value);
+    console.log(`email: "${userData.email || ''}" → field value: "${emailInput.value}"`);
   }
   
+  // Phone
   if (phoneInput) {
     phoneInput.value = userData.phone || '';
-    console.log("Set phone:", phoneInput.value);
+    console.log(`phone: "${userData.phone || ''}" → field value: "${phoneInput.value}"`);
   }
   
+  // License information
+  console.log("Setting license information...");
+  
+  // License number
   if (licenseNumberInput) {
     licenseNumberInput.value = userData.licenseNumber || '';
-    console.log("Set licenseNumber:", licenseNumberInput.value);
+    console.log(`licenseNumber: "${userData.licenseNumber || ''}" → field value: "${licenseNumberInput.value}"`);
   }
   
-  // Handle license date with proper conversion
-  if (licenseIssueDateInput && userData.licenseIssueDate) {
-    let licenseDate = null;
+  // License issue date
+  if (licenseIssueDateInput) {
+    console.log("Raw licenseIssueDate value:", userData.licenseIssueDate);
+    
+    let dateValue = '';
     
     try {
-      if (userData.licenseIssueDate instanceof Date) {
-        licenseDate = userData.licenseIssueDate;
-      } else if (userData.licenseIssueDate.toDate && typeof userData.licenseIssueDate.toDate === 'function') {
-        licenseDate = userData.licenseIssueDate.toDate();
-      } else if (typeof userData.licenseIssueDate === 'string') {
-        licenseDate = new Date(userData.licenseIssueDate);
-      } else if (userData.licenseIssueDate.seconds) { 
-        // Handle Firebase Timestamp objects
-        licenseDate = new Date(userData.licenseIssueDate.seconds * 1000);
-      }
-      
-      if (licenseDate && !isNaN(licenseDate.getTime())) {
-        // Format date as YYYY-MM-DD for input[type="date"]
-        const year = licenseDate.getFullYear();
-        const month = String(licenseDate.getMonth() + 1).padStart(2, '0');
-        const day = String(licenseDate.getDate()).padStart(2, '0');
-        licenseIssueDateInput.value = `${year}-${month}-${day}`;
-        console.log("Set licenseIssueDate:", licenseIssueDateInput.value);
+      if (userData.licenseIssueDate) {
+        let licenseDate = null;
+        
+        // Handle different date formats from Firestore
+        if (userData.licenseIssueDate instanceof Date) {
+          licenseDate = userData.licenseIssueDate;
+          console.log("licenseIssueDate is a Date object");
+        } 
+        else if (userData.licenseIssueDate.toDate && typeof userData.licenseIssueDate.toDate === 'function') {
+          licenseDate = userData.licenseIssueDate.toDate();
+          console.log("licenseIssueDate is a Firestore Timestamp");
+        }
+        else if (userData.licenseIssueDate.seconds) {
+          licenseDate = new Date(userData.licenseIssueDate.seconds * 1000);
+          console.log("licenseIssueDate has seconds property");
+        }
+        else if (typeof userData.licenseIssueDate === 'string') {
+          licenseDate = new Date(userData.licenseIssueDate);
+          console.log("licenseIssueDate is a string");
+        }
+        else if (typeof userData.licenseIssueDate === 'number') {
+          licenseDate = new Date(userData.licenseIssueDate);
+          console.log("licenseIssueDate is a number");
+        }
+        
+        if (licenseDate && !isNaN(licenseDate)) {
+          const year = licenseDate.getFullYear();
+          const month = String(licenseDate.getMonth() + 1).padStart(2, '0');
+          const day = String(licenseDate.getDate()).padStart(2, '0');
+          dateValue = `${year}-${month}-${day}`;
+          console.log(`Formatted date: ${dateValue}`);
+        } else {
+          console.error("Could not convert licenseIssueDate to valid Date");
+        }
       }
     } catch (err) {
-      console.error("Error formatting license date:", err);
+      console.error("Error processing license date:", err);
     }
+    
+    licenseIssueDateInput.value = dateValue;
+    console.log(`licenseIssueDate → field value: "${licenseIssueDateInput.value}"`);
   }
   
-  // Set role select
+  // Role select
+  console.log("Setting role select...");
   if (roleSelect) {
     const userRole = userData.role || 'user';
-    console.log("Setting role to:", userRole);
+    console.log(`User role from data: "${userRole}"`);
     
-    // Find and select the option with matching value
+    // Find and select matching option
     let optionFound = false;
     for (let i = 0; i < roleSelect.options.length; i++) {
       if (roleSelect.options[i].value === userRole) {
         roleSelect.selectedIndex = i;
         optionFound = true;
+        console.log(`Found matching role option at index ${i}`);
         break;
       }
     }
     
-    // Add a new option if no matching option found
+    // Add new option if not found
     if (!optionFound) {
-      const newOption = new Option(
-        userRole.charAt(0).toUpperCase() + userRole.slice(1),
-        userRole, 
-        true, 
-        true
-      );
-      roleSelect.add(newOption);
+      console.log(`No matching role option found, creating new option for "${userRole}"`);
+      const newOption = document.createElement('option');
+      newOption.value = userRole;
+      newOption.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+      newOption.selected = true;
+      roleSelect.appendChild(newOption);
     }
+    
+    console.log(`Role select value set to: "${roleSelect.value}"`);
   }
   
-  // Set account status
+  // Account status
+  console.log("Setting account status...");
   if (accountStatusToggle) {
     // Default to active if suspended is not explicitly true
     const isActive = userData.suspended !== true;
     accountStatusToggle.checked = isActive;
+    console.log(`suspended: ${userData.suspended}, isActive: ${isActive}, toggle checked: ${accountStatusToggle.checked}`);
     
     // Update status text
     if (statusText) {
       statusText.textContent = isActive ? 'Active' : 'Suspended';
       statusText.className = `toggle-text ${isActive ? 'text-success' : 'text-warning'}`;
+      console.log(`Status text updated to: "${statusText.textContent}"`);
     }
     
     // Update status card
     const statusCard = document.getElementById('status-action-card');
     if (statusCard) {
       statusCard.className = `action-card ${isActive ? 'active' : 'suspended'}`;
+      console.log(`Status card class updated to: "${statusCard.className}"`);
     }
+  }
+  
+  // Password fields
+  console.log("Resetting password fields...");
+  if (changePasswordCheckbox) {
+    changePasswordCheckbox.checked = false;
+    console.log("Password checkbox unchecked");
+  }
+  
+  if (newPasswordInput) {
+    newPasswordInput.value = '';
+    newPasswordInput.disabled = true;
+    console.log("New password field cleared and disabled");
+  }
+  
+  if (confirmPasswordInput) {
+    confirmPasswordInput.value = '';
+    confirmPasswordInput.disabled = true;
+    console.log("Confirm password field cleared and disabled");
+  }
+  
+  console.log("==== FORM POPULATION COMPLETE ====");
+  
+  // Return true to indicate successful population
+  return true;
+}
+
+// Make sure event listeners are properly set up for password toggle
+function setupPasswordToggle() {
+  if (changePasswordCheckbox) {
+    console.log("Setting up password toggle...");
+    
+    // Remove existing event listeners to prevent duplicates
+    changePasswordCheckbox.removeEventListener('change', togglePasswordFields);
+    
+    // Add fresh event listener
+    changePasswordCheckbox.addEventListener('change', function() {
+      console.log("Password checkbox changed to:", this.checked);
+      
+      // Manually set disabled state on password fields
+      if (newPasswordInput) {
+        newPasswordInput.disabled = !this.checked;
+        console.log("New password field disabled:", newPasswordInput.disabled);
+      }
+      
+      if (confirmPasswordInput) {
+        confirmPasswordInput.disabled = !this.checked;
+        console.log("Confirm password field disabled:", confirmPasswordInput.disabled);
+      }
+      
+      // Clear password fields when disabling
+      if (!this.checked) {
+        if (newPasswordInput) newPasswordInput.value = '';
+        if (confirmPasswordInput) confirmPasswordInput.value = '';
+        console.log("Password fields cleared");
+      }
+    });
+    
+    console.log("Password toggle setup complete");
+  } else {
+    console.error("Password checkbox element not found");
   }
 }
 
-// Toggle password fields enable/disable
-function togglePasswordFields() {
-    if (!newPasswordInput || !confirmPasswordInput || !changePasswordCheckbox) return;
-    
-    const isChecked = changePasswordCheckbox.checked;
-    
-    console.log("Password toggle changed:", isChecked ? "enabled" : "disabled");
-    
-    // Enable/disable password fields
-    newPasswordInput.disabled = !isChecked;
-    confirmPasswordInput.disabled = !isChecked;
-    
-    // Reset fields when disabled
-    if (!isChecked) {
-      newPasswordInput.value = '';
-      confirmPasswordInput.value = '';
-    } else {
-      // Focus on the password field when enabled
-      setTimeout(() => newPasswordInput.focus(), 10);
-    }
-  }
+// Add this to your setupEventListeners function or call directly
+document.addEventListener('DOMContentLoaded', function() {
+  // Wait for DOM to fully load, then set up event listeners
+  setTimeout(() => {
+    console.log("DOMContentLoaded - Setting up password toggle");
+    setupPasswordToggle();
+  }, 500);
+});
 
 // Handle form changes
 function handleFormChange() {
