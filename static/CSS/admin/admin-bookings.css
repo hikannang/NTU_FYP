@@ -348,16 +348,17 @@ body.sidebar-collapsed .admin-main {
 
 /* User ID display */
 .user-id {
-  font-size: 0.75rem;
-  color: var(--text-light);
-  font-family: monospace;
-  letter-spacing: 0.3px;
-}
-
-.user-id-value {
-  font-family: monospace;
-  letter-spacing: 0.5px;
-}
+    font-size: 0.75rem;
+    color: var(--text-light);
+    font-family: monospace;
+    letter-spacing: 0.3px;
+    margin-top: 2px;
+  }
+  
+  .user-id-value {
+    font-family: monospace;
+    letter-spacing: 0.5px;
+  }
 
 /* Car Cell */
 .car-cell {

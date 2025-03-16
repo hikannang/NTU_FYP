@@ -1,3 +1,4 @@
+// admin-bookings.js - Part 1
 import { db, auth, functions } from "../common/firebase-config.js";
 import {
   collection,
@@ -5,6 +6,7 @@ import {
   getDoc,
   getDocs,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -43,24 +45,6 @@ let bookingModal = null;
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("Bookings page initializing");
 
-  // Add this check to validate Firebase config
-  console.log("Checking Firebase configuration...");
-  try {
-    // Test database connection
-    const testQuery = query(collection(db, "bookings"), limit(1));
-
-    await getDocs(testQuery);
-    console.log("Firebase connection successful");
-  } catch (error) {
-    console.error("Firebase configuration error:", error);
-    showMessage(
-      `Database connection error: ${error.message}. Check console for details.`,
-      "error"
-    );
-  }
-
-  // Continue with rest of initialization...
-
   // Initialize DOM elements
   initializeElements();
 
@@ -68,6 +52,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       try {
+        console.log("Checking Firebase configuration...");
+        // Test database connection
+        const testQuery = query(collection(db, "bookings"), limit(1));
+
+        await getDocs(testQuery);
+        console.log("Firebase connection successful");
+
         // Verify admin status
         const userDoc = await getDoc(doc(db, "users", user.uid));
 
@@ -149,6 +140,26 @@ function setupEventListeners() {
     }
   });
 
+  // Apply filters button
+  const applyFiltersBtn = document.getElementById("apply-filters");
+  if (applyFiltersBtn) {
+    applyFiltersBtn.addEventListener("click", () => {
+      loadBookingsData();
+    });
+  }
+
+  // Reset filters button
+  const resetFiltersBtn = document.getElementById("reset-filters");
+  if (resetFiltersBtn) {
+    resetFiltersBtn.addEventListener("click", resetFilters);
+  }
+
+  // Clear filters button within the no bookings message
+  const clearFiltersBtn = document.getElementById("clear-filters-btn");
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener("click", resetFilters);
+  }
+
   // Initialize date range pickers if they exist
   initializeDateRangePickers();
 }
@@ -173,7 +184,32 @@ function initializeDateRangePickers() {
   }
 }
 
-// Enhanced loadBookingsData function with better error handling
+// Reset filters
+function resetFilters() {
+  if (filterSelect) filterSelect.value = "all";
+  if (sortSelect) sortSelect.value = "newest";
+  if (searchInput) searchInput.value = "";
+
+  const startDateInput = document.getElementById("start-date");
+  const endDateInput = document.getElementById("end-date");
+
+  if (startDateInput && endDateInput) {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    startDateInput.valueAsDate = thirtyDaysAgo;
+    endDateInput.valueAsDate = today;
+  }
+
+  currentFilter = "all";
+  currentSort = "newest";
+  searchTerm = "";
+
+  loadBookingsData();
+}
+
+// Load bookings data
 async function loadBookingsData(isLoadMore = false) {
   try {
     if (isLoading) return;
@@ -268,9 +304,11 @@ function createBookingsQuery() {
   // Apply search if provided
   if (searchTerm) {
     // Search by booking ID if it looks like an ID
-    if (searchTerm.startsWith("BK")) {
+    if (searchTerm.startsWith("BK") || searchTerm.match(/^\d+$/)) {
       constraints.push(where("bookingID", "==", searchTerm));
     }
+    // Note: Ideally we would search by user name or other fields,
+    // but Firestore requires special indexing for these kinds of queries
   }
 
   // Apply date range if provided
@@ -346,62 +384,100 @@ function createBookingsQuery() {
   return bookingsQuery;
 }
 
-// Load associated car and user data with more details
+// Load associated car and user data with error handling for undefined IDs
 async function loadAssociatedData(bookings) {
   try {
-    // Get unique car IDs and user IDs
-    const carIds = [...new Set(bookings.map(booking => booking.carID))];
-    const userIds = [...new Set(bookings.map(booking => booking.userID))];
-    
+    // Get unique car IDs and user IDs (filter out undefined values)
+    const carIds = [
+      ...new Set(
+        bookings
+          .map((booking) => booking.carID)
+          .filter((id) => id !== undefined)
+      ),
+    ];
+    const userIds = [
+      ...new Set(
+        bookings
+          .map((booking) => booking.userID)
+          .filter((id) => id !== undefined)
+      ),
+    ];
+
+    console.log("Car IDs to fetch:", carIds);
+    console.log("User IDs to fetch:", userIds);
+
     // Load car data if not already loaded
-    const carsToFetch = carIds.filter(id => !carsData.has(id));
+    const carsToFetch = carIds.filter((id) => !carsData.has(id));
     if (carsToFetch.length > 0) {
+      console.log("Fetching cars:", carsToFetch);
       for (const carId of carsToFetch) {
         try {
-          const carDoc = await getDoc(doc(db, "cars", String(carId)));
+          // Make sure to convert carId to string since it's stored as integer in bookings
+          const carIdString = String(carId);
+          console.log(`Fetching car with ID: ${carIdString}`);
+
+          const carDoc = await getDoc(doc(db, "cars", carIdString));
           if (carDoc.exists()) {
             // Store basic car data
             const carData = {
               id: carId,
-              ...carDoc.data()
+              ...carDoc.data(),
             };
-            
+
             // Also try to get car model details if available
             if (carData.car_type) {
               try {
-                const modelDoc = await getDoc(doc(db, "car_models", carData.car_type));
+                console.log(`Fetching model details for ${carData.car_type}`);
+                const modelDoc = await getDoc(
+                  doc(db, "car_models", carData.car_type)
+                );
                 if (modelDoc.exists()) {
                   // Add model info to car data
                   carData.model_details = modelDoc.data();
                 }
               } catch (modelErr) {
-                console.log(`Could not fetch model details for ${carData.car_type}:`, modelErr);
+                console.log(
+                  `Could not fetch model details for ${carData.car_type}:`,
+                  modelErr
+                );
               }
             }
-            
+
             // Store the enhanced car data
             carsData.set(carId, carData);
             console.log(`Loaded car data for ID ${carId}:`, carData);
+          } else {
+            console.log(`No car found with ID ${carIdString}`);
           }
         } catch (err) {
           console.error(`Error loading car data for ID ${carId}:`, err);
         }
       }
     }
-    
+
     // Load user data if not already loaded
-    const usersToFetch = userIds.filter(id => !usersData.has(id));
+    const usersToFetch = userIds.filter((id) => !usersData.has(id));
     if (usersToFetch.length > 0) {
+      console.log("Fetching users:", usersToFetch);
       for (const userId of usersToFetch) {
+        if (!userId) {
+          console.error("Attempted to fetch user with undefined ID, skipping");
+          continue;
+        }
+
         try {
+          console.log(`Fetching user with ID: ${userId}`);
           const userDoc = await getDoc(doc(db, "users", userId));
           if (userDoc.exists()) {
             // Store user data with all fields
-            usersData.set(userId, {
+            const userData = {
               id: userId,
-              ...userDoc.data()
-            });
-            console.log(`Loaded user data for ID ${userId}`);
+              ...userDoc.data(),
+            };
+            usersData.set(userId, userData);
+            console.log(`Loaded user data for ID ${userId}:`, userData);
+          } else {
+            console.log(`No user found with ID ${userId}`);
           }
         } catch (err) {
           console.error(`Error loading user data for ID ${userId}:`, err);
@@ -413,7 +489,7 @@ async function loadAssociatedData(bookings) {
   }
 }
 
-// Fix render bookings function - remove typo
+// Render bookings to table
 function renderBookings(bookings, isAppend = false) {
   if (!bookingsTableBody) {
     console.error("bookingsTableBody element not found");
@@ -430,8 +506,6 @@ function renderBookings(bookings, isAppend = false) {
   }
 
   hideNoBookingsMessage();
-  // Remove this typo that was causing issues
-  // a; <-- This was causing a JavaScript error!
 
   bookings.forEach((booking) => {
     const row = createBookingRow(booking);
@@ -442,7 +516,7 @@ function renderBookings(bookings, isAppend = false) {
   initializeTooltips();
 }
 
-// Create a single booking table row
+// Create a single booking row
 function createBookingRow(booking) {
   if (!booking) {
     console.error("Attempted to create row with null booking data");
@@ -453,33 +527,33 @@ function createBookingRow(booking) {
   row.className = "booking-row";
   row.dataset.id = booking.id;
 
-  // Get associated data
-  const user = usersData.get(booking.userID) || {};
-  const car = carsData.get(booking.carID) || {};
+  // Get associated data from collections
+  const user = booking.userID ? usersData.get(booking.userID) || {} : {};
+  const car = booking.carID ? carsData.get(booking.carID) || {} : {};
 
-  // Safely extract booking ID
+  console.log(`Creating row for booking ${booking.id}:`, booking);
+  console.log(`User data for ${booking.userID}:`, user);
+  console.log(`Car data for ${booking.carID}:`, car);
+
+  // Extract booking ID - just the numeric part excluding "booking_"
   let displayBookingId = "Unknown";
   if (booking.bookingID) {
-    // Extract just the numeric part without 'booking_' prefix
-    const numericPart = booking.bookingID.replace(/^booking_/, '');
-    displayBookingId = numericPart;
+    displayBookingId = booking.bookingID.replace(/^booking_/, "");
   } else if (booking.id) {
-    // Fallback to using document ID
-    displayBookingId = booking.id;
+    // Fallback to document ID
+    displayBookingId = booking.id.substring(0, 13);
   }
 
-  // Safely get dates with error handling
+  // Format dates with error handling
   let startDate, endDate;
   try {
     startDate =
       booking.start_time instanceof Timestamp
         ? booking.start_time.toDate()
         : new Date(booking.start_time);
-
-    if (isNaN(startDate.getTime())) throw new Error("Invalid start date");
-  } catch (error) {
-    console.error("Error parsing start date:", error);
-    startDate = new Date(); // Fallback to current date
+  } catch (e) {
+    console.error("Error parsing start date:", e);
+    startDate = new Date();
   }
 
   try {
@@ -487,17 +561,26 @@ function createBookingRow(booking) {
       booking.end_time instanceof Timestamp
         ? booking.end_time.toDate()
         : new Date(booking.end_time);
-
-    if (isNaN(endDate.getTime())) throw new Error("Invalid end date");
-  } catch (error) {
-    console.error("Error parsing end date:", error);
-    endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Fallback to start + 1 hour
+  } catch (e) {
+    console.error("Error parsing end date:", e);
+    endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
   }
 
   // Format status class
   const statusClass = getStatusClass(booking.status);
 
-  // Build row HTML with error handling for all data points
+  // Calculate duration
+  let hours = 0;
+  let minutes = 0;
+  try {
+    const durationMs = endDate - startDate;
+    hours = Math.floor(durationMs / (1000 * 60 * 60));
+    minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+  } catch (e) {
+    console.error("Error calculating duration:", e);
+  }
+
+  // Build row HTML with error handling
   try {
     row.innerHTML = `
       <td class="booking-id">
@@ -507,20 +590,28 @@ function createBookingRow(booking) {
         <div class="user-cell">
           <div class="user-avatar">${getUserInitials(user)}</div>
           <div class="user-info">
-            <div class="user-name">${user.firstName || 'Unknown'}</div>
-            <div class="user-id">${booking.userID ? booking.userID.substring(0, 8) : 'N/A'}</div>
+            <!-- Get user's firstName from users collection -->
+            <div class="user-name">${user.firstName || "Unknown"}</div>
+            <!-- Show userID below the name -->
+            <div class="user-id">${booking.userID || "N/A"}</div>
           </div>
         </div>
       </td>
       <td>
-    <div class="car-cell">
-      <div class="car-icon"><i class="bi bi-car-front-fill"></i></div>
-      <div class="car-info">
-        <div class="car-name">${car.car_type || booking.car_type || 'Unknown'}</div>
-        <div class="car-plate">${booking.carID}(${car.license_plate || 'N/A'})</div>
-      </div>
-    </div>
-  </td>
+        <div class="car-cell">
+          <div class="car-icon"><i class="bi bi-car-front-fill"></i></div>
+          <div class="car-info">
+            <!-- Show car model -->
+            <div class="car-name">${
+              car.car_type || booking.car_type || "Unknown"
+            }</div>
+            <!-- Show carID(license_plate) format -->
+            <div class="car-plate">${booking.carID}(${
+      car.license_plate || "N/A"
+    })</div>
+          </div>
+        </div>
+      </td>
       <td>
         <div class="date-cell">
           <div class="date">${formatDate(startDate)}</div>
@@ -535,7 +626,7 @@ function createBookingRow(booking) {
       </td>
       <td>
         <div class="duration-cell">
-          ${formatDuration(startDate, endDate)}
+          ${hours > 0 ? `${hours}h` : ""} ${minutes}m
         </div>
       </td>
       <td>
@@ -599,11 +690,7 @@ function createBookingRow(booking) {
   }
 
   // Add event listeners to row buttons
-  try {
-    addRowEventListeners(row);
-  } catch (error) {
-    console.error("Error adding row event listeners:", error);
-  }
+  addRowEventListeners(row);
 
   return row;
 }
@@ -657,11 +744,6 @@ function addRowEventListeners(row) {
       toggleDropdown(dropdownToggle);
     });
   }
-
-  // Close all dropdowns when clicking outside
-  document.addEventListener("click", () => {
-    closeAllDropdowns();
-  });
 }
 
 // Toggle dropdown menu
@@ -688,9 +770,10 @@ function closeAllDropdowns() {
 async function viewBookingDetails(bookingId) {
   try {
     setLoading(true);
+    console.log(`Loading booking details for ID: ${bookingId}`);
 
     // Find booking in our data
-    const booking = bookingsData.find((b) => b.id === bookingId);
+    let booking = bookingsData.find((b) => b.id === bookingId);
 
     if (!booking) {
       // If not found in our data, fetch it
@@ -705,185 +788,255 @@ async function viewBookingDetails(bookingId) {
         ...bookingDoc.data(),
       };
 
+      console.log("Fetched booking data:", booking);
+
       // Load associated data if needed
-      if (!carsData.has(booking.carID)) {
-        const carDoc = await getDoc(doc(db, "cars", String(booking.carID)));
-        if (carDoc.exists()) {
-          carsData.set(booking.carID, {
-            id: booking.carID,
-            ...carDoc.data(),
-          });
+      if (booking.carID && !carsData.has(booking.carID)) {
+        try {
+          const carDoc = await getDoc(doc(db, "cars", String(booking.carID)));
+          if (carDoc.exists()) {
+            const carData = {
+              id: booking.carID,
+              ...carDoc.data(),
+            };
+            carsData.set(booking.carID, carData);
+            console.log("Loaded car data:", carData);
+          }
+        } catch (err) {
+          console.error("Error loading car details:", err);
         }
       }
 
-      if (!usersData.has(booking.userID)) {
-        const userDoc = await getDoc(doc(db, "users", booking.userID));
-        if (userDoc.exists()) {
-          usersData.set(booking.userID, {
-            id: userDoc.id,
-            ...userDoc.data(),
-          });
+      if (booking.userID && !usersData.has(booking.userID)) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", booking.userID));
+          if (userDoc.exists()) {
+            const userData = {
+              id: booking.userID,
+              ...userDoc.data(),
+            };
+            usersData.set(booking.userID, userData);
+            console.log("Loaded user data:", userData);
+          }
+        } catch (err) {
+          console.error("Error loading user details:", err);
         }
       }
     }
 
-    // Get associated data
-    const user = usersData.get(booking.userID) || {};
-    const car = carsData.get(booking.carID) || {};
+    // Get associated data from the collections we've loaded
+    const user = booking.userID ? usersData.get(booking.userID) || {} : {};
+    const car = booking.carID ? carsData.get(booking.carID) || {} : {};
 
-    // Format dates
-    const startDate =
-      booking.start_time instanceof Timestamp
-        ? booking.start_time.toDate()
-        : new Date(booking.start_time);
-    const endDate =
-      booking.end_time instanceof Timestamp
-        ? booking.end_time.toDate()
-        : new Date(booking.end_time);
+    console.log("User data for modal:", user);
+    console.log("Car data for modal:", car);
+
+    // Format dates with error handling
+    let startDate, endDate;
+    try {
+      startDate =
+        booking.start_time instanceof Timestamp
+          ? booking.start_time.toDate()
+          : new Date(booking.start_time);
+    } catch (e) {
+      console.error("Error parsing start date:", e);
+      startDate = new Date();
+    }
+
+    try {
+      endDate =
+        booking.end_time instanceof Timestamp
+          ? booking.end_time.toDate()
+          : new Date(booking.end_time);
+    } catch (e) {
+      console.error("Error parsing end date:", e);
+      endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    }
 
     // Format status
     const statusClass = getStatusClass(booking.status);
     const formattedStatus = formatStatus(booking.status);
 
+    // Extract booking ID - just the numeric part
+    let displayBookingId = "Unknown";
+    if (booking.bookingID) {
+      displayBookingId = booking.bookingID.replace(/^booking_/, "");
+    } else if (booking.id) {
+      displayBookingId = booking.id.substring(0, 13);
+    }
+
+    // Set up edit booking button link in modal
+    const editBookingBtn = document.getElementById("edit-booking-btn");
+    if (editBookingBtn) {
+      editBookingBtn.href = `admin-booking-edit.html?id=${booking.id}`;
+    }
+
     // Populate modal
     const modalTitle = document.getElementById("modal-title");
     const modalBody = document.getElementById("modal-body");
 
-    // In the viewBookingDetails function
     if (modalTitle) {
-      const displayBookingId = booking.bookingID
-        ? booking.bookingID.replace(/^booking_/, "")
-        : booking.id.substring(0, 6);
-
       modalTitle.innerHTML = `
-          <i class="bi bi-calendar3"></i>
-          Booking #${displayBookingId}
-        `;
+        <i class="bi bi-calendar3"></i>
+        Booking #${displayBookingId}
+      `;
     }
-
-    // In viewBookingDetails function - updated modal for detailed information
     if (modalBody) {
       // Get car model details if available
       const carModelInfo = car.model_details || {};
-      
+
       modalBody.innerHTML = `
-        <div class="modal-sections">
-          <!-- Contact Information Section -->
-          <div class="modal-section">
-            <h4><i class="bi bi-person-circle"></i> Contact Information</h4>
-            <div class="info-grid">
-              <div class="info-item">
-                <div class="info-label">Customer Name</div>
-                <div class="info-value">${user.firstName || ''} ${user.lastName || ''}</div>
+            <div class="modal-sections">
+              <!-- Contact Information Section -->
+              <div class="modal-section">
+                <h4><i class="bi bi-person-circle"></i> Contact Information</h4>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <div class="info-label">Customer Name</div>
+                    <div class="info-value">${user.firstName || ""} ${
+        user.lastName || ""
+      }</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Customer ID</div>
+                    <div class="info-value user-id-value">${
+                      booking.userID || "N/A"
+                    }</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">${
+                      user.email || "Not provided"
+                    }</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Phone</div>
+                    <div class="info-value">${
+                      user.phone || "Not provided"
+                    }</div>
+                  </div>
+                  ${
+                    user.licenseNumber
+                      ? `
+                  <div class="info-item">
+                    <div class="info-label">License Number</div>
+                    <div class="info-value">${user.licenseNumber}</div>
+                  </div>
+                  `
+                      : ""
+                  }
+                </div>
               </div>
-              <div class="info-item">
-                <div class="info-label">Customer ID</div>
-                <div class="info-value user-id-value">${booking.userID || 'N/A'}</div>
+              
+              <!-- Vehicle Information Section -->
+              <div class="modal-section">
+                <h4><i class="bi bi-car-front"></i> Vehicle Information</h4>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <div class="info-label">Vehicle Model</div>
+                    <div class="info-value">${
+                      car.car_type || booking.car_type || "N/A"
+                    }</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Car ID & License</div>
+                    <div class="info-value">${booking.carID}(${
+        car.license_plate || "N/A"
+      })</div>
+                  </div>
+                  ${
+                    car.car_color
+                      ? `
+                  <div class="info-item">
+                    <div class="info-label">Color</div>
+                    <div class="info-value">
+                      <span class="car-color-dot" style="background-color: ${colorNameToHex(
+                        car.car_color
+                      )}"></span>${car.car_color}
+                    </div>
+                  </div>
+                  `
+                      : ""
+                  }
+                  ${
+                    car.fuel_type
+                      ? `
+                  <div class="info-item">
+                    <div class="info-label">Fuel Type</div>
+                    <div class="info-value">${car.fuel_type}</div>
+                  </div>
+                  `
+                      : ""
+                  }
+                  ${
+                    carModelInfo.seating_capacity
+                      ? `
+                  <div class="info-item">
+                    <div class="info-label">Seating Capacity</div>
+                    <div class="info-value">${carModelInfo.seating_capacity} seats</div>
+                  </div>
+                  `
+                      : ""
+                  }
+                </div>
               </div>
-              <div class="info-item">
-                <div class="info-label">Email</div>
-                <div class="info-value">${user.email || 'Not provided'}</div>
+              
+              <!-- Booking Details Section -->
+              <div class="modal-section">
+                <h4><i class="bi bi-clock-history"></i> Booking Details</h4>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <div class="info-label">Booking ID</div>
+                    <div class="info-value">
+                      <span class="id-badge">${displayBookingId}</span>
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">
+                      <span class="status-badge ${statusClass}">${formattedStatus}</span>
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Start Time</div>
+                    <div class="info-value">
+                      ${formatDate(startDate)} at ${formatTime(startDate)}
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">End Time</div>
+                    <div class="info-value">
+                      ${formatDate(endDate)} at ${formatTime(endDate)}
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Duration</div>
+                    <div class="info-value">
+                      ${formatDuration(startDate, endDate)}
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">Price</div>
+                    <div class="info-value price-value">
+                      $${formatPrice(booking.total_price)}
+                    </div>
+                  </div>
+                  ${
+                    booking.created_at
+                      ? `
+                  <div class="info-item">
+                    <div class="info-label">Created At</div>
+                    <div class="info-value">
+                      ${formatDateTime(booking.created_at)}
+                    </div>
+                  </div>
+                  `
+                      : ""
+                  }
+                </div>
               </div>
-              <div class="info-item">
-                <div class="info-label">Phone</div>
-                <div class="info-value">${user.phone || 'Not provided'}</div>
-              </div>
-              ${user.licenseNumber ? `
-              <div class="info-item">
-                <div class="info-label">License Number</div>
-                <div class="info-value">${user.licenseNumber}</div>
-              </div>
-              ` : ''}
             </div>
-          </div>
-          
-          <!-- Vehicle Information Section -->
-          <div class="modal-section">
-            <h4><i class="bi bi-car-front"></i> Vehicle Information</h4>
-            <div class="info-grid">
-              <div class="info-item">
-                <div class="info-label">Vehicle Model</div>
-                <div class="info-value">${car.car_type || booking.car_type || 'N/A'}</div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Car ID & License</div>
-                <div class="info-value">${booking.carID}(${car.license_plate || 'N/A'})</div>
-              </div>
-              ${car.car_color ? `
-              <div class="info-item">
-                <div class="info-label">Color</div>
-                <div class="info-value">
-                  <span class="car-color-dot" style="background-color: ${colorNameToHex(car.car_color)}"></span>${car.car_color}
-                </div>
-              </div>
-              ` : ''}
-              ${car.fuel_type ? `
-              <div class="info-item">
-                <div class="info-label">Fuel Type</div>
-                <div class="info-value">${car.fuel_type}</div>
-              </div>
-              ` : ''}
-              ${carModelInfo.seating_capacity ? `
-              <div class="info-item">
-                <div class="info-label">Seating Capacity</div>
-                <div class="info-value">${carModelInfo.seating_capacity} seats</div>
-              </div>
-              ` : ''}
-            </div>
-          </div>
-          
-          <!-- Booking Details Section -->
-          <div class="modal-section">
-            <h4><i class="bi bi-clock-history"></i> Booking Details</h4>
-            <div class="info-grid">
-              <div class="info-item">
-                <div class="info-label">Booking ID</div>
-                <div class="info-value">
-                  <span class="id-badge">${displayBookingId}</span>
-                </div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Status</div>
-                <div class="info-value">
-                  <span class="status-badge ${statusClass}">${formatStatus(booking.status)}</span>
-                </div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Start Time</div>
-                <div class="info-value">
-                  ${formatDate(startDate)} at ${formatTime(startDate)}
-                </div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">End Time</div>
-                <div class="info-value">
-                  ${formatDate(endDate)} at ${formatTime(endDate)}
-                </div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Duration</div>
-                <div class="info-value">
-                  ${formatDuration(startDate, endDate)}
-                </div>
-              </div>
-              <div class="info-item">
-                <div class="info-label">Price</div>
-                <div class="info-value price-value">
-                  $${formatPrice(booking.total_price)}
-                </div>
-              </div>
-              ${booking.created_at ? `
-              <div class="info-item">
-                <div class="info-label">Created At</div>
-                <div class="info-value">
-                  ${formatDateTime(booking.created_at)}
-                </div>
-              </div>
-              ` : ''}
-            </div>
-          </div>
-        </div>
-      `;
+          `;
     }
 
     // Show modal
@@ -901,6 +1054,7 @@ async function viewBookingDetails(bookingId) {
 async function updateBookingStatus(bookingId, newStatus) {
   try {
     setLoading(true);
+    console.log(`Updating booking ${bookingId} status to ${newStatus}`);
 
     // Update status in Firestore
     await updateDoc(doc(db, "bookings", bookingId), {
@@ -953,6 +1107,7 @@ function confirmDeleteBooking(bookingId) {
 async function deleteBooking(bookingId) {
   try {
     setLoading(true);
+    console.log(`Deleting booking ${bookingId}`);
 
     // Delete booking in Firestore
     await deleteDoc(doc(db, "bookings", bookingId));
@@ -1008,7 +1163,9 @@ function handleSearch(event) {
 
 // Handle date range change
 function handleDateRangeChange() {
-  loadBookingsData();
+  // This gets called when date inputs change
+  // Actual reload happens when Apply button is clicked
+  console.log("Date range changed");
 }
 
 // Load more bookings
@@ -1058,14 +1215,35 @@ function hideLoadMoreButton() {
   }
 }
 
-function setLoading(loading) {
-  isLoading = loading;
+function setLoading(show) {
+  isLoading = show;
   if (loadingOverlay) {
-    loadingOverlay.style.display = loading ? "flex" : "none";
+    loadingOverlay.style.display = show ? "flex" : "none";
   }
 }
 
-// Utility functions with better error handling
+// Utility functions
+function getUserInitials(user) {
+  if (!user) return "?";
+
+  try {
+    if (user.firstName && user.lastName) {
+      return (user.firstName.charAt(0) + user.lastName.charAt(0)).toUpperCase();
+    } else if (user.firstName) {
+      return user.firstName.charAt(0).toUpperCase();
+    } else if (user.lastName) {
+      return user.lastName.charAt(0).toUpperCase();
+    } else if (user.email) {
+      return user.email.charAt(0).toUpperCase();
+    } else {
+      return "?";
+    }
+  } catch (error) {
+    console.error("Error getting user initials:", error);
+    return "?";
+  }
+}
+
 function formatDate(date) {
   if (!date) return "N/A";
 
@@ -1078,48 +1256,6 @@ function formatDate(date) {
   } catch (error) {
     console.error("Error formatting date:", error);
     return "Invalid Date";
-  }
-}
-
-function formatPrice(price) {
-  if (price === undefined || price === null) return "0.00";
-
-  try {
-    return Number(price).toFixed(2);
-  } catch (error) {
-    return "0.00";
-  }
-}
-
-function getUserFullName(user) {
-  if (!user) return "Unknown User";
-
-  try {
-    const firstName = user.firstName || "";
-    const lastName = user.lastName || "";
-
-    if (!firstName && !lastName) return "Unknown User";
-
-    return `${firstName} ${lastName}`.trim();
-  } catch (error) {
-    return "Unknown User";
-  }
-}
-
-// Get user initials with better handling
-function getUserInitials(user) {
-  if (!user) return "?";
-  
-  if (user.firstName && user.lastName) {
-    return (user.firstName.charAt(0) + user.lastName.charAt(0)).toUpperCase();
-  } else if (user.firstName) {
-    return user.firstName.charAt(0).toUpperCase();
-  } else if (user.lastName) {
-    return user.lastName.charAt(0).toUpperCase();
-  } else if (user.email) {
-    return user.email.charAt(0).toUpperCase();
-  } else {
-    return "?";
   }
 }
 
@@ -1137,30 +1273,47 @@ function formatTime(date) {
   }
 }
 
+function formatDateTime(timestamp) {
+  if (!timestamp) return "N/A";
+
+  try {
+    let date;
+    if (timestamp instanceof Timestamp) {
+      date = timestamp.toDate();
+    } else if (timestamp.seconds) {
+      date = new Date(timestamp.seconds * 1000);
+    } else {
+      date = new Date(timestamp);
+    }
+
+    return date.toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (error) {
+    console.error("Error formatting datetime:", error);
+    return "Invalid Date/Time";
+  }
+}
+
+function formatPrice(price) {
+  if (price === undefined || price === null) return "0.00";
+
+  try {
+    return Number(price).toFixed(2);
+  } catch (error) {
+    return "0.00";
+  }
+}
+
 function formatStatus(status) {
   if (!status) return "Unknown";
 
   // Capitalize first letter
   return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
-function getStatusClass(status) {
-  switch (status?.toLowerCase()) {
-    case "active":
-      return "status-active";
-    case "upcoming":
-      return "status-upcoming";
-    case "completed":
-      return "status-completed";
-    case "cancelled":
-      return "status-cancelled";
-    case "pending":
-      return "status-pending";
-    case "confirmed":
-      return "status-confirmed";
-    default:
-      return "status-default";
-  }
 }
 
 function formatDuration(startDate, endDate) {
@@ -1188,6 +1341,25 @@ function formatDuration(startDate, endDate) {
   }
 }
 
+function getStatusClass(status) {
+  switch (status?.toLowerCase()) {
+    case "active":
+      return "status-active";
+    case "upcoming":
+      return "status-upcoming";
+    case "completed":
+      return "status-completed";
+    case "cancelled":
+      return "status-cancelled";
+    case "pending":
+      return "status-pending";
+    case "confirmed":
+      return "status-confirmed";
+    default:
+      return "status-default";
+  }
+}
+
 // Convert color name to hex
 function colorNameToHex(colorName) {
   if (!colorName) return "#cccccc";
@@ -1204,27 +1376,6 @@ function colorNameToHex(colorName) {
   };
 
   return colors[colorName?.toLowerCase()] || "#cccccc";
-}
-
-// Format complete date and time
-function formatDateTime(timestamp) {
-  if (!timestamp) return "N/A";
-  
-  try {
-    const date = timestamp instanceof Timestamp ? 
-      timestamp.toDate() : 
-      new Date(timestamp);
-      
-    return date.toLocaleString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  } catch (error) {
-    return "Invalid Date/Time";
-  }
 }
 
 // Initialize tooltips
@@ -1281,6 +1432,8 @@ function debounce(func, delay) {
 
 // Show message toast
 function showMessage(message, type = "info") {
+  console.log(`${type.toUpperCase()}: ${message}`);
+
   // Create toast container if it doesn't exist
   let toastContainer = document.getElementById("toast-container");
   if (!toastContainer) {
@@ -1300,14 +1453,14 @@ function showMessage(message, type = "info") {
   if (type === "warning") icon = "exclamation-triangle";
 
   toast.innerHTML = `
-    <div class="toast-icon">
-      <i class="bi bi-${icon}"></i>
-    </div>
-    <div class="toast-content">${message}</div>
-    <button class="toast-close">
-      <i class="bi bi-x"></i>
-    </button>
-  `;
+        <div class="toast-icon">
+          <i class="bi bi-${icon}"></i>
+        </div>
+        <div class="toast-content">${message}</div>
+        <button class="toast-close">
+          <i class="bi bi-x"></i>
+        </button>
+      `;
 
   // Add close functionality
   const closeBtn = toast.querySelector(".toast-close");
