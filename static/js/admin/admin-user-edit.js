@@ -1,32 +1,27 @@
-// admin-user-edit.js - Part 1
+// admin-user-edit.js - Updated with fixes
 import { db, auth, functions } from "../common/firebase-config.js";
 import {
   doc,
   getDoc,
   updateDoc,
-  deleteDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
-import { 
+import {
   onAuthStateChanged,
-  EmailAuthProvider,
   updatePassword,
-  reauthenticateWithCredential,
   updateEmail,
-  signInWithEmailAndPassword,
-  httpsCallable
+  httpsCallable,
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 
 // Import utility functions
-import { 
-  formatDate, 
-  formatPhone, 
-  getInitials, 
-  safeSetLoading, 
-  showError, 
+import {
+  formatDate,
+  formatPhone,
+  safeSetLoading,
+  showError,
   showMessage,
   safeText,
-  safeSetDisplay
+  safeSetDisplay,
 } from "./admin-users.js";
 
 // Global variables
@@ -37,12 +32,13 @@ let originalEmail = null;
 let returnUrl = null;
 let hasChanges = false;
 
-// DOM Elements - initialize as null
+// DOM Elements
 let loadingOverlay = null;
 let userNotFound = null;
 let editFormContainer = null;
 let editUserTitle = null;
 let editUserForm = null;
+let unsavedChanges = null;
 
 // Form elements
 let userIdInput = null;
@@ -54,42 +50,98 @@ let roleSelect = null;
 let licenseNumberInput = null;
 let licenseIssueDateInput = null;
 
-// Account status
-let accountStatusSelect = null;
-
 // Password fields
 let changePasswordCheckbox = null;
 let passwordFields = null;
 let newPasswordInput = null;
 let confirmPasswordInput = null;
-let togglePasswordBtns = null;
-let generatePasswordBtn = null;
 let passwordStrengthMeter = null;
+let passwordStrengthText = null;
+let passwordRequirements = null;
+let togglePasswordBtns = null;
+
+// Account status elements
+let accountStatusToggle = null;
+let statusText = null;
 
 // Button elements
 let cancelBtn = null;
 let cancelFormBtn = null;
 let saveUserBtn = null;
-let deleteUserBtn = null;
-let confirmDeleteBtn = null;
+let deleteAccountBtn = null;
+let discardChangesBtn = null;
+let saveChangesBtn = null;
+
+// Modal elements
+let confirmationModal = null;
+let modalTitle = null;
+let modalBody = null;
+let modalCancelBtn = null;
+let modalConfirmBtn = null;
+let modalClose = null;
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("User Edit page loading");
-  
-  // Get all DOM elements
-  initializeElements();
-  
+
+  // Get DOM Elements
+  loadingOverlay = document.getElementById("loading-overlay");
+  userNotFound = document.getElementById("user-not-found");
+  editFormContainer = document.getElementById("edit-form-container");
+  editUserTitle = document.getElementById("edit-user-title");
+  editUserForm = document.getElementById("edit-user-form");
+  unsavedChanges = document.getElementById("unsaved-changes");
+
+  // Form elements
+  userIdInput = document.getElementById("user-id");
+  firstNameInput = document.getElementById("first-name");
+  lastNameInput = document.getElementById("last-name");
+  emailInput = document.getElementById("email");
+  phoneInput = document.getElementById("phone");
+  roleSelect = document.getElementById("role");
+  licenseNumberInput = document.getElementById("license-number");
+  licenseIssueDateInput = document.getElementById("license-issue-date");
+
+  // Password fields
+  changePasswordCheckbox = document.getElementById("change-password");
+  passwordFields = document.getElementById("password-fields");
+  newPasswordInput = document.getElementById("new-password");
+  confirmPasswordInput = document.getElementById("confirm-password");
+  passwordStrengthMeter = document.getElementById("password-strength");
+  passwordStrengthText = document.getElementById("password-strength-text");
+  passwordRequirements = document.querySelectorAll(".requirement");
+  togglePasswordBtns = document.querySelectorAll(".toggle-password-btn");
+
+  // Account status elements
+  accountStatusToggle = document.getElementById("account-status");
+  statusText = document.getElementById("status-text");
+
+  // Button elements
+  cancelBtn = document.getElementById("cancel-btn");
+  cancelFormBtn = document.getElementById("cancel-form-btn");
+  saveUserBtn = document.getElementById("save-user-btn");
+  deleteAccountBtn = document.getElementById("delete-account-btn");
+  discardChangesBtn = document.getElementById("discard-changes");
+  saveChangesBtn = document.getElementById("save-changes-btn");
+
+  // Modal elements
+  confirmationModal = document.getElementById("confirmation-modal");
+  modalTitle = document.getElementById("modal-title");
+  modalBody = document.getElementById("modal-body");
+  modalCancelBtn = document.getElementById("modal-cancel-btn");
+  modalConfirmBtn = document.getElementById("modal-confirm-btn");
+  modalClose = document.querySelector(".modal-close");
+
   // Get user ID from URL
   const urlParams = new URLSearchParams(window.location.search);
-  userId = urlParams.get('id');
-  returnUrl = urlParams.get('returnUrl');
-  
+  userId = urlParams.get("id");
+  returnUrl = urlParams.get("returnUrl");
+
   if (!userId) {
     showError("No user ID provided");
     return;
   }
-  
+
   try {
     // Check authentication
     onAuthStateChanged(auth, async (user) => {
@@ -97,15 +149,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
           // Verify admin status
           const userDoc = await getDoc(doc(db, "users", user.uid));
-          
+
           if (userDoc.exists() && userDoc.data().role === "admin") {
             currentUser = {
               uid: user.uid,
-              ...userDoc.data()
+              ...userDoc.data(),
             };
-            
+
             console.log("Admin authenticated:", currentUser.email);
-            
+
             // Initialize page with user data
             await loadUserData();
           } else {
@@ -124,120 +176,90 @@ document.addEventListener("DOMContentLoaded", async () => {
         window.location.href = "../index.html";
       }
     });
-    
+
     // Setup event listeners
     setupEventListeners();
-    
   } catch (error) {
     console.error("Initialization error:", error);
     showError(`Error initializing page: ${error.message}`);
   }
 });
 
-// Initialize all DOM elements
-function initializeElements() {
-  // Main elements
-  loadingOverlay = document.getElementById("loading-overlay");
-  userNotFound = document.getElementById("user-not-found");
-  editFormContainer = document.getElementById("edit-form-container");
-  editUserTitle = document.getElementById("edit-user-title");
-  editUserForm = document.getElementById("edit-user-form");
-  
-  // Form inputs
-  userIdInput = document.getElementById("user-id");
-  firstNameInput = document.getElementById("first-name");
-  lastNameInput = document.getElementById("last-name");
-  emailInput = document.getElementById("email");
-  phoneInput = document.getElementById("phone");
-  roleSelect = document.getElementById("role");
-  licenseNumberInput = document.getElementById("license-number");
-  licenseIssueDateInput = document.getElementById("license-issue-date");
-  
-  // Account status
-  accountStatusSelect = document.getElementById("account-status");
-  
-  // Password fields
-  changePasswordCheckbox = document.getElementById("change-password");
-  passwordFields = document.getElementById("password-fields");
-  newPasswordInput = document.getElementById("new-password");
-  confirmPasswordInput = document.getElementById("confirm-password");
-  togglePasswordBtns = document.querySelectorAll(".toggle-password-btn");
-  generatePasswordBtn = document.getElementById("generate-password-btn");
-  passwordStrengthMeter = document.getElementById("password-strength");
-  
-  // Button elements
-  cancelBtn = document.getElementById("cancel-btn");
-  cancelFormBtn = document.getElementById("cancel-form-btn");
-  saveUserBtn = document.getElementById("save-user-btn");
-  deleteUserBtn = document.getElementById("delete-user-btn");
-  confirmDeleteBtn = document.getElementById("confirm-delete-btn");
-}
-
 // Set up event listeners
 function setupEventListeners() {
-  // Form change detection
-  if (editUserForm) {
-    const formInputs = editUserForm.querySelectorAll('input, select');
-    formInputs.forEach(input => {
-      input.addEventListener('change', markFormChanged);
-      input.addEventListener('input', markFormChanged);
-    });
-  }
-  
   // Cancel buttons
   if (cancelBtn) {
     cancelBtn.addEventListener("click", handleCancel);
   }
-  
+
   if (cancelFormBtn) {
     cancelFormBtn.addEventListener("click", handleCancel);
   }
-  
+
   // Form submission
   if (editUserForm) {
     editUserForm.addEventListener("submit", handleFormSubmit);
   }
-  
+
+  // Form input change detection
+  const formInputs = editUserForm.querySelectorAll("input, select, textarea");
+  formInputs.forEach((input) => {
+    input.addEventListener("change", handleFormChange);
+    input.addEventListener("input", handleFormChange);
+  });
+
   // Password change toggle
   if (changePasswordCheckbox) {
     changePasswordCheckbox.addEventListener("change", togglePasswordFields);
   }
-  
+
+  // Password strength checking
+  if (newPasswordInput) {
+    newPasswordInput.addEventListener("input", checkPasswordStrength);
+  }
+
+  // Password match checking
+  if (confirmPasswordInput) {
+    confirmPasswordInput.addEventListener("input", checkPasswordMatch);
+  }
+
   // Password visibility toggle buttons
   if (togglePasswordBtns) {
-    togglePasswordBtns.forEach(btn => {
+    togglePasswordBtns.forEach((btn) => {
       btn.addEventListener("click", togglePasswordVisibility);
     });
   }
-  
-  // Generate password button
-  if (generatePasswordBtn) {
-    generatePasswordBtn.addEventListener("click", generateRandomPassword);
+
+  // Account status toggle
+  if (accountStatusToggle) {
+    accountStatusToggle.addEventListener("change", updateStatusText);
   }
-  
-  // Password strength meter
-  if (newPasswordInput && passwordStrengthMeter) {
-    newPasswordInput.addEventListener("input", updatePasswordStrength);
+
+  // Delete account button
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener("click", confirmDeleteAccount);
   }
-  
-  // Delete user button
-  if (deleteUserBtn) {
-    deleteUserBtn.addEventListener("click", showDeleteConfirmation);
+
+  // Unsaved changes banner buttons
+  if (discardChangesBtn) {
+    discardChangesBtn.addEventListener("click", discardChanges);
   }
-  
-  // Confirm delete button
-  if (confirmDeleteBtn) {
-    confirmDeleteBtn.addEventListener("click", handleDeleteUser);
+
+  if (saveChangesBtn) {
+    saveChangesBtn.addEventListener("click", () => {
+      if (editUserForm) {
+        editUserForm.dispatchEvent(new Event("submit"));
+      }
+    });
   }
-  
-  // Phone formatting
-  if (phoneInput) {
-    phoneInput.addEventListener('input', formatPhoneInput);
+
+  // Modal buttons
+  if (modalCancelBtn) {
+    modalCancelBtn.addEventListener("click", closeModal);
   }
-  
-  // License date formatting
-  if (licenseIssueDateInput) {
-    licenseIssueDateInput.addEventListener('input', formatDateInput);
+
+  if (modalClose) {
+    modalClose.addEventListener("click", closeModal);
   }
 }
 
@@ -245,43 +267,46 @@ function setupEventListeners() {
 async function loadUserData() {
   try {
     safeSetLoading(true);
-    
+
     // Get user document
     const userDoc = await getDoc(doc(db, "users", userId));
-    
+
     if (!userDoc.exists()) {
       safeSetDisplay(userNotFound, "flex");
       safeSetDisplay(editFormContainer, "none");
       safeSetLoading(false);
       return;
     }
-    
+
     // Store user data globally and include the ID
     userData = {
       id: userId,
-      ...userDoc.data()
+      ...userDoc.data(),
     };
-    
+
+    console.log("User data loaded:", userData);
+
     // Store original email for comparison
     originalEmail = userData.email;
-    
+
     // Update page title with user name
-    const firstName = userData.firstName || '';
-    const lastName = userData.lastName || '';
-    const userName = firstName || lastName ? `${firstName} ${lastName}`.trim() : "User";
-    
+    const firstName = userData.firstName || "";
+    const lastName = userData.lastName || "";
+    const userName =
+      firstName || lastName ? `${firstName} ${lastName}`.trim() : "User";
+
     if (editUserTitle) {
       editUserTitle.innerHTML = `
         <i class="bi bi-pencil-square"></i> 
         Edit User: ${safeText(userName)}
       `;
     }
-    
-    document.title = `Edit ${userName} | BaoCarLiao Admin`;
-    
+
+    document.title = `Edit ${userName} | Admin Dashboard`;
+
     // Populate form with user data
     populateForm(userData);
-    
+
     safeSetLoading(false);
   } catch (error) {
     console.error("Error loading user data:", error);
@@ -294,229 +319,138 @@ async function loadUserData() {
 function populateForm(userData) {
   // Set hidden user ID
   if (userIdInput) userIdInput.value = userData.id;
-  
+
   // Set text inputs
-  if (firstNameInput) firstNameInput.value = userData.firstName || '';
-  if (lastNameInput) lastNameInput.value = userData.lastName || '';
-  if (emailInput) emailInput.value = userData.email || '';
-  if (phoneInput) phoneInput.value = userData.phone || '';
-  
+  if (firstNameInput) firstNameInput.value = userData.firstName || "";
+  if (lastNameInput) lastNameInput.value = userData.lastName || "";
+  if (emailInput) emailInput.value = userData.email || "";
+  if (phoneInput) phoneInput.value = userData.phone || "";
+
   // Set license information
-  if (licenseNumberInput) licenseNumberInput.value = userData.licenseNumber || '';
-  
-  // Format and set license date if available
-  if (licenseIssueDateInput) {
-    const licenseDate = getDateObject(userData.licenseIssueDate || userData.licenseDate);
-    if (licenseDate) {
-      // Format as YYYY-MM-DD for date input
+  if (licenseNumberInput)
+    licenseNumberInput.value = userData.licenseNumber || "";
+
+  if (licenseIssueDateInput && userData.licenseIssueDate) {
+    let licenseDate;
+
+    if (userData.licenseIssueDate instanceof Date) {
+      licenseDate = userData.licenseIssueDate;
+    } else if (userData.licenseIssueDate.toDate) {
+      licenseDate = userData.licenseIssueDate.toDate();
+    } else if (typeof userData.licenseIssueDate === "string") {
+      licenseDate = new Date(userData.licenseIssueDate);
+    }
+
+    if (licenseDate && !isNaN(licenseDate)) {
+      // Format date as YYYY-MM-DD for input[type="date"]
       const year = licenseDate.getFullYear();
-      const month = String(licenseDate.getMonth() + 1).padStart(2, '0');
-      const day = String(licenseDate.getDate()).padStart(2, '0');
+      const month = String(licenseDate.getMonth() + 1).padStart(2, "0");
+      const day = String(licenseDate.getDate()).padStart(2, "0");
       licenseIssueDateInput.value = `${year}-${month}-${day}`;
-    } else {
-      licenseIssueDateInput.value = '';
     }
   }
-  
+
   // Set role select
   if (roleSelect) {
-    // Default to 'user' if no role is specified
-    const userRole = userData.role || 'user';
-    
+    const userRole = userData.role || "user";
+
     // Find and select the option with the matching value
-    const options = Array.from(roleSelect.options);
-    const matchingOption = options.find(option => option.value === userRole);
-    
-    if (matchingOption) {
-      matchingOption.selected = true;
-    } else {
-      // If no matching option, add one
-      const newOption = document.createElement('option');
+    for (let i = 0; i < roleSelect.options.length; i++) {
+      if (roleSelect.options[i].value === userRole) {
+        roleSelect.options[i].selected = true;
+        break;
+      }
+    }
+
+    // If no matching option, add one
+    if (
+      !Array.from(roleSelect.options).some(
+        (option) => option.value === userRole
+      )
+    ) {
+      const newOption = document.createElement("option");
       newOption.value = userRole;
-      newOption.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+      newOption.textContent =
+        userRole.charAt(0).toUpperCase() + userRole.slice(1);
       newOption.selected = true;
       roleSelect.appendChild(newOption);
     }
   }
-  
+
   // Set account status
-  if (accountStatusSelect) {
-    // Default to 'active' if not specified
-    const accountStatus = userData.status || 'active';
-    
-    // Find and select the option with the matching value
-    const options = Array.from(accountStatusSelect.options);
-    const matchingOption = options.find(option => option.value === accountStatus);
-    
-    if (matchingOption) {
-      matchingOption.selected = true;
-    }
+  if (accountStatusToggle) {
+    // Default to active if suspended is not specifically set to true
+    const isActive = userData.suspended !== true;
+    accountStatusToggle.checked = isActive;
+    updateStatusText();
   }
-  
+
   // Reset password fields
   if (changePasswordCheckbox) changePasswordCheckbox.checked = false;
-  if (passwordFields) safeSetDisplay(passwordFields, 'none');
-  if (newPasswordInput) newPasswordInput.value = '';
-  if (confirmPasswordInput) confirmPasswordInput.value = '';
+  if (passwordFields) safeSetDisplay(passwordFields, "none");
+  if (newPasswordInput) newPasswordInput.value = "";
+  if (confirmPasswordInput) confirmPasswordInput.value = "";
+  if (passwordStrengthMeter) {
+    passwordStrengthMeter.style.width = "0%";
+    passwordStrengthMeter.className = "password-strength";
+  }
+
+  // Reset form change state
+  hasChanges = false;
+  safeSetDisplay(unsavedChanges, "none");
 }
 
 // Toggle password fields visibility
 function togglePasswordFields() {
-  if (!passwordFields) return;
-  
+  if (!passwordFields || !changePasswordCheckbox) return;
+
   const isChecked = changePasswordCheckbox.checked;
-  safeSetDisplay(passwordFields, isChecked ? 'block' : 'none');
-  
+
+  // Update aria-expanded attribute
+  changePasswordCheckbox.setAttribute(
+    "aria-expanded",
+    isChecked ? "true" : "false"
+  );
+
+  safeSetDisplay(passwordFields, isChecked ? "block" : "none");
+
+  // Enable/disable password fields based on toggle
+  if (newPasswordInput) newPasswordInput.disabled = !isChecked;
+  if (confirmPasswordInput) confirmPasswordInput.disabled = !isChecked;
+
   // Reset password fields when hiding
   if (!isChecked) {
-    if (newPasswordInput) newPasswordInput.value = '';
-    if (confirmPasswordInput) confirmPasswordInput.value = '';
+    if (newPasswordInput) newPasswordInput.value = "";
+    if (confirmPasswordInput) confirmPasswordInput.value = "";
     if (passwordStrengthMeter) {
-      passwordStrengthMeter.style.width = '0%';
-      passwordStrengthMeter.className = 'password-strength';
+      passwordStrengthMeter.style.width = "0%";
+      passwordStrengthMeter.className = "password-strength";
+    }
+
+    // Reset requirement indicators
+    if (passwordRequirements) {
+      passwordRequirements.forEach((req) => {
+        req.classList.remove("met");
+      });
+    }
+
+    // Reset match indicator
+    const matchIndicator = document.getElementById("password-match-indicator");
+    if (matchIndicator) {
+      matchIndicator.textContent = "";
+      matchIndicator.className = "match-indicator";
     }
   }
-  
+
   // Mark form as changed
-  markFormChanged();
+  handleFormChange();
 }
 
-// Toggle password visibility
-function togglePasswordVisibility(e) {
-  const button = e.currentTarget;
-  const passwordInput = button.closest('.password-input-group').querySelector('input');
-  const icon = button.querySelector('i');
-  
-  if (passwordInput.type === 'password') {
-    passwordInput.type = 'text';
-    icon.className = 'bi bi-eye-slash';
-  } else {
-    passwordInput.type = 'password';
-    icon.className = 'bi bi-eye';
-  }
-}
-
-// Generate random secure password
-function generateRandomPassword() {
-  const length = 12;
-  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
-  let password = "";
-  
-  // Ensure at least one of each: uppercase, lowercase, number, symbol
-  password += charset.match(/[A-Z]/)[0]; // Add one uppercase
-  password += charset.match(/[a-z]/)[0]; // Add one lowercase
-  password += charset.match(/[0-9]/)[0]; // Add one number
-  password += charset.match(/[!@#$%^&*()_+]/)[0]; // Add one symbol
-  
-  // Fill the rest randomly
-  for (let i = password.length; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * charset.length);
-    password += charset[randomIndex];
-  }
-  
-  // Shuffle the password characters
-  password = password.split('').sort(() => 0.5 - Math.random()).join('');
-  
-  // Set password in both fields
-  if (newPasswordInput) newPasswordInput.value = password;
-  if (confirmPasswordInput) confirmPasswordInput.value = password;
-  
-  // Update strength meter
-  updatePasswordStrength();
-  
-  // Mark form changed
-  markFormChanged();
-  
-  // Show success message
-  showMessage("Secure password generated", "success");
-}
-
-// Update password strength meter
-function updatePasswordStrength() {
-  if (!newPasswordInput || !passwordStrengthMeter) return;
-  
-  const password = newPasswordInput.value;
-  let strength = 0;
-  
-  // Empty password
-  if (!password) {
-    passwordStrengthMeter.style.width = '0%';
-    passwordStrengthMeter.className = 'password-strength';
-    return;
-  }
-  
-  // Length check
-  if (password.length >= 8) strength += 25;
-  if (password.length >= 10) strength += 10;
-  
-  // Character variety checks
-  if (/[A-Z]/.test(password)) strength += 15; // Has uppercase
-  if (/[a-z]/.test(password)) strength += 15; // Has lowercase
-  if (/[0-9]/.test(password)) strength += 15; // Has number
-  if (/[^A-Za-z0-9]/.test(password)) strength += 20; // Has special char
-  
-  // Update meter
-  passwordStrengthMeter.style.width = `${strength}%`;
-  
-  // Update class based on strength
-  if (strength < 40) {
-    passwordStrengthMeter.className = 'password-strength weak';
-  } else if (strength < 70) {
-    passwordStrengthMeter.className = 'password-strength medium';
-  } else {
-    passwordStrengthMeter.className = 'password-strength strong';
-  }
-}
-
-// Format phone input
-function formatPhoneInput(e) {
-  // Get input value and remove non-digit characters
-  let input = e.target.value.replace(/\D/g, '');
-  
-  // Format based on length
-  let formatted = '';
-  if (input.length <= 3) {
-    formatted = input;
-  } else if (input.length <= 6) {
-    formatted = `${input.slice(0, 3)}-${input.slice(3)}`;
-  } else {
-    formatted = `${input.slice(0, 3)}-${input.slice(3, 6)}-${input.slice(6, 10)}`;
-  }
-  
-  // Update input value
-  e.target.value = formatted;
-}
-
-// Format date input
-function formatDateInput(e) {
-  // Use HTML5 date input format (handled by browser)
-  // This just ensures the date format will be valid
-}
-
-// Helper to convert various date formats to Date object
-function getDateObject(dateValue) {
-  if (!dateValue) return null;
-  
-  try {
-    if (dateValue instanceof Date) return dateValue;
-    
-    if (dateValue.seconds && dateValue.nanoseconds) {
-      // Firestore Timestamp
-      return new Date(dateValue.seconds * 1000);
-    }
-    
-    // String or number
-    return new Date(dateValue);
-  } catch (error) {
-    console.error("Error parsing date:", error);
-    return null;
-  }
-}
-
-// Mark form as having changes
-function markFormChanged() {
+// Handle form changes
+function handleFormChange() {
   hasChanges = true;
-  
+  safeSetDisplay(unsavedChanges, "flex");
+
   // Enable save button
   if (saveUserBtn) saveUserBtn.disabled = false;
 }
@@ -524,15 +458,15 @@ function markFormChanged() {
 // Handle form submission
 async function handleFormSubmit(e) {
   e.preventDefault();
-  
+
   try {
     // Validate form
     if (!validateForm()) {
       return;
     }
-    
+
     safeSetLoading(true);
-    
+
     // Gather form data
     const formData = {
       firstName: firstNameInput.value.trim(),
@@ -541,73 +475,61 @@ async function handleFormSubmit(e) {
       phone: phoneInput.value.trim(),
       role: roleSelect.value,
       licenseNumber: licenseNumberInput.value.trim(),
-      status: accountStatusSelect.value,
+      suspended: !accountStatusToggle.checked, // This is inverse of 'active'
       updated_at: serverTimestamp(),
-      updated_by: currentUser.uid
+      updated_by: currentUser.uid,
     };
-    
-    // Handle license issue date
+
+    // Add license issue date if provided
     if (licenseIssueDateInput.value) {
-      try {
-        // Convert date string to Firebase timestamp
-        const licenseDate = new Date(licenseIssueDateInput.value);
-        formData.licenseIssueDate = licenseDate;
-      } catch (err) {
-        console.error("Invalid license date format:", err);
-      }
+      formData.licenseIssueDate = new Date(licenseIssueDateInput.value);
     }
-    
+
     console.log("Updating user with data:", formData);
-    
+
     // Check if email has changed
     const emailChanged = originalEmail !== formData.email;
-    let passwordChanged = false;
-    
-    // Handle password change if requested
-    if (changePasswordCheckbox.checked) {
-      passwordChanged = true;
-      
-      // Validate password fields
-      const newPassword = newPasswordInput.value;
-      const confirmPassword = confirmPasswordInput.value;
-      
-      // Password validation
-      if (newPassword.length < 6) {
-        showMessage("Password must be at least 6 characters long", "error");
-        safeSetLoading(false);
-        return;
-      }
-      
-      if (newPassword !== confirmPassword) {
-        showMessage("Passwords do not match", "error");
-        safeSetLoading(false);
-        return;
-      }
-    }
-    
+
+    // Check if password change is requested
+    const passwordChanged =
+      changePasswordCheckbox.checked &&
+      newPasswordInput.value &&
+      confirmPasswordInput.value &&
+      newPasswordInput.value === confirmPasswordInput.value;
+
     // Update user document in Firestore
     await updateDoc(doc(db, "users", userId), formData);
-    console.log("User document updated successfully");
-    
-    // Handle email or password changes (requires special Firebase Auth operations)
+
+    // Handle email or password changes with Firebase Auth
     if (emailChanged || passwordChanged) {
       try {
-        // Call a Firebase Function to update Auth user
-        // This should be implemented on your Firebase backend
-        const updateAuthUser = httpsCallable(functions, 'updateAuthUser');
-        
-        await updateAuthUser({
+        // Call Firebase Function to update auth user
+        const updateAuthUser = httpsCallable(functions, "updateAuthUser");
+
+        // Prepare data based on what changed
+        const authUpdateData = {
           userId: userId,
-          email: emailChanged ? formData.email : null,
-          password: passwordChanged ? newPasswordInput.value : null
-        });
-        
+        };
+
+        if (emailChanged) {
+          authUpdateData.email = formData.email;
+        }
+
+        if (passwordChanged) {
+          authUpdateData.password = newPasswordInput.value;
+        }
+
+        await updateAuthUser(authUpdateData);
+
         console.log("Auth user updated successfully");
       } catch (authError) {
         console.error("Error updating auth user:", authError);
-        showMessage("User info updated, but authentication details could not be changed. Please contact technical support.", "warning");
+        showMessage(
+          "User data updated, but authentication details could not be changed.",
+          "warning"
+        );
         safeSetLoading(false);
-        
+
         // Return to user detail page after delay
         setTimeout(() => {
           navigateBack();
@@ -615,104 +537,22 @@ async function handleFormSubmit(e) {
         return;
       }
     }
-    
+
+    // Reset form state
+    hasChanges = false;
+    safeSetDisplay(unsavedChanges, "none");
+
     // Show success message
     showMessage("User updated successfully", "success");
-    
-    // Reset unsaved changes flag
-    hasChanges = false;
-    
-    // Return to previous page after delay
+
+    // Navigate back after delay
     setTimeout(() => {
       navigateBack();
     }, 1500);
-    
   } catch (error) {
     console.error("Error updating user:", error);
     showMessage(`Failed to update user: ${error.message}`, "error");
     safeSetLoading(false);
-  }
-}
-
-// Show delete confirmation
-function showDeleteConfirmation() {
-  // Show confirmation modal
-  const deleteModal = document.getElementById("delete-modal");
-  if (deleteModal) {
-    deleteModal.style.display = "flex";
-    setTimeout(() => {
-      deleteModal.classList.add("show");
-    }, 10);
-  }
-}
-
-// Cancel delete
-function cancelDelete() {
-  // Hide confirmation modal
-  const deleteModal = document.getElementById("delete-modal");
-  if (deleteModal) {
-    deleteModal.classList.remove("show");
-    setTimeout(() => {
-      deleteModal.style.display = "none";
-    }, 300);
-  }
-}
-
-// Handle user deletion
-async function handleDeleteUser() {
-  try {
-    safeSetLoading(true);
-    
-    // First, delete the Firestore document
-    await deleteDoc(doc(db, "users", userId));
-    
-    // Then, call Firebase Function to delete auth user
-    try {
-      const deleteAuthUser = httpsCallable(functions, 'deleteAuthUser');
-      await deleteAuthUser({ userId: userId });
-    } catch (authError) {
-      console.error("Error deleting auth user:", authError);
-      showMessage("User document deleted, but auth user could not be deleted. Please check Firebase console.", "warning");
-    }
-    
-    // Show success message
-    showMessage("User deleted successfully", "success");
-    
-    // Reset unsaved changes flag
-    hasChanges = false;
-    
-    // Hide delete modal
-    cancelDelete();
-    
-    // Redirect to users list
-    setTimeout(() => {
-      window.location.href = "admin-users.html";
-    }, 1500);
-    
-  } catch (error) {
-    console.error("Error deleting user:", error);
-    showMessage(`Failed to delete user: ${error.message}`, "error");
-    safeSetLoading(false);
-  }
-}
-
-// Navigate back to the previous page or to user detail
-function navigateBack() {
-  if (returnUrl) {
-    window.location.href = returnUrl;
-  } else {
-    window.location.href = `admin-user-detail.html?id=${userId}`;
-  }
-}
-
-// Handle cancel button click
-function handleCancel() {
-  if (hasChanges) {
-    if (confirm("You have unsaved changes. Are you sure you want to leave this page?")) {
-      navigateBack();
-    }
-  } else {
-    navigateBack();
   }
 }
 
@@ -724,7 +564,7 @@ function validateForm() {
     emailInput.focus();
     return false;
   }
-  
+
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(emailInput.value.trim())) {
@@ -732,63 +572,288 @@ function validateForm() {
     emailInput.focus();
     return false;
   }
-  
+
+  // Validate phone format if provided
+  const phoneValue = phoneInput.value.trim();
+  if (phoneValue) {
+    // Allow formats like (123) 456-7890, 123-456-7890, 1234567890, etc.
+    const phoneRegex =
+      /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,3}[-\s.]?[0-9]{4,6}$/;
+    if (!phoneRegex.test(phoneValue)) {
+      showMessage("Please enter a valid phone number", "error");
+      phoneInput.focus();
+      return false;
+    }
+  }
+
   // Validate role
   if (!roleSelect.value) {
     showMessage("Please select a role", "error");
     roleSelect.focus();
     return false;
   }
-  
+
   // Password validation if changing password
   if (changePasswordCheckbox.checked) {
-    if (!newPasswordInput.value) {
+    const newPassword = newPasswordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+
+    if (!newPassword) {
       showMessage("Please enter a new password", "error");
       newPasswordInput.focus();
       return false;
     }
-    
-    if (newPasswordInput.value.length < 6) {
-      showMessage("Password must be at least 6 characters long", "error");
+
+    if (newPassword.length < 8) {
+      showMessage("Password must be at least 8 characters long", "error");
       newPasswordInput.focus();
       return false;
     }
-    
-    if (newPasswordInput.value !== confirmPasswordInput.value) {
+
+    if (!validatePasswordStrength(newPassword)) {
+      showMessage("Password doesn't meet the requirements", "error");
+      newPasswordInput.focus();
+      return false;
+    }
+
+    if (newPassword !== confirmPassword) {
       showMessage("Passwords do not match", "error");
       confirmPasswordInput.focus();
       return false;
     }
   }
-  
+
   return true;
 }
 
-// Prevent accidental form submission with Enter key
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-    // Allow Enter in textareas
-    if (!e.target.form || e.target.form !== editUserForm) {
-      e.preventDefault();
+// Check password strength
+function checkPasswordStrength() {
+  if (!newPasswordInput || !passwordStrengthMeter || !passwordStrengthText)
+    return;
+
+  const password = newPasswordInput.value;
+  let strength = 0;
+  let status = "";
+
+  // Update requirement indicators
+  const hasLength = password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+  // Update UI for requirements
+  updateRequirement("req-length", hasLength);
+  updateRequirement("req-uppercase", hasUpperCase);
+  updateRequirement("req-lowercase", hasLowerCase);
+  updateRequirement("req-number", hasNumber);
+  updateRequirement("req-special", hasSpecial);
+
+  // Calculate strength
+  if (hasLength) strength += 1;
+  if (hasUpperCase) strength += 1;
+  if (hasLowerCase) strength += 1;
+  if (hasNumber) strength += 1;
+  if (hasSpecial) strength += 1;
+
+  // Update strength indicator
+  switch (strength) {
+    case 0:
+    case 1:
+      passwordStrengthMeter.className = "password-strength";
+      passwordStrengthMeter.style.width = "10%";
+      status = "Very Weak";
+      break;
+    case 2:
+      passwordStrengthMeter.className = "password-strength weak";
+      passwordStrengthMeter.style.width = "25%";
+      status = "Weak";
+      break;
+    case 3:
+      passwordStrengthMeter.className = "password-strength medium";
+      passwordStrengthMeter.style.width = "50%";
+      status = "Medium";
+      break;
+    case 4:
+      passwordStrengthMeter.className = "password-strength strong";
+      passwordStrengthMeter.style.width = "75%";
+      status = "Strong";
+      break;
+    case 5:
+      passwordStrengthMeter.className = "password-strength very-strong";
+      passwordStrengthMeter.style.width = "100%";
+      status = "Very Strong";
+      break;
+  }
+
+  // Update text
+  passwordStrengthText.textContent = status;
+
+  // Check match if confirm password has text
+  if (confirmPasswordInput.value) {
+    checkPasswordMatch();
+  }
+}
+
+// Update a requirement indicator
+function updateRequirement(id, isMet) {
+  const req = document.getElementById(id);
+  if (req) {
+    if (isMet) {
+      req.classList.add("met");
+    } else {
+      req.classList.remove("met");
     }
   }
-});
+}
 
-// Warn about unsaved changes
-window.addEventListener('beforeunload', function(e) {
+// Validate password strength for form submission
+function validatePasswordStrength(password) {
+  const hasLength = password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+  // Return true if password meets minimum requirements
+  return (
+    hasLength && (hasUpperCase || hasLowerCase) && (hasNumber || hasSpecial)
+  );
+}
+
+// Check password match
+function checkPasswordMatch() {
+  if (!newPasswordInput || !confirmPasswordInput) return;
+
+  const password = newPasswordInput.value;
+  const confirmPassword = confirmPasswordInput.value;
+  const matchIndicator = document.getElementById("password-match-indicator");
+
+  if (matchIndicator) {
+    if (!confirmPassword) {
+      matchIndicator.textContent = "";
+      matchIndicator.className = "match-indicator";
+    } else if (password === confirmPassword) {
+      matchIndicator.textContent = "Passwords match";
+      matchIndicator.className = "match-indicator match";
+    } else {
+      matchIndicator.textContent = "Passwords do not match";
+      matchIndicator.className = "match-indicator no-match";
+    }
+  }
+}
+
+// Toggle password visibility
+function togglePasswordVisibility(e) {
+  const button = e.currentTarget;
+  const passwordInput = button.parentElement.querySelector("input");
+  const icon = button.querySelector("i");
+
+  if (passwordInput.type === "password") {
+    passwordInput.type = "text";
+    icon.className = "bi bi-eye-slash";
+  } else {
+    passwordInput.type = "password";
+    icon.className = "bi bi-eye";
+  }
+}
+
+function updateStatusText() {
+  if (!accountStatusToggle || !statusText) return;
+
+  const isActive = accountStatusToggle.checked;
+  statusText.textContent = isActive ? "Active" : "Suspended";
+  statusText.className = `toggle-text ${
+    isActive ? "text-success" : "text-warning"
+  }`;
+
+  // Add status card styling
+  const statusCard = document.getElementById("status-action-card");
+  if (statusCard) {
+    statusCard.className = `action-card ${isActive ? "active" : "suspended"}`;
+  }
+
+  handleFormChange();
+}
+
+// Handle cancel button click
+function handleCancel() {
   if (hasChanges) {
-    // Standard message (most browsers will show their own message)
-    const message = 'You have unsaved changes. Are you sure you want to leave this page?';
-    e.returnValue = message;
-    return message;
+    showConfirmation(
+      "Discard Changes",
+      "You have unsaved changes. Are you sure you want to leave this page?",
+      discardChanges
+    );
+  } else {
+    navigateBack();
   }
-});
+}
 
-// Global error handling
-window.addEventListener('error', (event) => {
-  console.error('Global error:', event.error);
-  if (event.error && event.error.message && event.error.message.includes("Cannot read properties of null")) {
-    console.warn("Prevented null reference error");
-    event.preventDefault();
+// Discard changes and return
+function discardChanges() {
+  hasChanges = false;
+  navigateBack();
+}
+
+// Navigate back to previous page or user detail
+function navigateBack() {
+  if (returnUrl) {
+    window.location.href = returnUrl;
+  } else {
+    window.location.href = `admin-user-detail.html?id=${userId}`;
   }
-});
+}
+
+// Confirm delete account
+function confirmDeleteAccount() {
+  showConfirmation(
+    "Delete Account",
+    `Are you sure you want to delete this user account? This action cannot be undone. All user data will be permanently deleted.`,
+    deleteAccount
+  );
+}
+
+// Delete user account
+async function deleteAccount() {
+  try {
+    safeSetLoading(true);
+
+    // Call Firebase Function to delete auth user
+    const deleteUser = httpsCallable(functions, "deleteUser");
+    await deleteUser({ userId: userId });
+
+    showMessage("User account deleted successfully", "success");
+
+    setTimeout(() => {
+      window.location.href = "admin-users.html";
+    }, 1500);
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    showMessage(`Failed to delete user: ${error.message}`, "error");
+    safeSetLoading(false);
+  }
+}
+
+// Show confirmation modal
+function showConfirmation(title, message, confirmAction) {
+  if (!confirmationModal || !modalTitle || !modalBody || !modalConfirmBtn)
+    return;
+
+  modalTitle.innerHTML = `<i class="bi bi-question-circle"></i> ${title}`;
+  modalBody.textContent = message;
+
+  // Set confirm action
+  modalConfirmBtn.onclick = () => {
+    closeModal();
+    confirmAction();
+  };
+
+  // Show modal
+  confirmationModal.classList.add("show");
+}
+
+// Close confirmation modal
+function closeModal() {
+  if (!confirmationModal) return;
+  confirmationModal.classList.remove("show");
+}

@@ -135,7 +135,7 @@
             <div class="section-header">
               <h2><i class="bi bi-lock"></i> Password Management</h2>
               <div class="toggle-switch">
-                <input type="checkbox" id="change-password" name="change-password">
+                <input type="checkbox" id="change-password" name="change-password" aria-expanded="false">
                 <label for="change-password" class="toggle-label">
                   <span class="toggle-inner"></span>
                   <span class="toggle-switch"></span>
@@ -150,8 +150,7 @@
                   <label for="new-password">New Password <span class="required">*</span></label>
                   <div class="password-input-group">
                     <input type="password" id="new-password" name="new-password" placeholder="Enter new password" minlength="8">
-                    <button type="button" class="toggle-password-btn" aria-label="Show password">
-                      <i class="bi bi-eye"></i>
+                    <button type="button" class="toggle-password-btn" type="button" aria-label="Show password">                      <i class="bi bi-eye"></i>
                     </button>
                   </div>
                   <div class="password-strength-container">
@@ -166,8 +165,7 @@
                   <label for="confirm-password">Confirm Password <span class="required">*</span></label>
                   <div class="password-input-group">
                     <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm new password" minlength="8">
-                    <button type="button" class="toggle-password-btn" aria-label="Show password">
-                      <i class="bi bi-eye"></i>
+                    <button type="button" class="toggle-password-btn" type="button" aria-label="Show password">                      <i class="bi bi-eye"></i>
                     </button>
                   </div>
                   <span class="match-indicator" id="password-match-indicator"></span>
@@ -194,7 +192,7 @@
             </div>
             
             <div class="section-content">
-              <div class="action-card">
+              <div class="action-card" id="status-action-card">
                 <div class="action-content">
                   <h3><i class="bi bi-pause-circle"></i> Account Status</h3>
                   <p>Suspended accounts cannot log in but all their data is preserved.</p>
@@ -206,8 +204,7 @@
                       <span class="toggle-inner"></span>
                       <span class="toggle-switch"></span>
                     </label>
-                    <span id="status-text" class="toggle-text">Active</span>
-                  </div>
+                    <span id="status-text" class="toggle-text text-success">Active</span>                  </div>
                 </div>
               </div>
               

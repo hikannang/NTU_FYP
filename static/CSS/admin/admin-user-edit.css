@@ -37,7 +37,9 @@ body.admin-body {
   padding: 0;
   background-color: var(--gray-50);
   min-height: 100vh;
-  padding-top: var(--header-height); /* Add padding to account for fixed header */
+  padding-top: var(
+    --header-height
+  ); /* Add padding to account for fixed header */
 }
 
 .admin-main {
@@ -155,6 +157,18 @@ body.sidebar-collapsed .admin-main {
 .form-group select:hover,
 .form-group textarea:hover {
   border-color: var(--primary-color);
+}
+
+.form-group input:disabled,
+.form-group select:disabled {
+  background-color: var(--gray-50);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.password-input-group input:disabled + .toggle-password-btn {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .help-text {
@@ -346,6 +360,16 @@ body.sidebar-collapsed .admin-main {
   position: absolute;
 }
 
+.toggle-switch .text-success {
+  color: var(--success-color);
+  font-weight: 600;
+}
+
+.toggle-switch .text-warning {
+  color: var(--warning-color);
+  font-weight: 600;
+}
+
 .toggle-label {
   position: relative;
   display: inline-block;
@@ -485,7 +509,11 @@ body.sidebar-collapsed .admin-main {
 }
 
 .primary-btn {
-  background: linear-gradient(to bottom right, var(--primary-color), var(--primary-dark));
+  background: linear-gradient(
+    to bottom right,
+    var(--primary-color),
+    var(--primary-dark)
+  );
   color: white;
   box-shadow: 0 1px 3px rgba(59, 130, 246, 0.5);
 }
@@ -590,8 +618,14 @@ body.sidebar-collapsed .admin-main {
 }
 
 @keyframes slideDown {
-  from { transform: translateY(-20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Loading Overlay */
@@ -621,7 +655,9 @@ body.sidebar-collapsed .admin-main {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-overlay p {
@@ -668,7 +704,7 @@ body.sidebar-collapsed .admin-main {
 
 .modal.show {
   opacity: 1;
-  display: flex;
+  display: flex !important; /* Add !important to override any display:none */
 }
 
 .modal-content {
@@ -734,6 +770,20 @@ body.sidebar-collapsed .admin-main {
   gap: 12px;
 }
 
+#status-action-card {
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+#status-action-card.active {
+  border-left: 3px solid var(--success-color);
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+#status-action-card.suspended {
+  border-left: 3px solid var(--warning-color);
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
 /* Responsive Styles */
 @media (max-width: 1200px) {
   .form-grid {
@@ -746,15 +796,15 @@ body.sidebar-collapsed .admin-main {
     margin-left: 0;
     padding: 20px;
   }
-  
+
   body.sidebar-collapsed .admin-main {
     margin-left: 0;
   }
-  
+
   .form-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .section-header {
     flex-direction: column;
     align-items: flex-start;
@@ -768,16 +818,16 @@ body.sidebar-collapsed .admin-main {
     align-items: stretch;
     gap: 16px;
   }
-  
+
   .action-control {
     display: flex;
     justify-content: flex-start;
   }
-  
+
   .form-actions {
     flex-direction: column-reverse;
   }
-  
+
   .form-actions button {
     width: 100%;
   }
@@ -787,15 +837,15 @@ body.sidebar-collapsed .admin-main {
   .admin-main {
     padding: 16px;
   }
-  
+
   .section-content {
     padding: 16px;
   }
-  
+
   .password-requirements ul {
     padding-left: 16px;
   }
-  
+
   .modal-content {
     width: 95%;
   }
@@ -806,12 +856,12 @@ body.sidebar-collapsed .admin-main {
   body.admin-body {
     padding-top: 0;
   }
-  
+
   .admin-main {
     margin-left: 0 !important;
     padding: 0;
   }
-  
+
   .form-actions,
   .form-section.danger-zone,
   .password-management .section-content,
@@ -822,7 +872,7 @@ body.sidebar-collapsed .admin-main {
   .toggle-switch {
     display: none !important;
   }
-  
+
   .form-section {
     box-shadow: none;
     margin-bottom: 20px;
@@ -830,24 +880,26 @@ body.sidebar-collapsed .admin-main {
     page-break-inside: avoid;
     border: 1px solid var(--gray-200);
   }
-  
+
   .form-section:hover {
     transform: none;
     box-shadow: none;
   }
-  
+
   .form-grid {
     display: block;
   }
-  
+
   .form-group {
     margin-bottom: 15px;
   }
-  
-  input, select, textarea {
+
+  input,
+  select,
+  textarea {
     border: 1px solid var(--gray-300) !important;
   }
-  
+
   .help-text {
     display: none;
   }
