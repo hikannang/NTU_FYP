@@ -1,4 +1,4 @@
-// admin-user-edit.js - Complete solution
+// admin-user-edit.js - Fixed imports
 import { db, auth, functions } from "../common/firebase-config.js";
 import {
   doc,
@@ -7,9 +7,11 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 import { 
-  onAuthStateChanged,
-  httpsCallable 
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import {
+  httpsCallable
+} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-functions.js";
 
 // Global variables
 let currentUser = null;
@@ -293,24 +295,37 @@ async function handleSubmit(e) {
     // Check for password change
     const changePassword = document.getElementById("change-password").checked;
     const newPassword = document.getElementById("new-password").value;
+    const confirmPassword = document.getElementById("confirm-password").value;
     
     // Update Firestore user document
     await updateDoc(doc(db, "users", userId), formData);
+    console.log("User document updated in Firestore");
     
     // Update Authentication if password changed
-    if (changePassword && newPassword) {
+    if (changePassword && newPassword && newPassword === confirmPassword) {
       try {
+        console.log("Attempting to update user password...");
+        // Use the Firebase Function to update the user's password
         const updateAuthUser = httpsCallable(functions, 'updateAuthUser');
-        await updateAuthUser({ 
+        
+        const result = await updateAuthUser({ 
           userId: userId, 
           password: newPassword 
         });
+        
+        console.log("Password update result:", result);
+        
+        if (result.data && result.data.error) {
+          throw new Error(result.data.error);
+        }
+        
+        console.log("Password updated successfully");
       } catch (error) {
         console.error("Error updating password:", error);
-        showError("User updated but password change failed");
-        setTimeout(() => {
-          window.location.href = `admin-user-detail.html?id=${userId}`;
-        }, 2000);
+        
+        // Show error but don't redirect immediately
+        alert(`User updated but password change failed: ${error.message || "Unknown error"}`);
+        showLoading(false);
         return;
       }
     }
@@ -319,18 +334,26 @@ async function handleSubmit(e) {
     alert("User updated successfully");
     window.location.href = `admin-user-detail.html?id=${userId}`;
   } catch (error) {
-    showError("Failed to update user");
+    showError("Failed to update user: " + (error.message || "Unknown error"));
     console.error(error);
     showLoading(false);
   }
 }
 
-// Validate form
+// Validate form with better password validation
 function validateForm() {
   // Check email
   const email = document.getElementById("email").value.trim();
   if (!email) {
     alert("Email is required");
+    document.getElementById("email").focus();
+    return false;
+  }
+  
+  // Email format validation
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailPattern.test(email)) {
+    alert("Please enter a valid email address");
     document.getElementById("email").focus();
     return false;
   }
@@ -347,12 +370,14 @@ function validateForm() {
       return false;
     }
     
+    // Password complexity check
     if (newPassword.length < 6) {
       alert("Password must be at least 6 characters");
       document.getElementById("new-password").focus();
       return false;
     }
     
+    // Password matching check
     if (newPassword !== confirmPassword) {
       alert("Passwords do not match");
       document.getElementById("confirm-password").focus();
