@@ -187,184 +187,142 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Set up event listeners
 function setupEventListeners() {
-  // Cancel buttons
-  if (cancelBtn) {
-    cancelBtn.addEventListener("click", handleCancel);
-  }
-
-  if (cancelFormBtn) {
-    cancelFormBtn.addEventListener("click", handleCancel);
-  }
-
   // Form submission
   if (editUserForm) {
     editUserForm.addEventListener("submit", handleFormSubmit);
+    
+    // Form input change detection
+    const formInputs = editUserForm.querySelectorAll("input, select");
+    formInputs.forEach((input) => {
+      input.addEventListener("change", handleFormChange);
+    });
   }
-
-  // Form input change detection
-  const formInputs = editUserForm.querySelectorAll("input, select, textarea");
-  formInputs.forEach((input) => {
-    input.addEventListener("change", handleFormChange);
-    input.addEventListener("input", handleFormChange);
-  });
-
-  // Password change toggle
+  
+  // Password change toggle - direct event attachment
   if (changePasswordCheckbox) {
-    changePasswordCheckbox.addEventListener("change", togglePasswordFields);
+    console.log("Adding event listener to password checkbox");
+    changePasswordCheckbox.addEventListener("change", function() {
+      console.log("Checkbox changed:", this.checked);
+      togglePasswordFields();
+    });
   }
-
-  // Password strength checking
-  if (newPasswordInput) {
-    newPasswordInput.addEventListener("input", checkPasswordStrength);
-  }
-
-  // Password match checking
-  if (confirmPasswordInput) {
-    confirmPasswordInput.addEventListener("input", checkPasswordMatch);
-  }
-
+  
   // Password visibility toggle buttons
-  if (togglePasswordBtns) {
+  if (togglePasswordBtns && togglePasswordBtns.length > 0) {
     togglePasswordBtns.forEach((btn) => {
       btn.addEventListener("click", togglePasswordVisibility);
     });
   }
-
+  
   // Account status toggle
   if (accountStatusToggle) {
     accountStatusToggle.addEventListener("change", updateStatusText);
   }
-
+  
   // Delete account button
   if (deleteAccountBtn) {
     deleteAccountBtn.addEventListener("click", confirmDeleteAccount);
-  }
-
-  // Unsaved changes banner buttons
-  if (discardChangesBtn) {
-    discardChangesBtn.addEventListener("click", discardChanges);
-  }
-
-  if (saveChangesBtn) {
-    saveChangesBtn.addEventListener("click", () => {
-      if (editUserForm) {
-        editUserForm.dispatchEvent(new Event("submit"));
-      }
-    });
-  }
-
-  // Modal buttons
-  if (modalCancelBtn) {
-    modalCancelBtn.addEventListener("click", closeModal);
-  }
-
-  if (modalClose) {
-    modalClose.addEventListener("click", closeModal);
   }
 }
 
 // Load user data
 async function loadUserData() {
-    try {
-      safeSetLoading(true);
-      
-      // Get user document
-      const userDoc = await getDoc(doc(db, "users", userId));
-      
-      if (!userDoc.exists()) {
-        safeSetDisplay(userNotFound, "flex");
-        safeSetDisplay(editFormContainer, "none");
-        safeSetLoading(false);
-        return;
-      }
-      
-      // Store user data globally and include the ID
-      userData = {
-        id: userId,
-        ...userDoc.data()
-      };
-      
-      console.log("User data loaded:", userData);
-      
-      // Store original email for comparison
-      originalEmail = userData.email;
-      
-      // Update page title with user name
-      const firstName = userData.firstName || '';
-      const lastName = userData.lastName || '';
-      const userName = firstName || lastName ? `${firstName} ${lastName}`.trim() : "User";
-      
-      if (editUserTitle) {
-        editUserTitle.innerHTML = `
-          <i class="bi bi-pencil-square"></i> 
-          Edit User: ${safeText(userName)}
-        `;
-      }
-      
-      document.title = `Edit ${userName} | BaoCarLiao Admin`;
-      
-      // Populate form with user data - using setTimeout to ensure DOM is ready
-      setTimeout(() => {
-        populateForm(userData);
-      }, 100);
-      
+  try {
+    safeSetLoading(true);
+    
+    // Get user document
+    const userDoc = await getDoc(doc(db, "users", userId));
+    
+    if (!userDoc.exists()) {
+      safeSetDisplay(userNotFound, "flex");
+      safeSetDisplay(editFormContainer, "none");
       safeSetLoading(false);
-    } catch (error) {
-      console.error("Error loading user data:", error);
-      showError(`Failed to load user data: ${error.message}`);
-      safeSetLoading(false);
+      return;
     }
+    
+    // Store user data globally and include the ID
+    userData = {
+      id: userId,
+      ...userDoc.data()
+    };
+    
+    console.log("User data loaded:", userData);
+    
+    // Store original email for comparison
+    originalEmail = userData.email;
+    
+    // Update page title with user name
+    const firstName = userData.firstName || '';
+    const lastName = userData.lastName || '';
+    const userName = firstName || lastName ? `${firstName} ${lastName}`.trim() : "User";
+    
+    if (editUserTitle) {
+      editUserTitle.innerHTML = `
+        <i class="bi bi-pencil-square"></i> 
+        Edit User: ${safeText(userName)}
+      `;
+    }
+    
+    document.title = `Edit ${userName} | BaoCarLiao Admin`;
+    
+    // Populate form with user data AFTER UI is ready
+    populateForm(userData);
+    
+    safeSetLoading(false);
+  } catch (error) {
+    console.error("Error loading user data:", error);
+    showError(`Failed to load user data: ${error.message}`);
+    safeSetLoading(false);
   }
+}
 
 // Populate form with user data
 function populateForm(userData) {
-    console.log("Populating form with data:", userData);
+  console.log("Populating form with data:", userData);
+  
+  // Manually set each field with direct property access
+  if (firstNameInput) {
+    firstNameInput.value = userData.firstName || '';
+    console.log("Set firstName:", firstNameInput.value);
+  }
+  
+  if (lastNameInput) {
+    lastNameInput.value = userData.lastName || '';
+    console.log("Set lastName:", lastNameInput.value);
+  }
+  
+  if (emailInput) {
+    emailInput.value = userData.email || '';
+    console.log("Set email:", emailInput.value);
+  }
+  
+  if (phoneInput) {
+    phoneInput.value = userData.phone || '';
+    console.log("Set phone:", phoneInput.value);
+  }
+  
+  if (licenseNumberInput) {
+    licenseNumberInput.value = userData.licenseNumber || '';
+    console.log("Set licenseNumber:", licenseNumberInput.value);
+  }
+  
+  // Handle license date with proper conversion
+  if (licenseIssueDateInput && userData.licenseIssueDate) {
+    let licenseDate = null;
     
-    // Set hidden user ID
-    if (userIdInput) {
-      userIdInput.value = userData.id || '';
-      console.log("Set user ID:", userIdInput.value);
-    }
-    
-    // Set text inputs - with more verbose logging
-    if (firstNameInput) {
-      firstNameInput.value = userData.firstName || '';
-      console.log("Set firstName:", firstNameInput.value);
-    }
-    
-    if (lastNameInput) {
-      lastNameInput.value = userData.lastName || '';
-      console.log("Set lastName:", lastNameInput.value);
-    }
-    
-    if (emailInput) {
-      emailInput.value = userData.email || '';
-      console.log("Set email:", emailInput.value);
-    }
-    
-    if (phoneInput) {
-      phoneInput.value = userData.phone || '';
-      console.log("Set phone:", phoneInput.value);
-    }
-    
-    // Set license information
-    if (licenseNumberInput) {
-      licenseNumberInput.value = userData.licenseNumber || '';
-      console.log("Set licenseNumber:", licenseNumberInput.value);
-    }
-    
-    if (licenseIssueDateInput && userData.licenseIssueDate) {
-      let licenseDate;
-      
+    try {
       if (userData.licenseIssueDate instanceof Date) {
         licenseDate = userData.licenseIssueDate;
-      } else if (userData.licenseIssueDate.toDate) {
+      } else if (userData.licenseIssueDate.toDate && typeof userData.licenseIssueDate.toDate === 'function') {
         licenseDate = userData.licenseIssueDate.toDate();
       } else if (typeof userData.licenseIssueDate === 'string') {
         licenseDate = new Date(userData.licenseIssueDate);
+      } else if (userData.licenseIssueDate.seconds) { 
+        // Handle Firebase Timestamp objects
+        licenseDate = new Date(userData.licenseIssueDate.seconds * 1000);
       }
       
-      if (licenseDate && !isNaN(licenseDate)) {
+      if (licenseDate && !isNaN(licenseDate.getTime())) {
         // Format date as YYYY-MM-DD for input[type="date"]
         const year = licenseDate.getFullYear();
         const month = String(licenseDate.getMonth() + 1).padStart(2, '0');
@@ -372,52 +330,57 @@ function populateForm(userData) {
         licenseIssueDateInput.value = `${year}-${month}-${day}`;
         console.log("Set licenseIssueDate:", licenseIssueDateInput.value);
       }
+    } catch (err) {
+      console.error("Error formatting license date:", err);
     }
-    
-    // Set role select
-    if (roleSelect && roleSelect.options) {
-      const userRole = userData.role || 'user';
-      console.log("Setting role to:", userRole);
-      
-      let roleFound = false;
-      
-      // Find and select the option with the matching value
-      for (let i = 0; i < roleSelect.options.length; i++) {
-        if (roleSelect.options[i].value === userRole) {
-          roleSelect.options[i].selected = true;
-          roleFound = true;
-          console.log("Role option found and selected");
-          break;
-        }
-      }
-      
-      // If no matching option, add one
-      if (!roleFound) {
-        console.log("Adding new role option:", userRole);
-        const newOption = document.createElement('option');
-        newOption.value = userRole;
-        newOption.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
-        newOption.selected = true;
-        roleSelect.appendChild(newOption);
-      }
-    }
-    
-    // Set account status
-    if (accountStatusToggle) {
-      // Default to active if suspended is not specifically set to true
-      const isActive = userData.suspended !== true;
-      accountStatusToggle.checked = isActive;
-      console.log("Set account status:", isActive ? "Active" : "Suspended");
-      updateStatusText();
-    }
-    
-    // Reset password fields
-    if (changePasswordCheckbox) changePasswordCheckbox.checked = false;
-    if (newPasswordInput) newPasswordInput.disabled = true;
-    if (confirmPasswordInput) confirmPasswordInput.disabled = true;
-    
-    console.log("Form population completed");
   }
+  
+  // Set role select
+  if (roleSelect) {
+    const userRole = userData.role || 'user';
+    console.log("Setting role to:", userRole);
+    
+    // Find and select the option with matching value
+    let optionFound = false;
+    for (let i = 0; i < roleSelect.options.length; i++) {
+      if (roleSelect.options[i].value === userRole) {
+        roleSelect.selectedIndex = i;
+        optionFound = true;
+        break;
+      }
+    }
+    
+    // Add a new option if no matching option found
+    if (!optionFound) {
+      const newOption = new Option(
+        userRole.charAt(0).toUpperCase() + userRole.slice(1),
+        userRole, 
+        true, 
+        true
+      );
+      roleSelect.add(newOption);
+    }
+  }
+  
+  // Set account status
+  if (accountStatusToggle) {
+    // Default to active if suspended is not explicitly true
+    const isActive = userData.suspended !== true;
+    accountStatusToggle.checked = isActive;
+    
+    // Update status text
+    if (statusText) {
+      statusText.textContent = isActive ? 'Active' : 'Suspended';
+      statusText.className = `toggle-text ${isActive ? 'text-success' : 'text-warning'}`;
+    }
+    
+    // Update status card
+    const statusCard = document.getElementById('status-action-card');
+    if (statusCard) {
+      statusCard.className = `action-card ${isActive ? 'active' : 'suspended'}`;
+    }
+  }
+}
 
 // Toggle password fields enable/disable
 function togglePasswordFields() {

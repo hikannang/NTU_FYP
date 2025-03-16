@@ -971,3 +971,34 @@ input:disabled {
 .modal.show {
   display: flex !important;
 }
+
+/* Disabled input styling */
+input:disabled {
+  background-color: #f1f5f9;
+  color: #64748b;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+input:disabled + .toggle-password-btn {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Properly style the toggle-container */
+.toggle-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.toggle-container input[type="checkbox"] {
+  margin-right: 8px;
+  width: auto; /* Override any width: 100% from other styles */
+}
+
+.toggle-container label {
+  font-weight: 500;
+  color: var(--text-medium);
+  cursor: pointer;
+}
