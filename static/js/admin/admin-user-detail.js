@@ -50,6 +50,8 @@ let userEmail = null;
 let userPhone = null;
 let userIdElement = null;
 let userCreated = null;
+let userLicenseNumber = null; // Add this
+let userLicenseDate = null;   // Add this
 
 // Booking stats elements
 let totalBookingsElement = null;
@@ -90,6 +92,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   userPhone = document.getElementById("user-phone");
   userIdElement = document.getElementById("user-id");
   userCreated = document.getElementById("user-created");
+  userLicenseNumber = document.getElementById("user-license-number"); 
+  userLicenseDate = document.getElementById("user-license-date");     
 
   // Booking stats elements
   totalBookingsElement = document.getElementById("total-bookings");
@@ -581,57 +585,63 @@ function filterBookings() {
 // Update UI with user data
 function updateUserDetailUI() {
   if (!userData) return;
-
+  
   try {
     // Set user avatar
     if (userAvatar) {
-      userAvatar.textContent = getInitials(
-        userData.firstName,
-        userData.lastName
-      );
-
+      userAvatar.textContent = getInitials(userData.firstName, userData.lastName);
+      
       // Set background color based on user role for visual distinction
       if (userData.role === "admin") {
         userAvatar.classList.add("admin-avatar");
       }
     }
-
+    
     // Set user fullname
     if (userFullname) {
-      const firstName = userData.firstName || "";
-      const lastName = userData.lastName || "";
-      userFullname.textContent =
-        firstName || lastName ? `${firstName} ${lastName}`.trim() : "No name";
+      const firstName = userData.firstName || '';
+      const lastName = userData.lastName || '';
+      userFullname.textContent = firstName || lastName ? `${firstName} ${lastName}`.trim() : "No name";
     }
-
+    
     // Set role badge
     if (userRoleBadge) {
-      userRoleBadge.textContent = userData.role || "user";
-      userRoleBadge.className =
-        "profile-role " + (userData.role === "admin" ? "admin-badge" : "");
+      userRoleBadge.textContent = userData.role || 'user';
+      userRoleBadge.className = 'profile-role ' + (userData.role === 'admin' ? 'admin-badge' : '');
     }
-
+    
     // Set basic user info
     if (userEmail) {
-      userEmail.textContent = userData.email || "Not provided";
+      userEmail.textContent = userData.email || 'Not provided';
     }
-
+    
     if (userPhone) {
-      userPhone.textContent = formatPhone(userData.phone) || "Not provided";
+      userPhone.textContent = formatPhone(userData.phone) || 'Not provided';
     }
-
+    
     if (userIdElement) {
-      userIdElement.textContent = userData.id || "-";
+      userIdElement.textContent = userData.id || '-';
     }
-
+    
     // Format dates
     if (userCreated) {
-      const createdAt =
-        userData.createdAt instanceof Timestamp
-          ? formatDate(userData.createdAt.toDate())
-          : "Not available";
+      const createdAt = userData.createdAt instanceof Timestamp ? 
+        formatDate(userData.createdAt.toDate()) : 
+        'Not available';
       userCreated.textContent = createdAt;
     }
+    
+    // Add license information
+    if (userLicenseNumber) {
+      userLicenseNumber.textContent = userData.licenseNumber || 'Not provided';
+    }
+    
+    if (userLicenseDate) {
+      // Format the license issue date if it exists
+      const licenseDate = getDateFromField(userData.licenseIssueDate || userData.licenseDate);
+      userLicenseDate.textContent = licenseDate ? formatDate(licenseDate) : 'Not provided';
+    }
+    
   } catch (error) {
     console.error("Error updating user detail UI:", error);
     showMessage("Failed to display user details", "error");
