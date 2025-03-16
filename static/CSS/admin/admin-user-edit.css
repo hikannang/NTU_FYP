@@ -223,16 +223,25 @@ textarea:disabled {
   align-items: center;
   justify-content: center;
   transition: all var(--transition);
+  background-color: transparent;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
 }
 
 .toggle-password-btn:hover {
   color: var(--primary-color);
+  background-color: rgba(59, 130, 246, 0.1);
 }
 
 input:disabled + .toggle-password-btn {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+.toggle-password-btn:focus {
+  outline: 2px solid var(--primary-light);
 }
 
 /* Toggle Container for Password */
@@ -245,12 +254,20 @@ input:disabled + .toggle-password-btn {
 .toggle-container input[type="checkbox"] {
   width: auto;
   margin-right: 8px;
+  accent-color: var(--primary-color);
+  width: 16px;
+  height: 16px;
 }
 
 .toggle-container label {
   font-weight: 500;
   color: var(--text-medium);
   cursor: pointer;
+}
+
+.toggle-container input[type="checkbox"]:focus + label {
+  text-decoration: underline;
+  color: var(--primary-color);
 }
 
 /* Toggle Switch Styling */
@@ -731,4 +748,17 @@ input:disabled + .toggle-password-btn {
   .form-group select {
     border-color: var(--gray-300);
   }
+}
+
+/* Helper text styling */
+.helper-text {
+  color: var(--text-medium);
+  font-size: 0.85rem;
+  margin-top: -8px;
+  margin-bottom: 16px;
+}
+
+/* Add smooth transition to password fields */
+#new-password, #confirm-password {
+  transition: background-color 0.3s ease, opacity 0.3s ease, border-color 0.3s ease;
 }

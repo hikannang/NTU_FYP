@@ -1,4 +1,3 @@
-// admin-user-edit.js - Part 1
 import { db, auth, functions } from "../common/firebase-config.js";
 import {
   doc,
@@ -74,17 +73,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// Load user data
+// Load user data - FIXED IMPLEMENTATION FOR CORRECT DATA RETRIEVAL
 async function loadUserData() {
   try {
     showLoading(true);
     console.log(`Loading user data for ID: ${userId}`);
     
-    // Get user document
+    // Get user document from users collection
     const userRef = doc(db, "users", userId);
-    const userDoc = await getDoc(userRef);
+    const userSnapshot = await getDoc(userRef);
     
-    if (!userDoc.exists()) {
+    if (!userSnapshot.exists()) {
       console.error("User document not found");
       document.getElementById("user-not-found").style.display = "flex";
       document.getElementById("edit-form-container").style.display = "none";
@@ -92,16 +91,29 @@ async function loadUserData() {
       return;
     }
     
-    // Store user data globally
+    // Store user data globally with explicit field mapping based on database structure
+    const docData = userSnapshot.data();
     userData = {
       id: userId,
-      ...userDoc.data()
+      firstName: docData.firstName || '',
+      lastName: docData.lastName || '',
+      email: docData.email || '',
+      phone: docData.phone || '',
+      role: docData.role || 'user',
+      licenseNumber: docData.licenseNumber || '',
+      licenseIssueDate: docData.licenseIssueDate || null,
+      suspended: docData.suspended === true, // explicit boolean conversion
+      createdAt: docData.createdAt || null,
+      cardNumber: docData.cardNumber || '',
+      address: docData.address || ''
     };
     
-    console.log("Raw user data from Firestore:", userDoc.data());
+    // Log full raw data to see what we're working with
+    console.log("Raw user data from Firestore:", docData);
+    console.log("Processed user data:", userData);
     
     // Store original email for comparison
-    originalEmail = userData.email || '';
+    originalEmail = userData.email;
     
     // Update page title with user name
     const firstName = userData.firstName || '';
@@ -118,8 +130,8 @@ async function loadUserData() {
     
     document.title = `Edit ${userName} | BaoCarLiao Admin`;
     
-    // Populate form with user data
-    populateForm(userData);
+    // Direct form population with field-by-field approach
+    directlyPopulateForm(userData);
     
     showLoading(false);
   } catch (error) {
@@ -129,51 +141,100 @@ async function loadUserData() {
   }
 }
 
-// Populate form with user data
-function populateForm(data) {
-  console.log("Populating form with data:", data);
+// COMPLETELY REWRITTEN: Directly populate form field-by-field with debugging
+function directlyPopulateForm(user) {
+  console.log("Starting direct form population...");
+
+  // Basic info fields with direct element access
+  const firstNameField = document.getElementById("first-name");
+  if (firstNameField) {
+    firstNameField.value = user.firstName || '';
+    console.log(`Set firstName: ${firstNameField.value}`);
+  } else {
+    console.error("first-name field not found in DOM");
+  }
   
-  // Set basic info fields
-  setInputValue("first-name", data.firstName);
-  setInputValue("last-name", data.lastName);
-  setInputValue("email", data.email);
-  setInputValue("phone", data.phone);
-  setInputValue("license-number", data.licenseNumber);
+  const lastNameField = document.getElementById("last-name");
+  if (lastNameField) {
+    lastNameField.value = user.lastName || '';
+    console.log(`Set lastName: ${lastNameField.value}`);
+  } else {
+    console.error("last-name field not found in DOM");
+  }
   
-  // Handle license issue date
-  if (data.licenseIssueDate) {
-    const dateInput = document.getElementById("license-issue-date");
-    if (dateInput) {
-      try {
-        let licenseDate;
-        
-        if (data.licenseIssueDate instanceof Date) {
-          licenseDate = data.licenseIssueDate;
-        } else if (data.licenseIssueDate.toDate) {
-          licenseDate = data.licenseIssueDate.toDate();
-        } else if (data.licenseIssueDate.seconds) {
-          licenseDate = new Date(data.licenseIssueDate.seconds * 1000);
-        } else if (typeof data.licenseIssueDate === 'string') {
-          licenseDate = new Date(data.licenseIssueDate);
-        }
-        
-        if (licenseDate && !isNaN(licenseDate)) {
-          const year = licenseDate.getFullYear();
-          const month = String(licenseDate.getMonth() + 1).padStart(2, '0');
-          const day = String(licenseDate.getDate()).padStart(2, '0');
-          dateInput.value = `${year}-${month}-${day}`;
-          console.log(`Set license date: ${dateInput.value}`);
-        }
-      } catch (err) {
-        console.error("Error formatting license date:", err);
+  const emailField = document.getElementById("email");
+  if (emailField) {
+    emailField.value = user.email || '';
+    console.log(`Set email: ${emailField.value}`);
+  } else {
+    console.error("email field not found in DOM");
+  }
+  
+  const phoneField = document.getElementById("phone");
+  if (phoneField) {
+    phoneField.value = user.phone || '';
+    console.log(`Set phone: ${phoneField.value}`);
+  } else {
+    console.error("phone field not found in DOM");
+  }
+  
+  const licenseNumberField = document.getElementById("license-number");
+  if (licenseNumberField) {
+    licenseNumberField.value = user.licenseNumber || '';
+    console.log(`Set licenseNumber: ${licenseNumberField.value}`);
+  } else {
+    console.error("license-number field not found in DOM");
+  }
+  
+  // Handle license issue date with extensive debugging
+  const licenseIssueDateField = document.getElementById("license-issue-date");
+  if (licenseIssueDateField && user.licenseIssueDate) {
+    console.log("Processing licenseIssueDate...");
+    console.log("Original licenseIssueDate value:", user.licenseIssueDate);
+    
+    try {
+      let licenseDate = null;
+      
+      // Handle all possible date formats
+      if (user.licenseIssueDate instanceof Date) {
+        licenseDate = user.licenseIssueDate;
+        console.log("licenseIssueDate is a Date object");
+      } 
+      else if (user.licenseIssueDate.toDate && typeof user.licenseIssueDate.toDate === 'function') {
+        licenseDate = user.licenseIssueDate.toDate();
+        console.log("licenseIssueDate is a Firestore Timestamp, converted to:", licenseDate);
       }
+      else if (user.licenseIssueDate.seconds) {
+        licenseDate = new Date(user.licenseIssueDate.seconds * 1000);
+        console.log("licenseIssueDate has seconds property, converted to:", licenseDate);
+      }
+      else if (typeof user.licenseIssueDate === 'string') {
+        licenseDate = new Date(user.licenseIssueDate);
+        console.log("licenseIssueDate is a string, converted to:", licenseDate);
+      }
+      
+      // Format date for input field
+      if (licenseDate && !isNaN(licenseDate)) {
+        const year = licenseDate.getFullYear();
+        const month = String(licenseDate.getMonth() + 1).padStart(2, '0');
+        const day = String(licenseDate.getDate()).padStart(2, '0');
+        licenseIssueDateField.value = `${year}-${month}-${day}`;
+        console.log(`Set licenseIssueDate: ${licenseIssueDateField.value}`);
+      } else {
+        console.error("Could not convert to valid date");
+      }
+    } catch (err) {
+      console.error("Error processing license date:", err);
     }
+  } else {
+    console.log("No license issue date to process or field not found");
   }
   
   // Set role select
   const roleSelect = document.getElementById("role");
   if (roleSelect) {
-    const userRole = data.role || 'user';
+    const userRole = user.role || 'user';
+    console.log(`Setting role to: "${userRole}"`);
     
     // Find matching option
     let optionFound = false;
@@ -181,50 +242,77 @@ function populateForm(data) {
       if (roleSelect.options[i].value === userRole) {
         roleSelect.selectedIndex = i;
         optionFound = true;
+        console.log(`Selected existing role option at index ${i}`);
         break;
       }
     }
     
     // Add option if not found
     if (!optionFound) {
-      const newOption = new Option(
-        userRole.charAt(0).toUpperCase() + userRole.slice(1),
-        userRole, 
-        true, 
-        true
-      );
+      const newOption = document.createElement('option');
+      newOption.value = userRole;
+      newOption.text = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+      newOption.selected = true;
       roleSelect.add(newOption);
+      console.log(`Added new role option: ${userRole}`);
     }
-    
-    console.log(`Set role: ${roleSelect.value}`);
+  } else {
+    console.error("role select field not found in DOM");
   }
   
   // Set account status
-  const statusToggle = document.getElementById("account-status");
-  if (statusToggle) {
-    const isActive = data.suspended !== true;
-    statusToggle.checked = isActive;
+  const accountStatusToggle = document.getElementById("account-status");
+  if (accountStatusToggle) {
+    const isActive = !user.suspended;
+    accountStatusToggle.checked = isActive;
+    console.log(`Set account status toggle: ${isActive ? "active" : "suspended"}`);
+    
+    // Update status text
     updateStatusText();
-    console.log(`Set status: ${isActive ? "active" : "suspended"}`);
+  } else {
+    console.error("account-status toggle not found in DOM");
   }
   
-  // Reset password fields
-  document.getElementById("change-password")?.checked = false;
-  setPasswordFieldsState(false);
+  // Initialize password fields
+  initializePasswordFields();
+  
+  console.log("Form population completed");
 }
 
-// Helper for setting input values
-function setInputValue(id, value) {
-  const input = document.getElementById(id);
-  if (input) {
-    input.value = value || '';
-    console.log(`Set ${id}: ${input.value}`);
-  } else {
-    console.warn(`Input element with ID "${id}" not found`);
+// COMPLETELY REWRITTEN: Initialize password fields
+function initializePasswordFields() {
+  console.log("Initializing password fields");
+  
+  // Get password elements
+  const changePasswordCheckbox = document.getElementById("change-password");
+  const newPasswordField = document.getElementById("new-password");
+  const confirmPasswordField = document.getElementById("confirm-password");
+  
+  if (!changePasswordCheckbox) {
+    console.error("change-password checkbox not found");
+    return;
   }
+  
+  if (!newPasswordField || !confirmPasswordField) {
+    console.error("Password fields not found");
+    return;
+  }
+  
+  // Ensure checkbox is unchecked on page load
+  changePasswordCheckbox.checked = false;
+  
+  // Disable password fields initially
+  newPasswordField.disabled = true;
+  confirmPasswordField.disabled = true;
+  
+  // Clear any existing values
+  newPasswordField.value = '';
+  confirmPasswordField.value = '';
+  
+  console.log("Password fields initialized");
 }
 
-// Set up event listeners
+// Set up event listeners with direct element references
 function setupEventListeners() {
   console.log("Setting up event listeners");
   
@@ -232,6 +320,9 @@ function setupEventListeners() {
   const form = document.getElementById("edit-user-form");
   if (form) {
     form.addEventListener("submit", handleFormSubmit);
+    console.log("Form submit listener added");
+  } else {
+    console.error("edit-user-form not found");
   }
   
   // Form input change detection
@@ -239,80 +330,112 @@ function setupEventListeners() {
   allInputs.forEach(input => {
     input.addEventListener('change', () => {
       hasChanges = true;
+      console.log("Form change detected");
     });
   });
   
-  // Password change toggle
+  // FIXED: Password change toggle with direct binding
   const changePasswordCheckbox = document.getElementById("change-password");
   if (changePasswordCheckbox) {
-    console.log("Setting up password checkbox listener");
-    changePasswordCheckbox.addEventListener("change", function() {
-      const isChecked = this.checked;
-      console.log(`Password checkbox changed: ${isChecked}`);
-      setPasswordFieldsState(isChecked);
-    });
+    // Remove any existing listeners to prevent duplicates
+    const newHandler = function() {
+      console.log("Change password checkbox toggled: " + this.checked);
+      togglePasswordFields(this.checked);
+    };
+    
+    changePasswordCheckbox.removeEventListener("change", newHandler);
+    changePasswordCheckbox.addEventListener("change", newHandler);
+    console.log("Password checkbox listener added");
+  } else {
+    console.error("change-password checkbox not found");
   }
   
-  // Password visibility toggle
-  const toggleButtons = document.querySelectorAll(".toggle-password-btn");
-  if (toggleButtons) {
-    toggleButtons.forEach(btn => {
-      btn.addEventListener("click", togglePasswordVisibility);
-    });
-  }
-  
-  // Account status toggle
+  // Account status toggle with direct reference
   const statusToggle = document.getElementById("account-status");
   if (statusToggle) {
     statusToggle.addEventListener("change", updateStatusText);
+    console.log("Status toggle listener added");
+  } else {
+    console.error("account-status toggle not found");
   }
   
   // Delete account button
   const deleteBtn = document.getElementById("delete-account-btn");
   if (deleteBtn) {
     deleteBtn.addEventListener("click", confirmDeleteAccount);
+    console.log("Delete button listener added");
+  } else {
+    console.error("delete-account-btn not found");
   }
   
-  // Cancel button
-  const cancelBtn = document.getElementById("cancel-btn");
-  if (cancelBtn) {
-    cancelBtn.addEventListener("click", () => {
-      if (hasChanges && !confirm("Discard unsaved changes?")) return;
-      navigateBack();
+  // Password visibility toggle buttons
+  const toggleButtons = document.querySelectorAll(".toggle-password-btn");
+  if (toggleButtons && toggleButtons.length > 0) {
+    toggleButtons.forEach((btn, index) => {
+      btn.addEventListener("click", togglePasswordVisibility);
+      console.log(`Password toggle button ${index+1} listener added`);
     });
+  } else {
+    console.error("No password toggle buttons found");
   }
 }
 
-// Enable/disable password fields
-function setPasswordFieldsState(enabled) {
-  const newPasswordInput = document.getElementById("new-password");
-  const confirmPasswordInput = document.getElementById("confirm-password");
+// FIXED: Toggle password fields with direct element access
+function togglePasswordFields(enabled) {
+  console.log(`Toggling password fields: ${enabled ? "enabled" : "disabled"}`);
   
-  if (newPasswordInput) {
-    newPasswordInput.disabled = !enabled;
-    if (!enabled) newPasswordInput.value = '';
-    console.log(`New password field disabled: ${!enabled}`);
+  // Get password fields directly
+  const newPasswordField = document.getElementById("new-password");
+  const confirmPasswordField = document.getElementById("confirm-password");
+  
+  if (!newPasswordField || !confirmPasswordField) {
+    console.error("Password fields not found for toggling");
+    return;
   }
   
-  if (confirmPasswordInput) {
-    confirmPasswordInput.disabled = !enabled;
-    if (!enabled) confirmPasswordInput.value = '';
-    console.log(`Confirm password field disabled: ${!enabled}`);
+  // Enable/disable password fields
+  newPasswordField.disabled = !enabled;
+  confirmPasswordField.disabled = !enabled;
+  
+  // Reset values when disabled
+  if (!enabled) {
+    newPasswordField.value = '';
+    confirmPasswordField.value = '';
+    console.log("Password fields cleared");
+  } else {
+    // Focus on new password field when enabled
+    setTimeout(() => {
+      newPasswordField.focus();
+    }, 100);
   }
+  
+  console.log(`Password fields ${enabled ? "enabled" : "disabled"}`);
 }
 
 // Toggle password visibility
 function togglePasswordVisibility(e) {
+  // Get the button and find its parent input group
   const button = e.currentTarget;
-  const passwordInput = button.closest('.password-input-group').querySelector('input');
+  if (!button) return;
+  
+  // Get the input field that's a sibling to this button
+  const passwordInputGroup = button.closest('.password-input-group');
+  if (!passwordInputGroup) return;
+  
+  const passwordInput = passwordInputGroup.querySelector('input');
   const icon = button.querySelector('i');
   
+  if (!passwordInput || !icon) return;
+  
+  // Toggle between password and text
   if (passwordInput.type === 'password') {
     passwordInput.type = 'text';
     icon.className = 'bi bi-eye-slash';
+    console.log("Password visibility: shown");
   } else {
     passwordInput.type = 'password';
     icon.className = 'bi bi-eye';
+    console.log("Password visibility: hidden");
   }
 }
 
@@ -322,7 +445,10 @@ function updateStatusText() {
   const statusText = document.getElementById("status-text");
   const statusCard = document.getElementById("status-action-card");
   
-  if (!statusToggle || !statusText) return;
+  if (!statusToggle || !statusText) {
+    console.error("Status elements not found");
+    return;
+  }
   
   const isActive = statusToggle.checked;
   statusText.textContent = isActive ? 'Active' : 'Suspended';
@@ -331,6 +457,8 @@ function updateStatusText() {
   if (statusCard) {
     statusCard.className = `action-card ${isActive ? 'active' : 'suspended'}`;
   }
+  
+  console.log(`Status updated to: ${isActive ? "active" : "suspended"}`);
 }
 
 // Handle form submission
