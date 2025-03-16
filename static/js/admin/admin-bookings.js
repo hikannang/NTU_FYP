@@ -384,10 +384,10 @@ function createBookingsQuery() {
   return bookingsQuery;
 }
 
-// Load associated car and user data with error handling for undefined IDs
+// Enhanced loadAssociatedData function to properly get user data
 async function loadAssociatedData(bookings) {
   try {
-    // Get unique car IDs and user IDs (filter out undefined values)
+    // Get unique car IDs and user IDs
     const carIds = [
       ...new Set(
         bookings
@@ -403,84 +403,73 @@ async function loadAssociatedData(bookings) {
       ),
     ];
 
-    console.log("Car IDs to fetch:", carIds);
     console.log("User IDs to fetch:", userIds);
-
-    // Load car data if not already loaded
-    const carsToFetch = carIds.filter((id) => !carsData.has(id));
-    if (carsToFetch.length > 0) {
-      console.log("Fetching cars:", carsToFetch);
-      for (const carId of carsToFetch) {
-        try {
-          // Make sure to convert carId to string since it's stored as integer in bookings
-          const carIdString = String(carId);
-          console.log(`Fetching car with ID: ${carIdString}`);
-
-          const carDoc = await getDoc(doc(db, "cars", carIdString));
-          if (carDoc.exists()) {
-            // Store basic car data
-            const carData = {
-              id: carId,
-              ...carDoc.data(),
-            };
-
-            // Also try to get car model details if available
-            if (carData.car_type) {
-              try {
-                console.log(`Fetching model details for ${carData.car_type}`);
-                const modelDoc = await getDoc(
-                  doc(db, "car_models", carData.car_type)
-                );
-                if (modelDoc.exists()) {
-                  // Add model info to car data
-                  carData.model_details = modelDoc.data();
-                }
-              } catch (modelErr) {
-                console.log(
-                  `Could not fetch model details for ${carData.car_type}:`,
-                  modelErr
-                );
-              }
-            }
-
-            // Store the enhanced car data
-            carsData.set(carId, carData);
-            console.log(`Loaded car data for ID ${carId}:`, carData);
-          } else {
-            console.log(`No car found with ID ${carIdString}`);
-          }
-        } catch (err) {
-          console.error(`Error loading car data for ID ${carId}:`, err);
-        }
-      }
-    }
 
     // Load user data if not already loaded
     const usersToFetch = userIds.filter((id) => !usersData.has(id));
     if (usersToFetch.length > 0) {
-      console.log("Fetching users:", usersToFetch);
       for (const userId of usersToFetch) {
-        if (!userId) {
-          console.error("Attempted to fetch user with undefined ID, skipping");
-          continue;
-        }
+        if (!userId) continue;
 
         try {
           console.log(`Fetching user with ID: ${userId}`);
           const userDoc = await getDoc(doc(db, "users", userId));
           if (userDoc.exists()) {
-            // Store user data with all fields
+            // Store complete user data including firstName
             const userData = {
               id: userId,
               ...userDoc.data(),
             };
             usersData.set(userId, userData);
-            console.log(`Loaded user data for ID ${userId}:`, userData);
+            console.log(`User data loaded for ID ${userId}:`, userData);
           } else {
             console.log(`No user found with ID ${userId}`);
           }
         } catch (err) {
           console.error(`Error loading user data for ID ${userId}:`, err);
+        }
+      }
+    }
+
+    // Load car and car model data
+    const carsToFetch = carIds.filter((id) => !carsData.has(id));
+    if (carsToFetch.length > 0) {
+      for (const carId of carsToFetch) {
+        try {
+          // Get car data
+          const carIdString = String(carId);
+          const carDoc = await getDoc(doc(db, "cars", carIdString));
+
+          if (carDoc.exists()) {
+            const carData = {
+              id: carId,
+              ...carDoc.data(),
+            };
+
+            // Get car model data with detailed name and color information
+            if (carData.car_type) {
+              try {
+                const modelDoc = await getDoc(
+                  doc(db, "car_models", carData.car_type)
+                );
+                if (modelDoc.exists()) {
+                  const modelData = modelDoc.data();
+                  // Add model details directly to car data
+                  carData.modelName = modelData.name || carData.car_type;
+                  carData.modelColor =
+                    carData.car_color || modelData.color || "";
+                  carData.fullCarName = `${carData.modelName} (${carData.modelColor})`;
+                }
+              } catch (modelErr) {
+                console.log(`Error loading model data: ${modelErr}`);
+              }
+            }
+
+            carsData.set(carId, carData);
+            console.log(`Complete car data loaded for ID ${carId}:`, carData);
+          }
+        } catch (err) {
+          console.error(`Error loading car data: ${err}`);
         }
       }
     }
@@ -536,11 +525,11 @@ function createBookingRow(booking) {
   console.log(`Car data for ${booking.carID}:`, car);
 
   // Extract booking ID - just the numeric part excluding "booking_"
-  let displayBookingId = "Unknown";
+  let displayBookingId = "";
   if (booking.bookingID) {
+    // Remove the "booking_" prefix completely
     displayBookingId = booking.bookingID.replace(/^booking_/, "");
   } else if (booking.id) {
-    // Fallback to document ID
     displayBookingId = booking.id.substring(0, 13);
   }
 
@@ -593,25 +582,25 @@ function createBookingRow(booking) {
             <!-- Get user's firstName from users collection -->
             <div class="user-name">${user.firstName || "Unknown"}</div>
             <!-- Show userID below the name -->
-            <div class="user-id">${booking.userID || "N/A"}</div>
+            <div class="user-id">${booking.userID || ""}</div>
           </div>
         </div>
       </td>
       <td>
-        <div class="car-cell">
-          <div class="car-icon"><i class="bi bi-car-front-fill"></i></div>
-          <div class="car-info">
-            <!-- Show car model -->
-            <div class="car-name">${
-              car.car_type || booking.car_type || "Unknown"
-            }</div>
-            <!-- Show carID(license_plate) format -->
-            <div class="car-plate">${booking.carID}(${
+    <div class="car-cell">
+      <div class="car-icon"><i class="bi bi-car-front-fill"></i></div>
+      <div class="car-info">
+        <!-- Display the car name with color -->
+        <div class="car-name">${
+          car.fullCarName || car.car_type || booking.car_type || "Unknown"
+        }</div>
+        <!-- Display carID(license_plate) format -->
+        <div class="car-plate">${booking.carID}(${
       car.license_plate || "N/A"
     })</div>
-          </div>
-        </div>
-      </td>
+      </div>
+    </div>
+  </td>
       <td>
         <div class="date-cell">
           <div class="date">${formatDate(startDate)}</div>
@@ -884,7 +873,6 @@ async function viewBookingDetails(bookingId) {
     if (modalBody) {
       // Get car model details if available
       const carModelInfo = car.model_details || {};
-
       modalBody.innerHTML = `
             <div class="modal-sections">
               <!-- Contact Information Section -->
@@ -900,7 +888,7 @@ async function viewBookingDetails(bookingId) {
                   <div class="info-item">
                     <div class="info-label">Customer ID</div>
                     <div class="info-value user-id-value">${
-                      booking.userID || "N/A"
+                      booking.userID || ""
                     }</div>
                   </div>
                   <div class="info-item">
