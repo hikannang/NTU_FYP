@@ -1,3 +1,4 @@
+// admin-users.js - Part 1
 import { db, auth } from "../common/firebase-config.js";
 import {
   collection,
@@ -21,19 +22,29 @@ let currentSort = { field: "createdAt", direction: "desc" };
 let isLoading = false;
 const USERS_PER_PAGE = 10;
 
-// DOM Elements
-const loadingOverlay = document.getElementById("loading-overlay");
-const usersTableBody = document.getElementById("users-table-body");
-const userSearchInput = document.getElementById("user-search");
-const sortButtons = document.querySelectorAll(".sort-btn");
-const loadMoreBtn = document.getElementById("load-more-btn");
-const userStatsTotal = document.getElementById("user-stats-total");
-const tableWrapper = document.getElementById("table-wrapper");
-const noResultsMessage = document.getElementById("no-results-message");
+// DOM Elements - initialize as null and then check for existence
+let loadingOverlay = null;
+let usersTableBody = null;
+let userSearchInput = null;
+let sortButtons = [];
+let loadMoreBtn = null;
+let userStatsTotal = null;
+let tableWrapper = null;
+let noResultsMessage = null;
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("User Management page loading");
+
+  // Safely get DOM elements
+  loadingOverlay = document.getElementById("loading-overlay");
+  usersTableBody = document.getElementById("users-table-body");
+  userSearchInput = document.getElementById("user-search");
+  sortButtons = document.querySelectorAll(".sort-btn") || [];
+  loadMoreBtn = document.getElementById("load-more-btn");
+  userStatsTotal = document.getElementById("user-stats-total");
+  tableWrapper = document.getElementById("table-wrapper");
+  noResultsMessage = document.getElementById("no-results-message");
 
   try {
     // Check authentication
@@ -80,15 +91,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Initialize page
 async function initPage() {
-  showLoading(true);
+  safeSetLoading(true);
 
   try {
     await Promise.all([loadInitialUsers(), loadUserStatistics()]);
 
-    showLoading(false);
+    safeSetLoading(false);
   } catch (error) {
     console.error("Error initializing page:", error);
     showError(`Failed to load users: ${error.message}`);
+    safeSetLoading(false);
   }
 }
 
@@ -103,9 +115,11 @@ function setupEventListeners() {
   }
 
   // Sort buttons
-  sortButtons.forEach((button) => {
-    button.addEventListener("click", () => handleSort(button.dataset.field));
-  });
+  if (sortButtons && sortButtons.length > 0) {
+    sortButtons.forEach((button) => {
+      button.addEventListener("click", () => handleSort(button.dataset.field));
+    });
+  }
 
   // Load more button
   if (loadMoreBtn) {
@@ -150,8 +164,7 @@ async function loadMoreUsers() {
 
   try {
     isLoading = true;
-    loadMoreBtn.disabled = true;
-    loadMoreBtn.innerHTML = '<div class="spinner-sm"></div> Loading...';
+    safeSetButtonLoading(loadMoreBtn, true);
 
     // Build query with startAfter for pagination
     const usersQuery = buildUsersQuery(true);
@@ -166,20 +179,18 @@ async function loadMoreUsers() {
     renderUsers();
 
     isLoading = false;
-    loadMoreBtn.disabled = false;
-    loadMoreBtn.innerHTML = "Load More";
+    safeSetButtonLoading(loadMoreBtn, false);
 
     // Hide load more button if no more results
     if (usersSnapshot.empty || usersSnapshot.docs.length < USERS_PER_PAGE) {
-      loadMoreBtn.style.display = "none";
+      safeSetDisplay(loadMoreBtn, "none");
     }
   } catch (error) {
     console.error("Error loading more users:", error);
     showMessage("Failed to load more users", "error");
 
     isLoading = false;
-    loadMoreBtn.disabled = false;
-    loadMoreBtn.innerHTML = "Load More";
+    safeSetButtonLoading(loadMoreBtn, false);
   }
 }
 
@@ -209,19 +220,19 @@ function buildUsersQuery(paginate = false) {
   return getDocs(query(userQuery, ...constraints));
 }
 
-// Process user results from Firestore
+// Process user results from Firestore - With null checks added
 function processUserResults(snapshot) {
   if (snapshot.empty && allUsers.length === 0) {
     // No results at all
     console.log("No users found in query results");
-    showNoResults(true);
-    tableWrapper.style.display = "none";
-    loadMoreBtn.style.display = "none";
+    safeSetDisplay(noResultsMessage, "flex");
+    safeSetDisplay(tableWrapper, "none");
+    safeSetDisplay(loadMoreBtn, "none");
     return;
   }
 
-  showNoResults(false);
-  tableWrapper.style.display = "block";
+  safeSetDisplay(noResultsMessage, "none");
+  safeSetDisplay(tableWrapper, "block");
 
   // Get the last visible document for pagination
   if (!snapshot.empty) {
@@ -245,13 +256,13 @@ function processUserResults(snapshot) {
 
     // Show or hide load more button
     if (snapshot.docs.length < USERS_PER_PAGE) {
-      loadMoreBtn.style.display = "none";
+      safeSetDisplay(loadMoreBtn, "none");
     } else {
-      loadMoreBtn.style.display = "block";
+      safeSetDisplay(loadMoreBtn, "block");
     }
   } else {
     // No more results
-    loadMoreBtn.style.display = "none";
+    safeSetDisplay(loadMoreBtn, "none");
   }
 }
 
@@ -328,14 +339,14 @@ function renderUsers() {
         <div class="user-info">
           <div class="user-avatar">${getInitials(firstName, lastName)}</div>
           <div class="user-details">
-            <div class="user-name">${fullName}</div>
-            <div class="user-email">${user.email || "No email"}</div>
+            <div class="user-name">${safeText(fullName)}</div>
+            <div class="user-email">${safeText(user.email || "No email")}</div>
           </div>
         </div>
       </td>
-      <td>${formatPhone(user.phone) || "Not provided"}</td>
-      <td>${user.role || "user"}</td>
-      <td>${createdAt}</td>
+      <td>${safeText(formatPhone(user.phone) || "Not provided")}</td>
+      <td>${safeText(user.role || "user")}</td>
+      <td>${safeText(createdAt)}</td>
       <td class="actions-cell">
         <div class="actions-wrapper">
           <button class="icon-btn view-btn" title="View User Details" data-user-id="${
@@ -369,9 +380,9 @@ function renderUsers() {
 
   // Show no results message if needed
   if (allUsers.length === 0) {
-    showNoResults(true);
+    safeSetDisplay(noResultsMessage, "flex");
   } else {
-    showNoResults(false);
+    safeSetDisplay(noResultsMessage, "none");
   }
 }
 
@@ -400,19 +411,19 @@ function handleSearchChange(e) {
 
     if (filteredUsers.length === 0) {
       showNoResults(true, `No users found matching "${searchTerm}"`);
-      tableWrapper.style.display = "none";
-      loadMoreBtn.style.display = "none";
+      safeSetDisplay(tableWrapper, "none");
+      safeSetDisplay(loadMoreBtn, "none");
     } else {
       showNoResults(false);
-      tableWrapper.style.display = "block";
+      safeSetDisplay(tableWrapper, "block");
 
       // Re-render the table with filtered users
-      usersTableBody.innerHTML = "";
+      if (usersTableBody) usersTableBody.innerHTML = "";
       allUsers = filteredUsers;
       renderUsers();
 
       // Hide load more button during search
-      loadMoreBtn.style.display = "none";
+      safeSetDisplay(loadMoreBtn, "none");
     }
   } else {
     // If search is cleared, reload initial users
@@ -453,6 +464,8 @@ function handleSort(field) {
 
 // Update sort buttons UI to reflect current sort state
 function updateSortButtonsUI() {
+  if (!sortButtons || sortButtons.length === 0) return;
+
   sortButtons.forEach((button) => {
     // Remove all sort classes
     button.classList.remove("sort-asc", "sort-desc");
@@ -503,17 +516,48 @@ function showNoResults(
 ) {
   if (!noResultsMessage) return;
 
-  noResultsMessage.style.display = show ? "flex" : "none";
-  noResultsMessage.querySelector("p").textContent = message;
-}
+  safeSetDisplay(noResultsMessage, show ? "flex" : "none");
 
-// UI Helper Functions
-function showLoading(show) {
-  if (loadingOverlay) {
-    loadingOverlay.style.display = show ? "flex" : "none";
+  const messageElement = noResultsMessage.querySelector("p");
+  if (messageElement) {
+    messageElement.textContent = message;
   }
 }
 
+// Safe DOM manipulation helpers
+function safeSetDisplay(element, displayValue) {
+  if (element && element.style) {
+    element.style.display = displayValue;
+  }
+}
+
+function safeSetButtonLoading(button, isLoading) {
+  if (!button) return;
+
+  button.disabled = isLoading;
+  if (isLoading) {
+    button.innerHTML = '<div class="spinner-sm"></div> Loading...';
+  } else {
+    button.innerHTML = "Load More";
+  }
+}
+
+function safeSetLoading(show) {
+  safeSetDisplay(loadingOverlay, show ? "flex" : "none");
+}
+
+// Safely escape text for display
+function safeText(text) {
+  if (text === null || text === undefined) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// UI Helper Functions
 function showError(message) {
   // Create error container if it doesn't exist
   let errorContainer = document.getElementById("error-container");
@@ -532,9 +576,9 @@ function showError(message) {
   }
 
   errorContainer.textContent = message;
-  errorContainer.style.display = "block";
+  safeSetDisplay(errorContainer, "block");
 
-  showLoading(false);
+  safeSetLoading(false);
 }
 
 function showMessage(message, type = "info") {
@@ -558,7 +602,7 @@ function showMessage(message, type = "info") {
 
   toast.innerHTML = `
     <i class="bi bi-${icon}"></i>
-    <span>${message}</span>
+    <span>${safeText(message)}</span>
   `;
 
   // Add toast to container
@@ -648,21 +692,38 @@ export {
   formatDate,
   formatPhone,
   getInitials,
-  showLoading,
+  safeSetLoading,
   showError,
   showMessage,
   debounce,
+  safeText,
+  safeSetDisplay,
 };
 
 // Check if we're on the main users list page
 // Update sort buttons UI on page load
 document.addEventListener("DOMContentLoaded", () => {
   // Only run this if we're on the users list page
+  const path = window.location.pathname;
   if (
-    !window.location.pathname.includes("admin-user-detail.html") &&
-    !window.location.pathname.includes("admin-user-edit.html") &&
+    !path.includes("admin-user-detail.html") &&
+    !path.includes("admin-user-edit.html") &&
+    sortButtons &&
     sortButtons.length > 0
   ) {
     updateSortButtonsUI();
+  }
+});
+
+// Global error handling
+window.addEventListener("error", (event) => {
+  console.error("Global error caught:", event.error);
+  if (
+    event.error &&
+    event.error.message &&
+    event.error.message.includes("Cannot read properties of null")
+  ) {
+    console.warn("Nulled DOM element reference error prevented");
+    event.preventDefault(); // Prevent default error handling
   }
 });

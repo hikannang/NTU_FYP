@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>User Details | BaoCarLiao Admin</title>
   <link rel="stylesheet" href="../static/css/admin/admin.css">
-  <link rel="stylesheet" href="../static/css/admin/admin-users.css">
+  <link rel="stylesheet" href="../static/css/admin/admin-user-detail.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body class="admin-body">
@@ -53,77 +53,89 @@
 
       <!-- User Details Container -->
       <div id="user-detail-container" class="user-detail-container">
-        <!-- Profile Section -->
-        <div class="detail-section">
-          <div class="detail-header">
-            <h2><i class="bi bi-person-badge"></i> Profile Information</h2>
+        <!-- Profile Summary Card -->
+        <div class="detail-card profile-card">
+          <div class="profile-header">
+            <div class="profile-avatar" id="user-avatar">--</div>
+            <div class="profile-summary">
+              <h2 id="user-fullname">Loading...</h2>
+              <div class="profile-role" id="user-role-badge">user</div>
+            </div>
           </div>
           
-          <div class="profile-content">
-            <div class="profile-image-container">
-              <div class="profile-image" id="user-avatar">--</div>
+          <div class="profile-contact">
+            <div class="contact-item">
+              <i class="bi bi-envelope"></i>
+              <span id="user-email">loading@example.com</span>
             </div>
-            
-            <div class="profile-details">
-              <div class="detail-row">
-                <div class="detail-group">
-                  <label>First Name</label>
-                  <div class="detail-value" id="user-firstname">--</div>
-                </div>
-                
-                <div class="detail-group">
-                  <label>Last Name</label>
-                  <div class="detail-value" id="user-lastname">--</div>
-                </div>
-              </div>
-              
-              <div class="detail-row">
-                <div class="detail-group">
-                  <label>Email</label>
-                  <div class="detail-value" id="user-email">--</div>
-                </div>
-                
-                <div class="detail-group">
-                  <label>Phone</label>
-                  <div class="detail-value" id="user-phone">--</div>
-                </div>
-              </div>
-              
-              <div class="detail-row">
-                <div class="detail-group">
-                  <label>Role</label>
-                  <div class="detail-value" id="user-role">--</div>
-                </div>
-                
-                <div class="detail-group">
-                  <label>User ID</label>
-                  <div class="detail-value id-value" id="user-id">--</div>
-                </div>
-              </div>
-              
-              <div class="detail-row">
-                <div class="detail-group">
-                  <label>Account Created</label>
-                  <div class="detail-value" id="user-created">--</div>
-                </div>
-              </div>
+            <div class="contact-item">
+              <i class="bi bi-telephone"></i>
+              <span id="user-phone">Loading...</span>
+            </div>
+          </div>
+          
+          <div class="profile-meta">
+            <div class="meta-item">
+              <div class="meta-label"><i class="bi bi-calendar"></i> Joined</div>
+              <div class="meta-value" id="user-created">Loading...</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-label"><i class="bi bi-key"></i> User ID</div>
+              <div class="meta-value user-id" id="user-id">Loading...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Stats Card -->
+        <div class="detail-card stats-card">
+          <h3 class="card-title"><i class="bi bi-graph-up"></i> User Activity</h3>
+          
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-value" id="total-bookings">--</div>
+              <div class="stat-label">Total Bookings</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="active-bookings">--</div>
+              <div class="stat-label">Active Bookings</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="completed-bookings">--</div>
+              <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="cancelled-bookings">--</div>
+              <div class="stat-label">Cancelled</div>
             </div>
           </div>
         </div>
         
         <!-- Bookings Section -->
-        <div class="detail-section full-width">
-          <div class="detail-header">
-            <h2><i class="bi bi-calendar-check"></i> Bookings</h2>
+        <div class="detail-card full-width">
+          <div class="card-header">
+            <h3 class="card-title"><i class="bi bi-calendar-check"></i> Booking History</h3>
+            <div class="card-actions">
+              <select id="bookings-filter" class="filter-select">
+                <option value="all">All Bookings</option>
+                <option value="active">Active Only</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
           </div>
           
           <div class="bookings-content">
+            <div class="bookings-loading">
+              <div class="spinner small"></div>
+              <p>Loading bookings...</p>
+            </div>
+            
             <div id="bookings-container" class="bookings-container">
               <!-- Booking items will be added here by JavaScript -->
             </div>
             
-            <div id="no-bookings" class="no-bookings" style="display: none;">
-              <i class="bi bi-calendar"></i>
+            <div id="no-bookings" class="no-results-message" style="display: none;">
+              <i class="bi bi-calendar-x"></i>
               <p>No bookings found for this user</p>
             </div>
           </div>
@@ -131,6 +143,23 @@
       </div>
     </div>
   </main>
+
+  <!-- Booking Details Modal -->
+  <div id="booking-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">Booking Details</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Booking details will be populated here -->
+      </div>
+      <div class="modal-footer">
+        <button class="secondary-btn" id="modal-close-btn">Close</button>
+        <button class="primary-btn" id="view-booking-btn">View Full Details</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Admin footer will be loaded here -->
   <div id="footer"></div>

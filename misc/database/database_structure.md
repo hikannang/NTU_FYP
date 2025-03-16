@@ -72,5 +72,19 @@ Root
 │   │   ├── licenseNumber: string
 │   │   ├── phone: string
 │   │   ├── role: string
+│   │   ├── bookings (collection)
+│   │   │   ├──bookingID_1 (Document)
+│   │   │   │   ├── carID: integer
+│   │   │   │   ├── car_type: string
+│   │   │   │   ├── created_at: datetime
+│   │   │   │   ├── duration_minutes: integer
+│   │   │   │   ├── end_time: datetime
+│   │   │   │   ├── bookingID: string
+│   │   │   │   ├── start_time: datetime
+│   │   │   │   ├── status: string
+│   │   │   │   ├── total_price: float
+│   │   │   │   ├── userID: string
+│   │   ├── bookingID_2 (Document)
+│   │   │   │   └── (Same structure as bookingID_1)
 │   ├── userID_2 (Document)
 │       └── (Same structure as userID_1)
