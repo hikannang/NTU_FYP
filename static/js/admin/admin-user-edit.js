@@ -1,8 +1,10 @@
+// admin-user-edit.js - Part 1
 import { db, auth, functions } from "../common/firebase-config.js";
 import {
   doc,
   getDoc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 import { 
@@ -15,14 +17,16 @@ import {
   httpsCallable
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 
-// Import utility functions from admin-users.js
+// Import utility functions
 import { 
   formatDate, 
   formatPhone, 
   getInitials, 
-  showLoading, 
+  safeSetLoading, 
   showError, 
-  showMessage 
+  showMessage,
+  safeText,
+  safeSetDisplay
 } from "./admin-users.js";
 
 // Global variables
@@ -31,37 +35,50 @@ let userId = null;
 let userData = null;
 let originalEmail = null;
 let returnUrl = null;
+let hasChanges = false;
 
-// DOM Elements
-const loadingOverlay = document.getElementById("loading-overlay");
-const userNotFound = document.getElementById("user-not-found");
-const editFormContainer = document.getElementById("edit-form-container");
-const editUserTitle = document.getElementById("edit-user-title");
-const editUserForm = document.getElementById("edit-user-form");
+// DOM Elements - initialize as null
+let loadingOverlay = null;
+let userNotFound = null;
+let editFormContainer = null;
+let editUserTitle = null;
+let editUserForm = null;
 
 // Form elements
-const userIdInput = document.getElementById("user-id");
-const firstNameInput = document.getElementById("first-name");
-const lastNameInput = document.getElementById("last-name");
-const emailInput = document.getElementById("email");
-const phoneInput = document.getElementById("phone");
-const roleSelect = document.getElementById("role");
+let userIdInput = null;
+let firstNameInput = null;
+let lastNameInput = null;
+let emailInput = null;
+let phoneInput = null;
+let roleSelect = null;
+let licenseNumberInput = null;
+let licenseIssueDateInput = null;
+
+// Account status
+let accountStatusSelect = null;
 
 // Password fields
-const changePasswordCheckbox = document.getElementById("change-password");
-const passwordFields = document.getElementById("password-fields");
-const newPasswordInput = document.getElementById("new-password");
-const confirmPasswordInput = document.getElementById("confirm-password");
-const togglePasswordBtns = document.querySelectorAll(".toggle-password-btn");
+let changePasswordCheckbox = null;
+let passwordFields = null;
+let newPasswordInput = null;
+let confirmPasswordInput = null;
+let togglePasswordBtns = null;
+let generatePasswordBtn = null;
+let passwordStrengthMeter = null;
 
 // Button elements
-const cancelBtn = document.getElementById("cancel-btn");
-const cancelFormBtn = document.getElementById("cancel-form-btn");
-const saveUserBtn = document.getElementById("save-user-btn");
+let cancelBtn = null;
+let cancelFormBtn = null;
+let saveUserBtn = null;
+let deleteUserBtn = null;
+let confirmDeleteBtn = null;
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("User Edit page loading");
+  
+  // Get all DOM elements
+  initializeElements();
   
   // Get user ID from URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -117,8 +134,56 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+// Initialize all DOM elements
+function initializeElements() {
+  // Main elements
+  loadingOverlay = document.getElementById("loading-overlay");
+  userNotFound = document.getElementById("user-not-found");
+  editFormContainer = document.getElementById("edit-form-container");
+  editUserTitle = document.getElementById("edit-user-title");
+  editUserForm = document.getElementById("edit-user-form");
+  
+  // Form inputs
+  userIdInput = document.getElementById("user-id");
+  firstNameInput = document.getElementById("first-name");
+  lastNameInput = document.getElementById("last-name");
+  emailInput = document.getElementById("email");
+  phoneInput = document.getElementById("phone");
+  roleSelect = document.getElementById("role");
+  licenseNumberInput = document.getElementById("license-number");
+  licenseIssueDateInput = document.getElementById("license-issue-date");
+  
+  // Account status
+  accountStatusSelect = document.getElementById("account-status");
+  
+  // Password fields
+  changePasswordCheckbox = document.getElementById("change-password");
+  passwordFields = document.getElementById("password-fields");
+  newPasswordInput = document.getElementById("new-password");
+  confirmPasswordInput = document.getElementById("confirm-password");
+  togglePasswordBtns = document.querySelectorAll(".toggle-password-btn");
+  generatePasswordBtn = document.getElementById("generate-password-btn");
+  passwordStrengthMeter = document.getElementById("password-strength");
+  
+  // Button elements
+  cancelBtn = document.getElementById("cancel-btn");
+  cancelFormBtn = document.getElementById("cancel-form-btn");
+  saveUserBtn = document.getElementById("save-user-btn");
+  deleteUserBtn = document.getElementById("delete-user-btn");
+  confirmDeleteBtn = document.getElementById("confirm-delete-btn");
+}
+
 // Set up event listeners
 function setupEventListeners() {
+  // Form change detection
+  if (editUserForm) {
+    const formInputs = editUserForm.querySelectorAll('input, select');
+    formInputs.forEach(input => {
+      input.addEventListener('change', markFormChanged);
+      input.addEventListener('input', markFormChanged);
+    });
+  }
+  
   // Cancel buttons
   if (cancelBtn) {
     cancelBtn.addEventListener("click", handleCancel);
@@ -139,23 +204,55 @@ function setupEventListeners() {
   }
   
   // Password visibility toggle buttons
-  togglePasswordBtns.forEach(btn => {
-    btn.addEventListener("click", togglePasswordVisibility);
-  });
+  if (togglePasswordBtns) {
+    togglePasswordBtns.forEach(btn => {
+      btn.addEventListener("click", togglePasswordVisibility);
+    });
+  }
+  
+  // Generate password button
+  if (generatePasswordBtn) {
+    generatePasswordBtn.addEventListener("click", generateRandomPassword);
+  }
+  
+  // Password strength meter
+  if (newPasswordInput && passwordStrengthMeter) {
+    newPasswordInput.addEventListener("input", updatePasswordStrength);
+  }
+  
+  // Delete user button
+  if (deleteUserBtn) {
+    deleteUserBtn.addEventListener("click", showDeleteConfirmation);
+  }
+  
+  // Confirm delete button
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener("click", handleDeleteUser);
+  }
+  
+  // Phone formatting
+  if (phoneInput) {
+    phoneInput.addEventListener('input', formatPhoneInput);
+  }
+  
+  // License date formatting
+  if (licenseIssueDateInput) {
+    licenseIssueDateInput.addEventListener('input', formatDateInput);
+  }
 }
 
 // Load user data
 async function loadUserData() {
   try {
-    showLoading(true);
+    safeSetLoading(true);
     
     // Get user document
     const userDoc = await getDoc(doc(db, "users", userId));
     
     if (!userDoc.exists()) {
-      userNotFound.style.display = "flex";
-      editFormContainer.style.display = "none";
-      showLoading(false);
+      safeSetDisplay(userNotFound, "flex");
+      safeSetDisplay(editFormContainer, "none");
+      safeSetLoading(false);
       return;
     }
     
@@ -176,20 +273,20 @@ async function loadUserData() {
     if (editUserTitle) {
       editUserTitle.innerHTML = `
         <i class="bi bi-pencil-square"></i> 
-        Edit User: ${escapeHTML(userName)}
+        Edit User: ${safeText(userName)}
       `;
     }
     
     document.title = `Edit ${userName} | BaoCarLiao Admin`;
     
-    // Populate form
+    // Populate form with user data
     populateForm(userData);
     
-    showLoading(false);
+    safeSetLoading(false);
   } catch (error) {
     console.error("Error loading user data:", error);
     showError(`Failed to load user data: ${error.message}`);
-    showLoading(false);
+    safeSetLoading(false);
   }
 }
 
@@ -203,6 +300,23 @@ function populateForm(userData) {
   if (lastNameInput) lastNameInput.value = userData.lastName || '';
   if (emailInput) emailInput.value = userData.email || '';
   if (phoneInput) phoneInput.value = userData.phone || '';
+  
+  // Set license information
+  if (licenseNumberInput) licenseNumberInput.value = userData.licenseNumber || '';
+  
+  // Format and set license date if available
+  if (licenseIssueDateInput) {
+    const licenseDate = getDateObject(userData.licenseIssueDate || userData.licenseDate);
+    if (licenseDate) {
+      // Format as YYYY-MM-DD for date input
+      const year = licenseDate.getFullYear();
+      const month = String(licenseDate.getMonth() + 1).padStart(2, '0');
+      const day = String(licenseDate.getDate()).padStart(2, '0');
+      licenseIssueDateInput.value = `${year}-${month}-${day}`;
+    } else {
+      licenseIssueDateInput.value = '';
+    }
+  }
   
   // Set role select
   if (roleSelect) {
@@ -225,30 +339,52 @@ function populateForm(userData) {
     }
   }
   
+  // Set account status
+  if (accountStatusSelect) {
+    // Default to 'active' if not specified
+    const accountStatus = userData.status || 'active';
+    
+    // Find and select the option with the matching value
+    const options = Array.from(accountStatusSelect.options);
+    const matchingOption = options.find(option => option.value === accountStatus);
+    
+    if (matchingOption) {
+      matchingOption.selected = true;
+    }
+  }
+  
   // Reset password fields
   if (changePasswordCheckbox) changePasswordCheckbox.checked = false;
-  if (passwordFields) passwordFields.style.display = 'none';
+  if (passwordFields) safeSetDisplay(passwordFields, 'none');
   if (newPasswordInput) newPasswordInput.value = '';
   if (confirmPasswordInput) confirmPasswordInput.value = '';
 }
 
 // Toggle password fields visibility
 function togglePasswordFields() {
-  if (passwordFields) {
-    passwordFields.style.display = changePasswordCheckbox.checked ? 'block' : 'none';
-    
-    // Reset password fields when hiding
-    if (!changePasswordCheckbox.checked) {
-      if (newPasswordInput) newPasswordInput.value = '';
-      if (confirmPasswordInput) confirmPasswordInput.value = '';
+  if (!passwordFields) return;
+  
+  const isChecked = changePasswordCheckbox.checked;
+  safeSetDisplay(passwordFields, isChecked ? 'block' : 'none');
+  
+  // Reset password fields when hiding
+  if (!isChecked) {
+    if (newPasswordInput) newPasswordInput.value = '';
+    if (confirmPasswordInput) confirmPasswordInput.value = '';
+    if (passwordStrengthMeter) {
+      passwordStrengthMeter.style.width = '0%';
+      passwordStrengthMeter.className = 'password-strength';
     }
   }
+  
+  // Mark form as changed
+  markFormChanged();
 }
 
 // Toggle password visibility
 function togglePasswordVisibility(e) {
   const button = e.currentTarget;
-  const passwordInput = button.parentElement.querySelector('input');
+  const passwordInput = button.closest('.password-input-group').querySelector('input');
   const icon = button.querySelector('i');
   
   if (passwordInput.type === 'password') {
@@ -258,6 +394,131 @@ function togglePasswordVisibility(e) {
     passwordInput.type = 'password';
     icon.className = 'bi bi-eye';
   }
+}
+
+// Generate random secure password
+function generateRandomPassword() {
+  const length = 12;
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+  let password = "";
+  
+  // Ensure at least one of each: uppercase, lowercase, number, symbol
+  password += charset.match(/[A-Z]/)[0]; // Add one uppercase
+  password += charset.match(/[a-z]/)[0]; // Add one lowercase
+  password += charset.match(/[0-9]/)[0]; // Add one number
+  password += charset.match(/[!@#$%^&*()_+]/)[0]; // Add one symbol
+  
+  // Fill the rest randomly
+  for (let i = password.length; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    password += charset[randomIndex];
+  }
+  
+  // Shuffle the password characters
+  password = password.split('').sort(() => 0.5 - Math.random()).join('');
+  
+  // Set password in both fields
+  if (newPasswordInput) newPasswordInput.value = password;
+  if (confirmPasswordInput) confirmPasswordInput.value = password;
+  
+  // Update strength meter
+  updatePasswordStrength();
+  
+  // Mark form changed
+  markFormChanged();
+  
+  // Show success message
+  showMessage("Secure password generated", "success");
+}
+
+// Update password strength meter
+function updatePasswordStrength() {
+  if (!newPasswordInput || !passwordStrengthMeter) return;
+  
+  const password = newPasswordInput.value;
+  let strength = 0;
+  
+  // Empty password
+  if (!password) {
+    passwordStrengthMeter.style.width = '0%';
+    passwordStrengthMeter.className = 'password-strength';
+    return;
+  }
+  
+  // Length check
+  if (password.length >= 8) strength += 25;
+  if (password.length >= 10) strength += 10;
+  
+  // Character variety checks
+  if (/[A-Z]/.test(password)) strength += 15; // Has uppercase
+  if (/[a-z]/.test(password)) strength += 15; // Has lowercase
+  if (/[0-9]/.test(password)) strength += 15; // Has number
+  if (/[^A-Za-z0-9]/.test(password)) strength += 20; // Has special char
+  
+  // Update meter
+  passwordStrengthMeter.style.width = `${strength}%`;
+  
+  // Update class based on strength
+  if (strength < 40) {
+    passwordStrengthMeter.className = 'password-strength weak';
+  } else if (strength < 70) {
+    passwordStrengthMeter.className = 'password-strength medium';
+  } else {
+    passwordStrengthMeter.className = 'password-strength strong';
+  }
+}
+
+// Format phone input
+function formatPhoneInput(e) {
+  // Get input value and remove non-digit characters
+  let input = e.target.value.replace(/\D/g, '');
+  
+  // Format based on length
+  let formatted = '';
+  if (input.length <= 3) {
+    formatted = input;
+  } else if (input.length <= 6) {
+    formatted = `${input.slice(0, 3)}-${input.slice(3)}`;
+  } else {
+    formatted = `${input.slice(0, 3)}-${input.slice(3, 6)}-${input.slice(6, 10)}`;
+  }
+  
+  // Update input value
+  e.target.value = formatted;
+}
+
+// Format date input
+function formatDateInput(e) {
+  // Use HTML5 date input format (handled by browser)
+  // This just ensures the date format will be valid
+}
+
+// Helper to convert various date formats to Date object
+function getDateObject(dateValue) {
+  if (!dateValue) return null;
+  
+  try {
+    if (dateValue instanceof Date) return dateValue;
+    
+    if (dateValue.seconds && dateValue.nanoseconds) {
+      // Firestore Timestamp
+      return new Date(dateValue.seconds * 1000);
+    }
+    
+    // String or number
+    return new Date(dateValue);
+  } catch (error) {
+    console.error("Error parsing date:", error);
+    return null;
+  }
+}
+
+// Mark form as having changes
+function markFormChanged() {
+  hasChanges = true;
+  
+  // Enable save button
+  if (saveUserBtn) saveUserBtn.disabled = false;
 }
 
 // Handle form submission
@@ -270,7 +531,7 @@ async function handleFormSubmit(e) {
       return;
     }
     
-    showLoading(true);
+    safeSetLoading(true);
     
     // Gather form data
     const formData = {
@@ -279,9 +540,22 @@ async function handleFormSubmit(e) {
       email: emailInput.value.trim().toLowerCase(),
       phone: phoneInput.value.trim(),
       role: roleSelect.value,
+      licenseNumber: licenseNumberInput.value.trim(),
+      status: accountStatusSelect.value,
       updated_at: serverTimestamp(),
       updated_by: currentUser.uid
     };
+    
+    // Handle license issue date
+    if (licenseIssueDateInput.value) {
+      try {
+        // Convert date string to Firebase timestamp
+        const licenseDate = new Date(licenseIssueDateInput.value);
+        formData.licenseIssueDate = licenseDate;
+      } catch (err) {
+        console.error("Invalid license date format:", err);
+      }
+    }
     
     console.log("Updating user with data:", formData);
     
@@ -300,13 +574,13 @@ async function handleFormSubmit(e) {
       // Password validation
       if (newPassword.length < 6) {
         showMessage("Password must be at least 6 characters long", "error");
-        showLoading(false);
+        safeSetLoading(false);
         return;
       }
       
       if (newPassword !== confirmPassword) {
         showMessage("Passwords do not match", "error");
-        showLoading(false);
+        safeSetLoading(false);
         return;
       }
     }
@@ -332,7 +606,7 @@ async function handleFormSubmit(e) {
       } catch (authError) {
         console.error("Error updating auth user:", authError);
         showMessage("User info updated, but authentication details could not be changed. Please contact technical support.", "warning");
-        showLoading(false);
+        safeSetLoading(false);
         
         // Return to user detail page after delay
         setTimeout(() => {
@@ -345,8 +619,8 @@ async function handleFormSubmit(e) {
     // Show success message
     showMessage("User updated successfully", "success");
     
-    // Remove unsaved changes flag
-    window.onbeforeunload = null;
+    // Reset unsaved changes flag
+    hasChanges = false;
     
     // Return to previous page after delay
     setTimeout(() => {
@@ -356,7 +630,69 @@ async function handleFormSubmit(e) {
   } catch (error) {
     console.error("Error updating user:", error);
     showMessage(`Failed to update user: ${error.message}`, "error");
-    showLoading(false);
+    safeSetLoading(false);
+  }
+}
+
+// Show delete confirmation
+function showDeleteConfirmation() {
+  // Show confirmation modal
+  const deleteModal = document.getElementById("delete-modal");
+  if (deleteModal) {
+    deleteModal.style.display = "flex";
+    setTimeout(() => {
+      deleteModal.classList.add("show");
+    }, 10);
+  }
+}
+
+// Cancel delete
+function cancelDelete() {
+  // Hide confirmation modal
+  const deleteModal = document.getElementById("delete-modal");
+  if (deleteModal) {
+    deleteModal.classList.remove("show");
+    setTimeout(() => {
+      deleteModal.style.display = "none";
+    }, 300);
+  }
+}
+
+// Handle user deletion
+async function handleDeleteUser() {
+  try {
+    safeSetLoading(true);
+    
+    // First, delete the Firestore document
+    await deleteDoc(doc(db, "users", userId));
+    
+    // Then, call Firebase Function to delete auth user
+    try {
+      const deleteAuthUser = httpsCallable(functions, 'deleteAuthUser');
+      await deleteAuthUser({ userId: userId });
+    } catch (authError) {
+      console.error("Error deleting auth user:", authError);
+      showMessage("User document deleted, but auth user could not be deleted. Please check Firebase console.", "warning");
+    }
+    
+    // Show success message
+    showMessage("User deleted successfully", "success");
+    
+    // Reset unsaved changes flag
+    hasChanges = false;
+    
+    // Hide delete modal
+    cancelDelete();
+    
+    // Redirect to users list
+    setTimeout(() => {
+      window.location.href = "admin-users.html";
+    }, 1500);
+    
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    showMessage(`Failed to delete user: ${error.message}`, "error");
+    safeSetLoading(false);
   }
 }
 
@@ -371,28 +707,13 @@ function navigateBack() {
 
 // Handle cancel button click
 function handleCancel() {
-  if (hasUnsavedChanges()) {
+  if (hasChanges) {
     if (confirm("You have unsaved changes. Are you sure you want to leave this page?")) {
       navigateBack();
     }
   } else {
     navigateBack();
   }
-}
-
-// Check if form has unsaved changes
-function hasUnsavedChanges() {
-  // Compare current values with original data
-  if (!userData) return false;
-  
-  if (firstNameInput.value.trim() !== (userData.firstName || '')) return true;
-  if (lastNameInput.value.trim() !== (userData.lastName || '')) return true;
-  if (emailInput.value.trim().toLowerCase() !== (userData.email || '').toLowerCase()) return true;
-  if (phoneInput.value.trim() !== (userData.phone || '')) return true;
-  if (roleSelect.value !== (userData.role || 'user')) return true;
-  if (changePasswordCheckbox.checked) return true;
-  
-  return false;
 }
 
 // Validate form inputs
@@ -410,18 +731,6 @@ function validateForm() {
     showMessage("Please enter a valid email address", "error");
     emailInput.focus();
     return false;
-  }
-  
-  // Validate phone format if provided
-  const phoneValue = phoneInput.value.trim();
-  if (phoneValue) {
-    // Allow formats like (123) 456-7890, 123-456-7890, 1234567890, etc.
-    const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,3}[-\s.]?[0-9]{4,6}$/;
-    if (!phoneRegex.test(phoneValue)) {
-      showMessage("Please enter a valid phone number", "error");
-      phoneInput.focus();
-      return false;
-    }
   }
   
   // Validate role
@@ -455,48 +764,6 @@ function validateForm() {
   return true;
 }
 
-// Format phone number on input
-if (phoneInput) {
-  phoneInput.addEventListener('input', function(e) {
-    // Get input value and remove non-digit characters
-    let input = this.value.replace(/\D/g, '');
-    
-    // Format based on length
-    if (input.length <= 3) {
-      // Do nothing
-    } else if (input.length <= 6) {
-      input = input.replace(/^(\d{3})(\d+)/, '$1-$2');
-    } else {
-      input = input.replace(/^(\d{3})(\d{3})(\d+)/, '$1-$2-$3');
-    }
-    
-    // Update input value
-    this.value = input;
-  });
-}
-
-// Security - Escape HTML to prevent XSS
-function escapeHTML(str) {
-  if (!str || typeof str !== 'string') return '';
-  
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-// Handle beforeunload event to warn about unsaved changes
-window.addEventListener('beforeunload', function(e) {
-  if (hasUnsavedChanges()) {
-    // Standard message (most browsers will show their own message)
-    const message = 'You have unsaved changes. Are you sure you want to leave this page?';
-    e.returnValue = message;
-    return message;
-  }
-});
-
 // Prevent accidental form submission with Enter key
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
@@ -507,21 +774,21 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Listen for error events globally and handle them
+// Warn about unsaved changes
+window.addEventListener('beforeunload', function(e) {
+  if (hasChanges) {
+    // Standard message (most browsers will show their own message)
+    const message = 'You have unsaved changes. Are you sure you want to leave this page?';
+    e.returnValue = message;
+    return message;
+  }
+});
+
+// Global error handling
 window.addEventListener('error', (event) => {
   console.error('Global error:', event.error);
-  showMessage("An unexpected error occurred. Please try again.", "error");
+  if (event.error && event.error.message && event.error.message.includes("Cannot read properties of null")) {
+    console.warn("Prevented null reference error");
+    event.preventDefault();
+  }
 });
-
-// Listen for unhandled promise rejections globally
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
-  showMessage("An unexpected error occurred with a background task. Please try again.", "error");
-});
-
-// Export key functions for reuse in other modules
-export {
-  validateForm,
-  escapeHTML,
-  hasUnsavedChanges
-};

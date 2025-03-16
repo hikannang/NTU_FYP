@@ -739,7 +739,7 @@ function createBookingElement(booking) {
           <i class="bi bi-calendar-check"></i>
           <div class="time-range">
             <div class="time-start">${safeText(startDate)}</div>
-            <div class="time-end">to ${safeText(endDate)}</div>
+            <div class="time-end">${safeText(endDate)}</div>
           </div>
         </div>
         <div class="time-duration">
