@@ -455,14 +455,10 @@ async function loadAssociatedData(bookings) {
             // Store car data
             carsData.set(carId, carData);
             console.log(`Car data for ID ${carId} stored in cache`);
-          } else {
-            console.log(`No car document found for ID ${carId}`);
           }
         } catch (err) {
           console.error(`Error loading car data for ID ${carId}:`, err);
         }
-      } else {
-        console.log(`Using cached car data for ID ${carId}`);
       }
     }
     
@@ -482,14 +478,12 @@ async function loadAssociatedData(bookings) {
             console.log(`User data for ID ${userId} stored:`, userData);
           } else {
             console.log(`No user document found for ID ${userId}`);
-            // Create placeholder user data
+            // Create placeholder user data with ID shown
             usersData.set(userId, { id: userId, firstName: "Unknown" });
           }
         } catch (err) {
           console.error(`Error loading user data for ID ${userId}:`, err);
         }
-      } else {
-        console.log(`Using cached user data for ID ${userId}`);
       }
     }
     
@@ -552,6 +546,7 @@ function createBookingRow(booking) {
     displayBookingId = booking.bookingID.replace(/^booking_/, '');
     console.log(`Displaying bookingID as: ${displayBookingId}`);
   } else {
+    // If no bookingID field, use document ID (first 13 characters)
     displayBookingId = booking.id.substring(0, 13);
     console.log(`Using document ID as fallback: ${displayBookingId}`);
   }

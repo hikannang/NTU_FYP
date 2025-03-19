@@ -161,6 +161,20 @@
       </div>
       <div class="modal-body" id="modal-body">
         <!-- Modal content will be inserted here dynamically -->
+        <div class="car-cell">
+          <div class="car-icon"><i class="bi bi-car-front-fill"></i></div>
+          <div class="car-info">
+            <div class="car-name">${car.displayName || car.car_type || 'Unknown'}</div>
+            <div class="car-plate">${car.license_plate || 'N/A'}(${booking.carID})</div>
+          </div>
+        </div>
+        <div class="user-cell">
+          <div class="user-avatar">${getUserInitials(user)}</div>
+          <div class="user-info">
+            <div class="user-name">${user.firstName || 'Unknown'}</div>
+            <div class="user-id">${booking.userID || ''}</div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="secondary-btn close-modal">
