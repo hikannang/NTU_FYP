@@ -140,22 +140,25 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 });
 
-// Set up the page
+// Update the setupPage function to ensure user selection is set immediately
 async function setupPage() {
   debug("Setting up booking create page");
-
+  
   setLoading(true);
-
+  
   try {
     // Load cars and users data
-    await Promise.all([loadCarsData(), loadUsersData()]);
-
+    await Promise.all([
+      loadCarsData(),
+      loadUsersData()
+    ]);
+    
     // Set up event listeners
     setupEventListeners();
-
+    
     // Initial calculation of duration and price
     updateDurationAndPrice();
-
+    
     setLoading(false);
   } catch (error) {
     console.error("Error setting up page:", error);
@@ -267,72 +270,87 @@ async function loadCarsData() {
   }
 }
 
-// Update the loadUsersData function to include admins and set current admin as default
+// Modify the loadUsersData function to set current admin as default
 async function loadUsersData() {
   debug("Loading users data");
-
+  
   try {
-    // Get users (limit to 50 most recently active users)
-    const usersQuery = query(
-      collection(db, "users"),
-      orderBy("last_login", "desc"),
-      limit(50)
-    );
+    // Get all users
+    const usersQuery = query(collection(db, "users"), orderBy("last_login", "desc"), limit(50));
     const usersSnapshot = await getDocs(usersQuery);
-
-    if (usersSnapshot.empty) {
-      debug("No users found in database");
-      return;
-    }
-
+    
     users = [];
-    let options = '<option value="">Select a user</option>';
-
-    // Add current admin at the top
+    let options = '';  // Remove the empty option
+    
+    // First, add currently logged-in admin at the top and select them by default
     if (currentUser) {
-      users.push(currentUser);
-      options += `<option value="${currentUser.uid}" selected>
-          ${currentUser.firstName || ""} ${currentUser.lastName || ""} (Admin)
-        </option>`;
+      const adminUser = {
+        id: currentUser.uid,
+        ...currentUser
+      };
+      
+      users.push(adminUser);
+      options += `<option value="${adminUser.id}" selected>
+        ${adminUser.firstName || ''} ${adminUser.lastName || ''} (Current Admin)
+      </option>`;
+      
+      // Set selected user to current admin
+      selectedUser = adminUser;
     }
-
-    usersSnapshot.forEach((doc) => {
+    
+    // Then add other users if needed
+    usersSnapshot.forEach(doc => {
       const userData = {
         id: doc.id,
-        ...doc.data(),
+        ...doc.data()
       };
-
-      // Skip the current admin as we already added them
+      
+      // Skip current admin as we've already added them
       if (userData.id === currentUser?.uid) {
         return;
       }
-
+      
       users.push(userData);
-
-      // Add to select dropdown
-      const displayName =
-        `${userData.firstName || ""} ${userData.lastName || ""}`.trim() ||
-        "User";
-      const userRole = userData.role === "admin" ? " (Admin)" : "";
-      const email = userData.email || "No email";
-      options += `<option value="${userData.id}">${displayName}${userRole} (${email})</option>`;
+      
+      // Only include admins in the dropdown
+      if (userData.role === 'admin') {
+        const displayName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || "Admin";
+        options += `<option value="${userData.id}">${displayName} (Admin)</option>`;
+      }
     });
-
+    
     // Update the select element
     if (userSelectElement) {
       userSelectElement.innerHTML = options;
-
-      // If current user is admin, set them as selected
+      
+      // Set selected user to current admin
       if (currentUser) {
         userSelectElement.value = currentUser.uid;
-        handleUserSelection(); // Trigger the selection handler
       }
     }
-
-    debug(`Loaded ${users.length} users`);
+    
+    // Update user details for the selected admin
+    updateUserDetails();
+    
+    debug(`Loaded users with current admin selected`);
   } catch (error) {
     console.error("Error loading users:", error);
     throw error;
+  }
+}
+
+// Add a new function to update user details based on selectedUser
+function updateUserDetails() {
+  const userDetailsElement = document.getElementById('user-details');
+  if (userDetailsElement && selectedUser) {
+    userDetailsElement.innerHTML = `
+      <div class="user-detail"><strong>Name:</strong> ${selectedUser.firstName || ''} ${selectedUser.lastName || ''}</div>
+      <div class="user-detail"><strong>Email:</strong> ${selectedUser.email || 'N/A'}</div>
+      <div class="user-detail"><strong>Role:</strong> ${selectedUser.role || 'user'}</div>
+    `;
+    userDetailsElement.style.display = 'block';
+  } else if (userDetailsElement) {
+    userDetailsElement.style.display = 'none';
   }
 }
 
@@ -498,31 +516,13 @@ function handleCarSelection() {
   }
 }
 
-// Handle user selection change
+// Modify handleUserSelection to call updateUserDetails
 function handleUserSelection() {
   const userId = userSelectElement.value;
   debug(`User selected: ${userId}`);
-
-  selectedUser = users.find((user) => user.id === userId);
-
-  // Update user details display
-  const userDetailsElement = document.getElementById("user-details");
-  if (userDetailsElement && selectedUser) {
-    userDetailsElement.innerHTML = `
-      <div class="user-detail"><strong>Name:</strong> ${
-        selectedUser.firstName || ""
-      } ${selectedUser.lastName || ""}</div>
-      <div class="user-detail"><strong>Email:</strong> ${
-        selectedUser.email || "N/A"
-      }</div>
-      <div class="user-detail"><strong>Phone:</strong> ${
-        selectedUser.phone || "N/A"
-      }</div>
-    `;
-    userDetailsElement.style.display = "block";
-  } else if (userDetailsElement) {
-    userDetailsElement.style.display = "none";
-  }
+  
+  selectedUser = users.find(user => user.id === userId);
+  updateUserDetails();
 }
 
 // Handle date/time input changes
@@ -677,31 +677,26 @@ async function checkCarAvailability() {
   }
 }
 
-// Handle form submission
+// Update handleFormSubmit to handle default admin user
 async function handleFormSubmit(e) {
   e.preventDefault();
   debug("Form submitted");
-
+  
   // Validate form
   if (!validateForm()) {
     return;
   }
-
+  
   try {
     setLoading(true);
-
+    
     // Check car availability one more time
     const isAvailable = await checkCarAvailability();
-    if (
-      !isAvailable &&
-      !confirm(
-        "This car might not be available for the selected time period. Create booking anyway?"
-      )
-    ) {
+    if (!isAvailable && !confirm("This car might not be available for the selected time period. Create booking anyway?")) {
       setLoading(false);
       return;
     }
-
+    
     // Create booking data
     const bookingData = {
       car_id: selectedCar.id,
@@ -710,61 +705,54 @@ async function handleFormSubmit(e) {
       start_time: Timestamp.fromDate(selectedStartTime),
       end_time: Timestamp.fromDate(selectedEndTime),
       status: isMaintenanceBooking ? statusSelect.value : "upcoming",
-      updated_at: serverTimestamp(),
+      updated_at: serverTimestamp()
     };
-
+    
     // Add duration in minutes
     const durationMs = selectedEndTime - selectedStartTime;
     bookingData.duration_minutes = Math.round(durationMs / (1000 * 60));
-
-    // For regular bookings, add user ID and price
-    if (!isMaintenanceBooking) {
-      if (!selectedUser) {
-        showMessage("Please select a customer for this booking", "error");
-        setLoading(false);
-        return;
-      }
-
-      bookingData.user_id = selectedUser.id;
-      bookingData.total_price = parseFloat(priceInput.value);
-    } else {
-      // For maintenance bookings, set price to 0
+    
+    // Always add user ID (which is now the admin by default)
+    if (!selectedUser) {
+      showMessage("No user selected for this booking", "error");
+      setLoading(false);
+      return;
+    }
+    
+    bookingData.user_id = selectedUser.id;
+    
+    // For maintenance bookings, set price to 0, otherwise use the calculated price
+    if (isMaintenanceBooking) {
       bookingData.total_price = 0;
+      
+      // Add notes for maintenance if provided
+      if (notesInput && notesInput.value.trim()) {
+        bookingData.notes = notesInput.value.trim();
+      }
+    } else {
+      bookingData.total_price = parseFloat(priceInput.value);
     }
-
-    // Add notes if provided
-    if (notesInput && notesInput.value.trim()) {
-      bookingData.notes = notesInput.value.trim();
-    }
-
+    
     debug("Creating booking with data:", bookingData);
-
+    
     // Generate a new booking ID
     const bookingId = `booking_${Date.now()}`;
     bookingData.id = bookingId;
-
+    
     // Add to main bookings collection
     await setDoc(doc(db, "bookings", bookingId), bookingData);
     debug("Added to main bookings collection");
-
+    
     // Add to car timesheet
-    await setDoc(
-      doc(db, "timesheets", selectedCar.id, "bookings", bookingId),
-      bookingData
-    );
+    await setDoc(doc(db, "timesheets", selectedCar.id, "bookings", bookingId), bookingData);
     debug("Added to car timesheet");
-
-    // For regular bookings, add to user's bookings collection
-    if (!isMaintenanceBooking) {
-      await setDoc(
-        doc(db, "users", selectedUser.id, "bookings", bookingId),
-        bookingData
-      );
-      debug("Added to user bookings");
-    }
-
+    
+    // Always add to user's bookings collection (which is now the admin)
+    await setDoc(doc(db, "users", selectedUser.id, "bookings", bookingId), bookingData);
+    debug("Added to user bookings");
+    
     showMessage("Booking created successfully", "success");
-
+    
     // Redirect to bookings page after short delay
     setTimeout(() => {
       goBackToBookings();

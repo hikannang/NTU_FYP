@@ -310,7 +310,7 @@ select.form-control option[value="upcoming"] {
 }
 
 select.form-control option[value="active"] {
-  color: var(--success-color);
+  color: var (--success-color);
 }
 
 select.form-control option[value="completed"] {
@@ -739,4 +739,20 @@ select.form-control.time-select::-ms-expand {
   .section-body {
     padding: 16px;
   }
+}
+
+.admin-info {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  background-color: var(--primary-light);
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+.admin-info i {
+  color: var(--primary-color);
 }
