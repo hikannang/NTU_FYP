@@ -79,16 +79,16 @@
               </div>
             </div>
 
-            <!-- User Selection Section - Hidden for maintenance bookings -->
+            <!-- User Selection Section - Will default to current admin -->
             <div id="user-section" class="form-section user-section">
               <div class="section-header">
-                <h3><i class="bi bi-person"></i> Customer</h3>
+                <h3><i class="bi bi-person"></i> User</h3>
               </div>
               <div class="section-body">
                 <div class="form-group">
-                  <label for="user-select">Select Customer</label>
+                  <label for="user-select">Select User</label>
                   <select id="user-select" class="form-control">
-                    <option value="">Loading customers...</option>
+                    <option value="">Loading users...</option>
                   </select>
                 </div>
                 <div id="user-details" class="details-box" style="display: none;">
@@ -181,7 +181,7 @@
               </div>
             </div>
 
-            <!-- Price Section - Hidden for maintenance bookings -->
+            <!-- Price Section -->
             <div class="form-section price-section">
               <div class="section-header">
                 <h3><i class="bi bi-cash"></i> Payment</h3>
@@ -193,23 +193,11 @@
                 </div>
                 <div class="payment-info">
                   <i class="bi bi-info-circle"></i>
-                  <span>Price is calculated based on duration ($20/hour)</span>
+                  <span>Price is calculated based on duration ($15/hour)</span>
                 </div>
               </div>
             </div>
 
-            <!-- Regular Booking Notes Section -->
-            <div id="regular-notes" class="form-section notes-section">
-              <div class="section-header">
-                <h3><i class="bi bi-pencil"></i> Notes</h3>
-              </div>
-              <div class="section-body">
-                <div class="form-group">
-                  <label for="booking-notes">Additional Notes</label>
-                  <textarea id="booking-notes" class="form-control" rows="3" placeholder="Add any special instructions or notes about this booking"></textarea>
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- Form Actions -->
