@@ -1,504 +1,534 @@
-<header class="main-header">
-  <div class="header-content">
-    <!-- Logo and Brand -->
-    <div class="brand-container">
-      <a href="user-dashboard.html" class="logo-link">
-        <img src="../static/images/logo.png" alt="BaoCarLiao Logo" class="logo-image">
-        <span class="brand-name">BaoCarLiao</span>
-      </a>
-    </div>
-    
-    <!-- Navigation Links (Desktop) -->
-    <nav class="main-nav desktop-only">
-      <ul class="nav-list">
-        <li class="nav-item"><a href="user-dashboard.html" class="nav-link" data-page="dashboard"><i class="bi bi-house-door"></i> Home</a></li>
-        <li class="nav-item"><a href="user-search-results.html" class="nav-link" data-page="search"><i class="bi bi-search"></i> Find Cars</a></li>
-        <li class="nav-item"><a href="user-bookings.html" class="nav-link" data-page="bookings"><i class="bi bi-calendar-check"></i> My Bookings</a></li>
-      </ul>
-    </nav>
-    
-    <!-- User Area -->
-    <div class="user-area">
-      <!-- Notifications -->
-      <div class="notification-dropdown">
-        <button class="notification-btn">
-          <i class="bi bi-bell"></i>
-          <span class="notification-badge" id="notification-count">0</span>
-        </button>
-        <div class="dropdown-content">
-          <div class="dropdown-header">
-            <h3>Notifications</h3>
-            <button class="mark-read-btn">Mark all as read</button>
-          </div>
-          <div class="notifications-list" id="notifications-list">
-            <!-- Notifications will be populated via JavaScript -->
-            <div class="empty-notifications">
-              <i class="bi bi-bell-slash"></i>
-              <p>No new notifications</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- User Menu -->
-      <div class="user-dropdown">
-        <button class="user-btn">
-          <div class="user-avatar">
-            <img id="user-avatar" src="../static/images/default-avatar.png" alt="User">
-          </div>
-          <span id="welcome-message" class="user-name">Welcome</span>
-          <i class="bi bi-chevron-down"></i>
-        </button>
-        <div class="dropdown-content">
-          <a href="user-profile.html" class="dropdown-item">
-            <i class="bi bi-person"></i>
-            <span>My Profile</span>
-          </a>
-          <a href="user-bookings.html" class="dropdown-item">
-            <i class="bi bi-calendar-check"></i>
-            <span>My Bookings</span>
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" id="logout-button" class="dropdown-item">
-            <i class="bi bi-box-arrow-right"></i>
-            <span>Logout</span>
-          </a>
-        </div>
-      </div>
-      
-      <!-- Mobile Menu Toggle -->
-      <button class="mobile-menu-toggle mobile-only">
-        <i class="bi bi-list"></i>
-      </button>
-    </div>
-  </div>
-  
-  <!-- Mobile Menu (hidden by default) -->
-  <div class="mobile-menu">
-    <nav class="mobile-nav">
-      <ul class="nav-list">
-        <li class="nav-item"><a href="user-dashboard.html" class="nav-link" data-page="dashboard"><i class="bi bi-house-door"></i> Home</a></li>
-        <li class="nav-item"><a href="user-search-results.html" class="nav-link" data-page="search"><i class="bi bi-search"></i> Find Cars</a></li>
-        <li class="nav-item"><a href="user-bookings.html" class="nav-link" data-page="bookings"><i class="bi bi-calendar-check"></i> My Bookings</a></li>
-        <li class="nav-item"><a href="user-profile.html" class="nav-link" data-page="profile"><i class="bi bi-person"></i> My Profile</a></li>
-      </ul>
-    </nav>
-  </div>
-</header>
+<!DOCTYPE html>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-<!-- Add the CSS and JavaScript for the header functionality -->
 <style>
-  /* Header Styles */
-  .main-header {
-    background-color: #ffffff;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    width: 100%;
-  }
-  
-  .header-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-    height: 70px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  /* Brand and Logo */
-  .brand-container {
-    display: flex;
-    align-items: center;
-  }
-  
-  .logo-link {
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-    color: #333;
-  }
-  
-  .logo-image {
-    height: 40px;
-    width: auto;
-    margin-right: 10px;
-  }
-  
-  .brand-name {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #1e88e5;
-    display: block;
-  }
-  
-  /* Main Navigation */
-  .main-nav {
-    display: flex;
-    height: 100%;
-  }
-  
-  .nav-list {
-    display: flex;
-    list-style: none;
+  * {
     margin: 0;
     padding: 0;
-    height: 100%;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
   }
-  
-  .nav-item {
-    height: 100%;
-    display: flex;
-    align-items: center;
+
+  :root {
+    --primary-color: #1e88e5;
+    --secondary-color: #1976d2;
+    --background-color: #f8f9fa;
+    --text-color: #333;
+    --light-text: #6c757d;
+    --border-color: #dee2e6;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --header-height: 70px;
+    --sidebar-width: 250px;
   }
-  
-  .nav-link {
-    color: #555;
-    text-decoration: none;
-    padding: 0 15px;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    font-weight: 500;
-    position: relative;
-    transition: color 0.3s;
-  }
-  
-  .nav-link:hover {
-    color: #1e88e5;
-  }
-  
-  .nav-link.active {
-    color: #1e88e5;
-  }
-  
-  .nav-link.active:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
+
+  .user-header {
+    position: fixed;
+    top: 0;
     left: 0;
-    width: 100%;
-    height: 3px;
-    background-color: #1e88e5;
-  }
-  
-  .nav-link i {
-    margin-right: 8px;
-    font-size: 1.1rem;
-  }
-  
-  /* User Area */
-  .user-area {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-  }
-  
-  /* Notification Dropdown */
-  .notification-dropdown {
-    position: relative;
-  }
-  
-  .notification-btn {
-    background: none;
-    border: none;
-    font-size: 1.3rem;
-    color: #666;
-    cursor: pointer;
-    position: relative;
-    padding: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .notification-badge {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    background-color: #ff5252;
-    color: white;
-    font-size: 0.7rem;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  /* User Dropdown */
-  .user-dropdown {
-    position: relative;
-  }
-  
-  .user-btn {
-    background: none;
-    border: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    padding: 5px;
-  }
-  
-  .user-avatar {
-    width: 35px;
-    height: 35px;
-    overflow: hidden;
-    border-radius: 50%;
-    border: 2px solid #1e88e5;
-  }
-  
-  .user-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .user-name {
-    font-weight: 500;
-    color: #333;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  
-  /* Dropdown Content */
-  .dropdown-content {
-    position: absolute;
     right: 0;
-    top: calc(100% + 10px);
+    height: var(--header-height);
     background-color: white;
-    min-width: 220px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    border-radius: 8px;
-    overflow: hidden;
-    z-index: 1100;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(10px);
-    transition: all 0.3s;
-  }
-  
-  .notification-dropdown:hover .dropdown-content,
-  .user-dropdown:hover .dropdown-content {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
-  
-  .dropdown-header {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 12px 15px;
-    border-bottom: 1px solid #eee;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 1000;
   }
-  
-  .dropdown-header h3 {
-    margin: 0;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+  }
+
+  .logo-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .logo {
+    height: 40px;
+    margin-right: 15px;
+  }
+
+  .greeting-container {
+    margin-left: 20px;
+  }
+
+  .greeting-text {
     font-size: 1rem;
+    color: var(--text-color);
+    font-weight: 500;
+  }
+
+  .greeting-name {
+    color: var(--primary-color);
     font-weight: 600;
   }
-  
-  .mark-read-btn {
-    background: none;
-    border: none;
-    color: #1e88e5;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-  
-  .dropdown-item {
+
+  .header-right {
     display: flex;
     align-items: center;
-    padding: 12px 15px;
+    gap: 20px;
+  }
+
+  .notification {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .notification i {
+    font-size: 1.25rem;
+    color: var(--light-text);
+  }
+
+  .notification .badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 18px;
+    height: 18px;
+    background-color: var(--danger-color);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .user-profile {
+    display: flex;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    padding: 10px 0;
+  }
+
+  .profile-image {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    color: var(--primary-color);
+    font-weight: 600;
+  }
+
+  .profile-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .profile-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text-color);
+  }
+
+  .dropdown-toggle {
+    margin-left: 5px;
+    color: var(--light-text);
+    transition: transform 0.2s;
+  }
+
+  /* Dropdown Menu */
+  .profile-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 200px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 10px 0;
+    margin-top: 10px;
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    z-index: 1001;
+  }
+
+  /* Create a hover extension area to prevent dropdown from closing */
+  .profile-dropdown::before {
+    content: "";
+    position: absolute;
+    top: -15px;
+    left: 0;
+    right: 0;
+    height: 15px;
+  }
+
+  .user-profile:hover .profile-dropdown {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .user-profile:hover .dropdown-toggle {
+    transform: rotate(180deg);
+  }
+
+  .dropdown-item {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    color: var(--text-color);
     text-decoration: none;
-    color: #333;
+    font-size: 0.9rem;
     transition: background-color 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font-family: "Poppins", sans-serif;
   }
-  
-  .dropdown-item:hover {
-    background-color: #f5f5f5;
-  }
-  
+
   .dropdown-item i {
     margin-right: 10px;
+    color: var(--light-text);
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .dropdown-item:hover {
+    background-color: var(--background-color);
+  }
+
+  /* Divider */
+  .dropdown-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 8px 0;
+  }
+
+  /* Sidebar */
+  .user-sidebar {
+    position: fixed;
+    left: 0;
+    top: var(--header-height);
+    width: var(--sidebar-width);
+    height: calc(100vh - var(--header-height));
+    background-color: white;
+    border-right: 1px solid var(--border-color);
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+    z-index: 999;
+    transform: translateX(-100%); /* Start hidden on mobile */
+  }
+
+  .sidebar-menu {
+    padding: 20px 0;
+  }
+
+  .menu-item {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: background-color 0.2s;
+    font-size: 0.9rem;
+  }
+
+  .menu-item i {
+    margin-right: 15px;
     font-size: 1.1rem;
-    color: #666;
     width: 20px;
     text-align: center;
   }
-  
-  .dropdown-divider {
-    height: 1px;
-    background-color: #eee;
-    margin: 5px 0;
+
+  .menu-item:hover {
+    background-color: var(--background-color);
   }
-  
-  /* Notifications List */
-  .notifications-list {
-    max-height: 300px;
-    overflow-y: auto;
+
+  .menu-item.active {
+    background-color: rgba(30, 136, 229, 0.1);
+    color: var(--primary-color);
+    font-weight: 500;
+    border-left: 3px solid var(--primary-color);
   }
-  
-  .empty-notifications {
-    padding: 20px;
-    text-align: center;
-    color: #999;
+
+  .menu-item.active i {
+    color: var(--primary-color);
   }
-  
-  .empty-notifications i {
-    font-size: 2rem;
-    margin-bottom: 10px;
-    display: block;
-  }
-  
-  /* Mobile Styles */
-  .mobile-only {
+
+  /* Sidebar toggle button for mobile */
+  .sidebar-toggle {
     display: none;
-  }
-  
-  .mobile-menu-toggle {
     background: none;
     border: none;
     font-size: 1.5rem;
-    color: #333;
+    color: var(--light-text);
     cursor: pointer;
-    padding: 5px;
+    margin-right: 15px;
   }
-  
-  .mobile-menu {
-    position: fixed;
-    top: 70px;
-    left: 0;
-    width: 100%;
-    height: calc(100vh - 70px);
-    background-color: white;
-    z-index: 999;
-    transform: translateX(100%);
-    transition: transform 0.3s ease-in-out;
-    overflow-y: auto;
-  }
-  
-  .mobile-menu.active {
-    transform: translateX(0);
-  }
-  
-  .mobile-nav .nav-list {
-    flex-direction: column;
-    height: auto;
-  }
-  
-  .mobile-nav .nav-item {
-    height: auto;
-    width: 100%;
-  }
-  
-  .mobile-nav .nav-link {
-    padding: 15px 20px;
-    border-bottom: 1px solid #eee;
-    width: 100%;
-    justify-content: flex-start;
-  }
-  
-  /* Responsive Design */
+
+  /* Responsive */
   @media (max-width: 992px) {
-    .brand-name {
-      display: none;
+    .sidebar-toggle {
+      display: block; /* Show toggle on smaller screens */
+    }
+
+    .user-sidebar.active {
+      transform: translateX(0);
+    }
+
+    .greeting-container {
+      margin-left: 10px;
     }
   }
-  
+
   @media (max-width: 768px) {
-    .desktop-only {
+    .user-header {
+      padding: 0 15px;
+    }
+
+    .greeting-text {
+      font-size: 0.85rem;
+    }
+
+    .profile-info {
       display: none;
     }
-    
-    .mobile-only {
+
+    .profile-dropdown {
+      right: -10px;
+    }
+  }
+
+  /* Mobile sidebar overlay */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 998;
+  }
+
+  /* Show overlay when sidebar is active on mobile */
+  @media (max-width: 992px) {
+    .sidebar-overlay.active {
       display: block;
     }
-    
-    .user-name, 
-    .user-btn i {
-      display: none;
-    }
-    
-    .user-avatar {
-      margin-right: 0;
-    }
-    
-    .header-content {
-      height: 60px;
-    }
-    
-    .mobile-menu {
-      top: 60px;
-      height: calc(100vh - 60px);
-    }
-    
-    .logo-image {
-      height: 30px;
+  }
+
+  /* Desktop styling - show sidebar by default on larger screens */
+  @media (min-width: 993px) {
+    .user-sidebar {
+      transform: translateX(0);
     }
   }
 </style>
 
+<div class="user-header">
+  <div class="header-left">
+    <button id="sidebar-toggle" class="sidebar-toggle">
+      <i class="bi bi-list"></i>
+    </button>
+    <div class="logo-container">
+      <img src="../static/images/logo.png" alt="BaoCarLiao Logo" class="logo" />
+    </div>
+    <div class="greeting-container">
+      <span class="greeting-text">
+        Good day, <span class="greeting-name" id="user-name">User</span>
+      </span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="notification">
+      <i class="bi bi-bell"></i>
+      <span class="badge" id="notification-count" style="display: none">0</span>
+    </div>
+    <div class="user-profile">
+      <div class="profile-image" id="user-avatar">
+        <i class="bi bi-person"></i>
+      </div>
+      <i class="bi bi-chevron-down dropdown-toggle"></i>
+
+      <div class="profile-dropdown">
+        <a href="user-profile.html" class="dropdown-item">
+          <i class="bi bi-person-circle"></i>
+          My Profile
+        </a>
+        <a href="user-bookings.html" class="dropdown-item">
+          <i class="bi bi-calendar-check"></i>
+          My Bookings
+        </a>
+        <div class="dropdown-divider"></div>
+        <a href="user-settings.html" class="dropdown-item">
+          <i class="bi bi-gear"></i>
+          Settings
+        </a>
+        <a href="#" id="logout-button" class="dropdown-item">
+          <i class="bi bi-box-arrow-right"></i>
+          Logout
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="user-sidebar" id="userSidebar">
+  <div class="sidebar-menu">
+    <a href="user-dashboard.html" class="menu-item">
+      <i class="bi bi-house"></i>
+      Home
+    </a>
+    <a href="user-bookings.html" class="menu-item">
+      <i class="bi bi-calendar-check"></i>
+      My Bookings
+    </a>
+    <a href="user-profile.html" class="menu-item">
+      <i class="bi bi-person"></i>
+      My Profile
+    </a>
+    <a href="user-settings.html" class="menu-item">
+      <i class="bi bi-gear"></i>
+      Settings
+    </a>
+    <a href="user-help.html" class="menu-item">
+      <i class="bi bi-question-circle"></i>
+      Help & Support
+    </a>
+  </div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Highlight current page in navigation
-    const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('.nav-link');
-    
-    navLinks.forEach(link => {
-      if (currentPath.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
-    
-    // Mobile menu toggle
-    const menuToggle = document.querySelector('.mobile-menu-toggle');
-    const mobileMenu = document.querySelector('.mobile-menu');
-    
-    if (menuToggle && mobileMenu) {
-      menuToggle.addEventListener('click', function() {
-        mobileMenu.classList.toggle('active');
-        
-        // Change icon based on menu state
-        const icon = menuToggle.querySelector('i');
-        if (mobileMenu.classList.contains('active')) {
-          icon.classList.remove('bi-list');
-          icon.classList.add('bi-x-lg');
-        } else {
-          icon.classList.remove('bi-x-lg');
-          icon.classList.add('bi-list');
+  document.addEventListener("DOMContentLoaded", function () {
+    const userSidebar = document.getElementById("userSidebar");
+    const sidebarToggle = document.getElementById("sidebar-toggle");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+
+    // Set active menu item based on current page
+    const currentPage = window.location.pathname.split("/").pop();
+
+    // Function to set active state for menu items
+    function setActiveMenuItem() {
+      const menuItems = document.querySelectorAll(".menu-item");
+
+      // First clear all active classes
+      menuItems.forEach((item) => item.classList.remove("active"));
+
+      // Then set active class based on current page
+      menuItems.forEach((item) => {
+        const href = item.getAttribute("href");
+        if (href && currentPage.includes(href.split("/").pop())) {
+          item.classList.add("active");
         }
       });
-    }
-    
-    // Close mobile menu when clicking outside
-    document.addEventListener('click', function(event) {
-      if (mobileMenu && mobileMenu.classList.contains('active') && 
-          !event.target.closest('.mobile-menu') && 
-          !event.target.closest('.mobile-menu-toggle')) {
-        mobileMenu.classList.remove('active');
-        const icon = menuToggle.querySelector('i');
-        icon.classList.remove('bi-x-lg');
-        icon.classList.add('bi-list');
+
+      // If no active item found, default to dashboard if we're on the home page
+      if (
+        !document.querySelector(".menu-item.active") &&
+        (currentPage === "" || currentPage === "user-dashboard.html")
+      ) {
+        document.querySelector(".menu-item").classList.add("active");
       }
-    });
-    
-    // Setup logout button (using a simpler approach)
-    const logoutButton = document.getElementById('logout-button');
-    if (logoutButton) {
-      logoutButton.addEventListener('click', function(event) {
-        event.preventDefault();
-        // Set a flag that the main JS file will check for
-        sessionStorage.setItem('performLogout', 'true');
-        window.location.reload(); // Reload to trigger the logout in the main JS
+    }
+
+    // Toggle sidebar on mobile
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener("click", () => {
+        userSidebar.classList.toggle("active");
+        sidebarOverlay.classList.toggle("active");
       });
+    }
+
+    // Close sidebar when clicking overlay
+    if (sidebarOverlay) {
+      sidebarOverlay.addEventListener("click", () => {
+        userSidebar.classList.remove("active");
+        sidebarOverlay.classList.remove("active");
+      });
+    }
+
+    // Make logo clickable to go to dashboard
+    const logoContainer = document.querySelector(".logo-container");
+    if (logoContainer) {
+      logoContainer.addEventListener("click", function () {
+        window.location.href = "user-dashboard.html";
+      });
+    }
+
+    // Set up logout button
+    const logoutButton = document.getElementById("logout-button");
+    if (logoutButton) {
+      logoutButton.addEventListener("click", function(event) {
+        // Prevent default link behavior
+        event.preventDefault();
+        
+        // Import the auth module (requires the page to be using modules)
+        import("../static/js/common/auth.js")
+          .then((auth) => {
+            auth.logout();
+          })
+          .catch((error) => {
+            console.error("Error importing auth module:", error);
+            // Fallback method if import fails
+            window.location.href = "../index.html";
+          });
+      });
+    }
+
+    // Initialize active menu item
+    setActiveMenuItem();
+
+    // Function to update user information - This is the key function for updating the greeting name
+    window.updateUserInfo = function (userData) {
+      if (!userData) return;
+
+      console.log("Updating user info with:", userData);
+
+      // Update user name in header profile
+      const userName = document.getElementById("user-name");
+      if (userName) {
+        userName.textContent = userData.firstName || "User";
+      }
+
+      // Update greeting name
+      const greetingName = document.getElementById("user-greeting-name");
+      if (greetingName) {
+        greetingName.textContent = userData.firstName || "User";
+        console.log("Updated greeting name to:", userData.firstName || "User");
+      }
+
+      // Update avatar with initials
+      const userAvatar = document.getElementById("user-avatar");
+      if (userAvatar) {
+        const initials = getInitials(userData.firstName, userData.lastName);
+        userAvatar.textContent = initials;
+      }
+
+      // Update notification badge if present
+      const notificationCount = document.getElementById("notification-count");
+      if (notificationCount && userData.notifications && userData.notifications > 0) {
+        notificationCount.textContent = userData.notifications;
+        notificationCount.style.display = "flex";
+      }
+    };
+
+    // Helper function to get initials
+    function getInitials(firstName, lastName) {
+      let initials = "";
+      if (firstName) initials += firstName[0];
+      if (lastName) initials += lastName[0];
+      return initials.toUpperCase() || "?";
     }
   });
 </script>

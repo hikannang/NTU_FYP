@@ -1,20 +1,129 @@
-<footer>
-  <nav class="bottom-nav">
-      <a href="user-dashboard.html" class="nav-item">
-          <i class="bi bi-house-door"></i>
-          <span>Home</span>
-      </a>
-      <a href="user-search.html" class="nav-item">
-          <i class="bi bi-search"></i>
-          <span>Search</span>
-      </a>
-      <a href="user-bookings.html" class="nav-item">
-          <i class="bi bi-calendar-check"></i>
-          <span>Bookings</span>
-      </a>
-      <a href="user-profile.html" class="nav-item">
-          <i class="bi bi-person"></i>
-          <span>Profile</span>
-      </a>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+  footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: white;
+    border-top: 1px solid #dee2e6;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    z-index: 990;
+    display: none;
+  }
+
+  footer nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 100%;
+  }
+
+  footer nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #6c757d;
+    padding: 5px;
+    flex: 1;
+    transition: all 0.2s ease;
+  }
+
+  footer nav a:hover {
+    color: #1e88e5;
+  }
+  
+  footer nav a.active {
+    color: #1e88e5;
+  }
+
+  footer nav i {
+    font-size: 1.3rem;
+    margin-bottom: 2px;
+  }
+
+  footer nav span {
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+  
+  .user-content {
+    padding-bottom: 80px;
+  }
+
+  @media (max-width: 992px) {
+    footer {
+      display: block;
+    }
+    
+    .user-sidebar {
+      /* This will be hidden by default on mobile and shown via JS */
+      transform: translateX(-100%);
+    }
+  }
+</style>
+
+<footer id="mobileNav">
+  <nav>
+    <a href="user-dashboard.html" class="footer-link" data-page="user-dashboard.html">
+      <i class="bi bi-house"></i>
+      <span>Home</span>
+    </a>
+    <a href="user-search.html" class="footer-link" data-page="user-search.html">
+      <i class="bi bi-search"></i>
+      <span>Search</span>
+    </a>
+    <a href="user-bookings.html" class="footer-link" data-page="user-bookings.html">
+      <i class="bi bi-calendar-check"></i>
+      <span>Bookings</span>
+    </a>
+    <a href="user-profile.html" class="footer-link" data-page="user-profile.html">
+      <i class="bi bi-person"></i>
+      <span>Profile</span>
+    </a>
+    <a href="#" class="footer-link" id="moreOptions">
+      <i class="bi bi-three-dots"></i>
+      <span>More</span>
+    </a>
   </nav>
 </footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set active footer link based on current page
+    const currentPage = window.location.pathname.split('/').pop();
+    const footerLinks = document.querySelectorAll('.footer-link');
+    
+    footerLinks.forEach(link => {
+      link.classList.remove('active');
+      const dataPage = link.getAttribute('data-page');
+      if (dataPage && currentPage.includes(dataPage)) {
+        link.classList.add('active');
+      }
+    });
+    
+    // If no active link found, default to home if we're on the user home page
+    if (!document.querySelector('.footer-link.active') && 
+        (currentPage === '' || currentPage === 'user-dashboard.html')) {
+      document.querySelector('.footer-link').classList.add('active');
+    }
+    
+    // Handle "More" button click
+    const moreOptionsBtn = document.getElementById('moreOptions');
+    if (moreOptionsBtn) {
+      moreOptionsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Toggle sidebar for more options
+        const userSidebar = document.getElementById('userSidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        if (userSidebar && sidebarOverlay) {
+          userSidebar.classList.add('active');
+          sidebarOverlay.classList.add('active');
+        }
+      });
+    }
+  });
+</script>
