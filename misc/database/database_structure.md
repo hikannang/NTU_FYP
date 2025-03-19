@@ -1,7 +1,7 @@
 Root
 ├── bookings (Collection)
 │   ├── bookingID_1 (Document)
-│   │   ├── carID: integer
+│   │   ├── car_id: integer
 │   │   ├── car_type: string
 │   │   ├── created_at: datetime
 │   │   ├── duration_minutes: integer
@@ -10,7 +10,7 @@ Root
 │   │   ├── start_time: datetime
 │   │   ├── status: string
 │   │   ├── total_price: float
-│   │   ├── userID: string
+│   │   ├── user_id: string
 │   ├── bookingID_2 (Document)
 │       └── (Same structure as bookingID_1)
 ├── car_models (Collection)
@@ -72,6 +72,7 @@ Root
 │   │   ├── licenseNumber: string
 │   │   ├── phone: string
 │   │   ├── role: string
+│   │   ├── updatedAt: datetime
 │   │   ├── bookings (collection)
 │   │   │   ├──bookingID_1 (Document)
 │   │   │   │   ├── carID: integer

@@ -1,230 +1,234 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bookings Management | BaoCarLiao Admin</title>
-  <link rel="stylesheet" href="../static/css/admin/admin.css">
-  <link rel="stylesheet" href="../static/css/admin/admin-bookings.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-</head>
-<body class="admin-body">
-  <!-- Admin header will be loaded here -->
-  <div id="header"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bookings Management | BaoCarLiao Admin</title>
+    <link rel="stylesheet" href="../static/css/admin/admin.css" />
+    <link rel="stylesheet" href="../static/css/admin/admin-bookings.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+    />
+  </head>
+  <body class="admin-body">
+    <!-- Admin header will be loaded here -->
+    <div id="header"></div>
 
-  <main class="admin-main">
-    <div class="container">
-      <!-- Page Header -->
-      <div class="page-header-wrapper">
-        <div class="page-header">
-          <div class="breadcrumb">
-            <a href="admin-dashboard.html"><i class="bi bi-house"></i> Dashboard</a>
-            <i class="bi bi-chevron-right"></i>
-            <span class="current">Bookings Management</span>
+    <main class="admin-main">
+      <div class="container">
+        <!-- Page Header -->
+        <div class="page-header-wrapper">
+          <div class="page-header">
+            <div class="breadcrumb">
+              <a href="admin-dashboard.html"
+                ><i class="bi bi-house"></i> Dashboard</a
+              >
+              <i class="bi bi-chevron-right"></i>
+              <span class="current">Bookings Management</span>
+            </div>
+            <h1 class="page-title">
+              <i class="bi bi-calendar-week"></i> Bookings Management
+            </h1>
           </div>
-          <h1 class="page-title">
-            <i class="bi bi-calendar-week"></i> Bookings Management
-          </h1>
-        </div>
-        
-        <div class="header-actions">
-          <a href="admin-booking-create.html" class="primary-btn">
-            <i class="bi bi-plus-lg"></i> Create Booking
-          </a>
-        </div>
-      </div>
 
-      <!-- Filters Section -->
-      <div class="filters-section">
-        <div class="filters-row">
-          <div class="filter-group">
-            <label for="filter-select">Status</label>
-            <select id="filter-select" class="filter-select">
-              <option value="all">All Bookings</option>
-              <option value="active">Active</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="pending">Pending</option>
-            </select>
+          <div class="header-actions">
+            <a href="admin-booking-create.html" class="primary-btn">
+              <i class="bi bi-plus-lg"></i> Create Booking
+            </a>
           </div>
-          
-          <div class="filter-group">
-            <label for="sort-select">Sort By</label>
-            <select id="sort-select" class="sort-select">
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="start-date-asc">Start Date (Asc)</option>
-              <option value="start-date-desc">Start Date (Desc)</option>
-              <option value="price-high">Price (High to Low)</option>
-              <option value="price-low">Price (Low to High)</option>
-            </select>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filters-section">
+          <div class="filters-row">
+            <div class="filter-group">
+              <label for="filter-select">Status</label>
+              <select id="filter-select" class="filter-select">
+                <option value="all">All Bookings</option>
+                <option value="active">Active</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="sort-select">Sort By</label>
+              <select id="sort-select" class="sort-select">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="start-date-asc">Start Date (Asc)</option>
+                <option value="start-date-desc">Start Date (Desc)</option>
+                <option value="price-high">Price (High to Low)</option>
+                <option value="price-low">Price (Low to High)</option>
+              </select>
+            </div>
+
+            <div class="filter-group search-group">
+              <label for="search-input">Search</label>
+              <div class="search-input-wrapper">
+                <i class="bi bi-search"></i>
+                <input
+                  type="text"
+                  id="search-input"
+                  placeholder="Search bookings..."
+                />
+              </div>
+            </div>
           </div>
-          
-          <div class="filter-group search-group">
-            <label for="search-input">Search</label>
-            <div class="search-input-wrapper">
-              <i class="bi bi-search"></i>
-              <input type="text" id="search-input" placeholder="Search bookings...">
+
+          <div class="filters-row date-filters">
+            <div class="filter-group date-group">
+              <label for="start-date">From Date</label>
+              <input type="date" id="start-date" />
+            </div>
+
+            <div class="filter-group date-group">
+              <label for="end-date">To Date</label>
+              <input type="date" id="end-date" />
+            </div>
+
+            <div class="filter-group">
+              <label class="invisible">Apply</label>
+              <button id="apply-filters" class="secondary-btn">
+                <i class="bi bi-funnel"></i> Apply Filters
+              </button>
+            </div>
+
+            <div class="filter-group">
+              <label class="invisible">Reset</label>
+              <button id="reset-filters" class="text-btn">
+                <i class="bi bi-x-circle"></i> Reset
+              </button>
             </div>
           </div>
         </div>
-        
-        <div class="filters-row date-filters">
-          <div class="filter-group date-group">
-            <label for="start-date">From Date</label>
-            <input type="date" id="start-date">
-          </div>
-          
-          <div class="filter-group date-group">
-            <label for="end-date">To Date</label>
-            <input type="date" id="end-date">
-          </div>
-          
-          <div class="filter-group">
-            <label class="invisible">Apply</label>
-            <button id="apply-filters" class="secondary-btn">
-              <i class="bi bi-funnel"></i> Apply Filters
-            </button>
-          </div>
-          
-          <div class="filter-group">
-            <label class="invisible">Reset</label>
-            <button id="reset-filters" class="text-btn">
-              <i class="bi bi-x-circle"></i> Reset
-            </button>
-          </div>
-        </div>
-      </div>
 
-      <!-- Content Section -->
-      <div class="content-section">
-        <div class="table-responsive" id="bookings-container">
-          <table class="data-table" id="bookings-table">
-            <thead>
-              <tr>
-                <th>Booking ID</th>
-                <th>Customer</th>
-                <th>Vehicle</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>Duration</th>
-                <th>Price</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="bookings-table-body">
-              <!-- Bookings will be loaded here dynamically -->
-            </tbody>
-          </table>
-          
-          <!-- No Bookings Message -->
-          <div id="no-bookings-message" class="no-data-message" style="display: none;">
-            <div class="no-data-icon">
-              <i class="bi bi-calendar-x"></i>
+        <!-- Content Section -->
+        <div class="content-section">
+          <div class="table-responsive" id="bookings-container">
+            <table class="data-table" id="bookings-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>Customer</th>
+                  <th>Vehicle</th>
+                  <th>Start Time</th>
+                  <th>End Time</th>
+                  <th>Duration</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="bookings-table-body">
+                <!-- Bookings will be loaded here dynamically -->
+              </tbody>
+            </table>
+
+            <!-- No Bookings Message -->
+            <div
+              id="no-bookings-message"
+              class="no-data-message"
+              style="display: none"
+            >
+              <div class="no-data-icon">
+                <i class="bi bi-calendar-x"></i>
+              </div>
+              <h3>No Bookings Found</h3>
+              <p>There are no bookings matching your current filters.</p>
+              <button id="clear-filters-btn" class="secondary-btn">
+                <i class="bi bi-arrow-counterclockwise"></i> Clear Filters
+              </button>
             </div>
-            <h3>No Bookings Found</h3>
-            <p>There are no bookings matching your current filters.</p>
-            <button id="clear-filters-btn" class="secondary-btn">
-              <i class="bi bi-arrow-counterclockwise"></i> Clear Filters
+          </div>
+
+          <!-- Load More Button -->
+          <div class="load-more-container">
+            <button
+              id="load-more-btn"
+              class="load-more-btn"
+              style="display: none"
+            >
+              <i class="bi bi-chevron-down"></i> Load More
             </button>
           </div>
         </div>
-        
-        <!-- Load More Button -->
-        <div class="load-more-container">
-          <button id="load-more-btn" class="load-more-btn" style="display: none;">
-            <i class="bi bi-chevron-down"></i> Load More
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay">
+          <div class="spinner"></div>
+          <p>Loading bookings data...</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Booking Details Modal -->
+    <div id="booking-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-title">Booking Details</h2>
+          <button class="close-modal">
+            <i class="bi bi-x-lg"></i>
           </button>
         </div>
-      </div>
-
-      <!-- Loading Overlay -->
-      <div id="loading-overlay" class="loading-overlay">
-        <div class="spinner"></div>
-        <p>Loading bookings data...</p>
-      </div>
-    </div>
-  </main>
-
-  <!-- Booking Details Modal -->
-  <div id="booking-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="modal-title">
-          <i class="bi bi-calendar3"></i> Booking Details
-        </h3>
-        <button class="close-modal">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="modal-body" id="modal-body">
-        <!-- Modal content will be inserted here dynamically -->
-        <div class="car-cell">
-          <div class="car-icon"><i class="bi bi-car-front-fill"></i></div>
-          <div class="car-info">
-            <div class="car-name">${car.displayName || car.car_type || 'Unknown'}</div>
-            <div class="car-plate">${car.license_plate || 'N/A'}(${booking.carID})</div>
-          </div>
+        <div class="modal-body" id="modal-body">
+          <!-- Modal content will be loaded here -->
         </div>
-        <div class="user-cell">
-          <div class="user-avatar">${getUserInitials(user)}</div>
-          <div class="user-info">
-            <div class="user-name">${user.firstName || 'Unknown'}</div>
-            <div class="user-id">${booking.userID || ''}</div>
+        <div class="modal-footer">
+          <button class="secondary-btn close-modal">
+            <i class="bi bi-x"></i> Close
+          </button>
+          <div class="modal-actions">
+            <a id="edit-booking-btn" class="primary-btn">
+              <i class="bi bi-pencil"></i> Edit
+            </a>
+            <button id="email-receipt-btn" class="secondary-btn">
+              <i class="bi bi-envelope"></i> Email Receipt
+            </button>
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="secondary-btn close-modal">
-          <i class="bi bi-x"></i> Close
-        </button>
-        <div class="modal-actions">
-          <a id="edit-booking-btn" class="primary-btn">
-            <i class="bi bi-pencil"></i> Edit
-          </a>
-          <button id="email-receipt-btn" class="secondary-btn">
-            <i class="bi bi-envelope"></i> Email Receipt
-          </button>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <!-- Admin footer will be loaded here -->
-  <div id="footer"></div>
+    <!-- Admin footer will be loaded here -->
+    <div id="footer"></div>
 
-  <!-- Firebase Scripts -->
-  <script src="../static/js/common/firebase-config.js" type="module"></script>
-  <script src="../static/js/common/auth.js" type="module"></script>
+    <!-- Firebase Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
 
-  <!-- Custom Scripts -->
-  <script src="../static/js/admin/admin-bookings.js" type="module"></script>
+    <!-- Custom Scripts -->
+    <script src="../static/js/admin/admin-bookings.js" type="module"></script>
 
-  <!-- Header and Footer Loading -->
-  <script type="module">
-    import { checkAdmin } from '../static/js/common/auth.js';
-    
-    // Load header and footer
-    document.addEventListener("DOMContentLoaded", async function() {
-      try {
-        // Load header and footer
-        document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html')
-          .then(response => response.text());
-        document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html')
-          .then(response => response.text());
-        
-        // Check admin status
-        const userData = await checkAdmin();
-        if (userData) {
-          const welcomeMsg = document.getElementById("welcome-message");
-          if (welcomeMsg) welcomeMsg.textContent = userData.firstName || "Admin";
+    <!-- Header and Footer Loading -->
+    <script type="module">
+      import { checkAdmin } from "../static/js/common/auth.js";
+
+      // Load header and footer
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          // Load header and footer
+          document.getElementById("header").innerHTML = await fetch(
+            "../static/headerFooter/admin-header.html"
+          ).then((response) => response.text());
+          document.getElementById("footer").innerHTML = await fetch(
+            "../static/headerFooter/admin-footer.html"
+          ).then((response) => response.text());
+
+          // Check admin status
+          const userData = await checkAdmin();
+          if (userData) {
+            const welcomeMsg = document.getElementById("welcome-message");
+            if (welcomeMsg)
+              welcomeMsg.textContent = userData.firstName || "Admin";
+          }
+        } catch (error) {
+          console.error("Error loading interface:", error);
         }
-      } catch (error) {
-        console.error("Error loading interface:", error);
-      }
-    });
-  </script>
-</body>
+      });
+    </script>
+  </body>
 </html>
