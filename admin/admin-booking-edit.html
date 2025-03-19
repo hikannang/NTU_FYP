@@ -142,16 +142,20 @@
                   </div>
                 </div>
 
+                <!-- Time duration display - add after end time inputs -->
+                <div class="form-group">
+                  <div id="duration-display" class="duration-display">
+                    <i class="bi bi-clock"></i> Duration: <span class="calc-value">0h 0m</span>
+                  </div>
+                  <div id="price-display" class="price-display">
+                    <i class="bi bi-tag"></i> Estimated Price: <span class="calc-value">$0.00</span>
+                  </div>
+                </div>
+
                 <!-- Price -->
                 <div class="form-group">
                   <label for="total-price">Total Price ($)</label>
                   <input type="number" id="total-price" class="form-control" step="0.01" min="0">
-                </div>
-
-                <!-- Notes -->
-                <div class="form-group">
-                  <label for="booking-notes">Notes</label>
-                  <textarea id="booking-notes" class="form-control" rows="4" placeholder="Add any notes or special instructions"></textarea>
                 </div>
               </div>
             </div>

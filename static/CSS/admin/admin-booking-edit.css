@@ -330,7 +330,7 @@ select.form-control option[value="cancelled"] {
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--gray-200);
+  border: 1px solid var (--gray-200);
 }
 
 .form-actions .action-buttons {
@@ -856,7 +856,7 @@ select.form-control option[value="cancelled"] {
   }
 }
 
-/* Add this to your CSS file */
+/* Time input styling - Updated */
 .time-input-group {
   display: flex;
   align-items: center;
@@ -883,8 +883,38 @@ select.form-control option[value="cancelled"] {
   flex: 1;
 }
 
-/* Override default select styling for time selects */
+/* Fix double arrow issue - reset appearance and use custom arrow */
 select.form-control.time-select {
-  padding-right: 10px;
-  appearance: menulist; /* Show the dropdown arrow */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  padding-right: 24px;
+}
+
+/* Add this to prevent the default browser arrow from showing in Firefox */
+select.form-control.time-select::-ms-expand {
+  display: none;
+}
+
+/* Add these containers for duration and price */
+.duration-display, .price-display {
+  margin-top: 8px;
+  color: var(--gray-700);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.duration-display i, .price-display i {
+  color: var(--primary-color);
+}
+
+.calc-value {
+  font-weight: 600;
+  color: var(--gray-900);
 }

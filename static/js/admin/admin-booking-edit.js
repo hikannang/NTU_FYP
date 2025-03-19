@@ -35,6 +35,9 @@ let originalPrice = null;
 let originalNotes = null;
 let hasChanges = false;
 let isInitialLoad = true;
+let hourlyRate = 15; // Default hourly rate in dollars, adjust as needed
+let durationDisplay = null;
+let priceDisplay = null;
 
 // DOM Elements
 let form = null;
@@ -46,7 +49,6 @@ let endDateInput = null;
 let endTimeHourInput = null;
 let endTimeMinuteInput = null;
 let priceInput = null;
-let notesInput = null;
 let saveBtn = null;
 let cancelBtn = null;
 let backBtn = null;
@@ -76,11 +78,12 @@ document.addEventListener("DOMContentLoaded", async function() {
     endTimeHourInput = document.getElementById("end-time-hour");
     endTimeMinuteInput = document.getElementById("end-time-minute");
     priceInput = document.getElementById("total-price");
-    notesInput = document.getElementById("booking-notes");
     saveBtn = document.getElementById("save-btn");
     cancelBtn = document.getElementById("cancel-btn");
     backBtn = document.getElementById("back-btn");
     loadingOverlay = document.getElementById("loading-overlay");
+    durationDisplay = document.getElementById("duration-display");
+    priceDisplay = document.getElementById("price-display");
     
     // Initialize hour selects
     populateHourSelects();
@@ -445,13 +448,9 @@ function populateForm() {
     priceInput.value = booking.total_price;
   }
   
-  // Set notes
-  if (notesInput) {
-    notesInput.value = booking.notes || "";
-  }
-  
   // After a brief delay, mark initial load as complete
   setTimeout(() => {
+    updateDurationAndPrice();
     isInitialLoad = false;
     debug("Initial form load complete");
   }, 500);
@@ -560,6 +559,19 @@ function setupChangeDetection() {
     endTimeHourInput.addEventListener('change', originalEndHandler);
     endTimeMinuteInput.addEventListener('change', originalEndHandler);
   }
+  
+  // Add duration and price calculation to time inputs
+  const timeInputs = [startDateInput, startTimeHourInput, startTimeMinuteInput,
+                     endDateInput, endTimeHourInput, endTimeMinuteInput];
+                     
+  timeInputs.forEach(input => {
+    if (input) {
+      input.addEventListener('change', () => {
+        updateDurationAndPrice();
+        checkForChanges();
+      });
+    }
+  });
 }
 
 // Helper to get Date object from separate date, hour and minute inputs
@@ -588,11 +600,6 @@ function checkForChanges() {
   
   // Check price
   if (priceInput && parseFloat(priceInput.value) !== originalPrice) {
-    currentHasChanges = true;
-  }
-  
-  // Check notes
-  if (notesInput && notesInput.value !== originalNotes) {
     currentHasChanges = true;
   }
   
@@ -742,11 +749,6 @@ async function handleFormSubmit(e) {
       updatedData.total_price = parseFloat(priceInput.value);
     }
     
-    // Notes
-    if (notesInput && notesInput.value !== originalNotes) {
-      updatedData.notes = notesInput.value;
-    }
-    
     // Start time
     if (startDateInput && startTimeHourInput && startTimeMinuteInput) {
       const newStartTime = getDateTimeFromSplitInputs(
@@ -831,7 +833,6 @@ async function handleFormSubmit(e) {
     // Update original values
     if (updatedData.status) originalStatus = updatedData.status;
     if (updatedData.total_price !== undefined) originalPrice = updatedData.total_price;
-    if (updatedData.notes !== undefined) originalNotes = updatedData.notes;
     if (updatedData.start_time) originalStartTime = updatedData.start_time.toDate();
     if (updatedData.end_time) originalEndTime = updatedData.end_time.toDate();
     
@@ -1095,3 +1096,62 @@ window.addEventListener("beforeunload", function(e) {
     return message;
   }
 });
+
+// Add this function to calculate and display duration and price
+function updateDurationAndPrice() {
+  // Skip if we're still in initial load
+  if (isInitialLoad) return;
+  
+  // Skip if we don't have all the necessary elements
+  if (!startDateInput || !startTimeHourInput || !startTimeMinuteInput || 
+      !endDateInput || !endTimeHourInput || !endTimeMinuteInput ||
+      !durationDisplay || !priceDisplay) return;
+  
+  // Get start and end times
+  const startDateTime = getDateTimeFromSplitInputs(
+    startDateInput, 
+    startTimeHourInput, 
+    startTimeMinuteInput
+  );
+  
+  const endDateTime = getDateTimeFromSplitInputs(
+    endDateInput, 
+    endTimeHourInput, 
+    endTimeMinuteInput
+  );
+  
+  // Skip if dates are invalid
+  if (!startDateTime || !endDateTime) return;
+  
+  // Calculate duration in milliseconds
+  let durationMs = endDateTime - startDateTime;
+  
+  // Handle negative duration (end before start)
+  if (durationMs < 0) {
+    durationDisplay.innerHTML = `<i class="bi bi-exclamation-triangle"></i> End time is before start time`;
+    priceDisplay.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Invalid duration`;
+    return;
+  }
+  
+  // Convert to hours and minutes
+  const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+  const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+  
+  // Format duration text
+  const durationText = durationHours > 0 ? 
+    `${durationHours}h ${durationMinutes}m` : 
+    `${durationMinutes}m`;
+  
+  // Calculate price (rounded to two decimal places)
+  const durationInHours = durationHours + (durationMinutes / 60);
+  const price = Math.ceil(durationInHours * hourlyRate * 100) / 100;
+  
+  // Update displays
+  durationDisplay.innerHTML = `<i class="bi bi-clock"></i> Duration: <span class="calc-value">${durationText}</span>`;
+  priceDisplay.innerHTML = `<i class="bi bi-tag"></i> Estimated Price: <span class="calc-value">$${price.toFixed(2)}</span>`;
+  
+  // Update price input if it exists
+  if (priceInput) {
+    priceInput.value = price.toFixed(2);
+  }
+}
