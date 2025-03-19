@@ -185,6 +185,10 @@ body.sidebar-collapsed .admin-main {
   font-size: 0.95rem;
 }
 
+.detail-row i.bi-hash {
+  color: var(--gray-400);
+}
+
 .detail-row strong {
   color: var(--text-dark);
   font-weight: 600;
@@ -294,7 +298,7 @@ select.form-control option[value="upcoming"] {
 }
 
 select.form-control option[value="active"] {
-  color: var(--success-color);
+  color: var (--success-color);
 }
 
 select.form-control option[value="completed"] {
@@ -327,6 +331,12 @@ select.form-control option[value="cancelled"] {
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--gray-200);
+}
+
+.form-actions .action-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .action-hint {
@@ -444,6 +454,11 @@ select.form-control option[value="cancelled"] {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+.primary-btn:focus, .secondary-btn:focus, .danger-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
 .secondary-btn {
   background-color: var(--gray-100);
   color: var(--text-medium);
@@ -491,6 +506,14 @@ select.form-control option[value="cancelled"] {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal[style*="flex"] {
+  opacity: 1;
+  visibility: visible;
 }
 
 .modal-content {
@@ -723,6 +746,18 @@ select.form-control option[value="cancelled"] {
   font-size: 1.1rem;
 }
 
+/* CSS for car ID */
+#car-id {
+  color: var(--gray-500);
+  font-size: 0.9rem;
+  font-family: monospace;
+}
+
+/* Make sure the remaining button works */
+#cancel-btn-bottom {
+  display: block; /* Override the previous setting to hide it */
+}
+
 /* Responsive Design */
 @media (max-width: 1100px) {
   .edit-container {
@@ -819,4 +854,37 @@ select.form-control option[value="cancelled"] {
   .edit-card-body {
     padding: 16px;
   }
+}
+
+/* Add this to your CSS file */
+.time-input-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.time-select {
+  flex: 1;
+  text-align: center;
+}
+
+.time-separator {
+  font-weight: bold;
+  color: var(--gray-700);
+  margin: 0 2px;
+}
+
+/* Make hour slightly wider than minute */
+#start-time-hour, #end-time-hour {
+  flex: 1.2;
+}
+
+#start-time-minute, #end-time-minute {
+  flex: 1;
+}
+
+/* Override default select styling for time selects */
+select.form-control.time-select {
+  padding-right: 10px;
+  appearance: menulist; /* Show the dropdown arrow */
 }

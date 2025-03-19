@@ -28,15 +28,6 @@
             <i class="bi bi-calendar-check"></i> Edit Booking
           </h1>
         </div>
-        <div class="header-actions">
-          <button id="cancel-btn" class="secondary-btn">
-            <i class="bi bi-x"></i> Cancel
-          </button>
-          <button id="save-btn" class="primary-btn" disabled>
-            <i class="bi bi-check-lg"></i> Save Changes
-            <span id="unsaved-indicator"></span>
-          </button>
-        </div>
       </div>
 
       <!-- Main Content Area -->
@@ -64,7 +55,7 @@
             </div>
           </div>
 
-          <!-- Vehicle Info Card -->
+          <!-- Vehicle Info Card - Update to show car ID -->
           <div class="detail-section">
             <div class="detail-section-header">
               <i class="bi bi-car-front"></i>
@@ -77,6 +68,10 @@
               <div class="detail-row">
                 <i class="bi bi-tag"></i>
                 <span id="car-license">Loading...</span>
+              </div>
+              <div class="detail-row">
+                <i class="bi bi-hash"></i>
+                <span id="car-id">Loading...</span>
               </div>
             </div>
           </div>
@@ -109,7 +104,18 @@
                   </div>
                   <div class="form-group">
                     <label for="start-time">Start Time</label>
-                    <input type="time" id="start-time" class="form-control">
+                    <div class="time-input-group">
+                      <select id="start-time-hour" class="form-control time-select">
+                        <!-- Hours will be populated by JavaScript -->
+                      </select>
+                      <span class="time-separator">:</span>
+                      <select id="start-time-minute" class="form-control time-select">
+                        <option value="00">00</option>
+                        <option value="15">15</option>
+                        <option value="30">30</option>
+                        <option value="45">45</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -121,7 +127,18 @@
                   </div>
                   <div class="form-group">
                     <label for="end-time">End Time</label>
-                    <input type="time" id="end-time" class="form-control">
+                    <div class="time-input-group">
+                      <select id="end-time-hour" class="form-control time-select">
+                        <!-- Hours will be populated by JavaScript -->
+                      </select>
+                      <span class="time-separator">:</span>
+                      <select id="end-time-minute" class="form-control time-select">
+                        <option value="00">00</option>
+                        <option value="15">15</option>
+                        <option value="30">30</option>
+                        <option value="45">45</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 

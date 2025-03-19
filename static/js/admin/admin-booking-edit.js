@@ -8,7 +8,8 @@ import {
   where,
   getDocs,
   Timestamp,
-  serverTimestamp
+  serverTimestamp,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
 
@@ -31,6 +32,7 @@ let originalStatus = null;
 let originalStartTime = null;
 let originalEndTime = null;
 let originalPrice = null;
+let originalNotes = null;
 let hasChanges = false;
 let isInitialLoad = true;
 
@@ -38,9 +40,11 @@ let isInitialLoad = true;
 let form = null;
 let statusSelect = null;
 let startDateInput = null;
-let startTimeInput = null;
+let startTimeHourInput = null;
+let startTimeMinuteInput = null;
 let endDateInput = null;
-let endTimeInput = null;
+let endTimeHourInput = null;
+let endTimeMinuteInput = null;
 let priceInput = null;
 let notesInput = null;
 let saveBtn = null;
@@ -66,15 +70,20 @@ document.addEventListener("DOMContentLoaded", async function() {
     form = document.getElementById("booking-edit-form");
     statusSelect = document.getElementById("booking-status");
     startDateInput = document.getElementById("start-date");
-    startTimeInput = document.getElementById("start-time");
+    startTimeHourInput = document.getElementById("start-time-hour");
+    startTimeMinuteInput = document.getElementById("start-time-minute");
     endDateInput = document.getElementById("end-date");
-    endTimeInput = document.getElementById("end-time");
+    endTimeHourInput = document.getElementById("end-time-hour");
+    endTimeMinuteInput = document.getElementById("end-time-minute");
     priceInput = document.getElementById("total-price");
     notesInput = document.getElementById("booking-notes");
     saveBtn = document.getElementById("save-btn");
     cancelBtn = document.getElementById("cancel-btn");
     backBtn = document.getElementById("back-btn");
     loadingOverlay = document.getElementById("loading-overlay");
+    
+    // Initialize hour selects
+    populateHourSelects();
     
     // Check for booking ID in URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -141,6 +150,47 @@ async function setupPage() {
   
   // Set up change detection
   setupChangeDetection();
+  
+  // Set up modal close functionality
+  setupModalClose();
+}
+
+// Function to populate hours in the selects (00-23)
+function populateHourSelects() {
+  const hourSelects = [startTimeHourInput, endTimeHourInput];
+  
+  hourSelects.forEach(select => {
+    if (select) {
+      select.innerHTML = ''; // Clear existing options
+      
+      // Add hours (00-23)
+      for (let i = 0; i < 24; i++) {
+        const hour = i.toString().padStart(2, '0');
+        const option = document.createElement('option');
+        option.value = hour;
+        option.textContent = hour;
+        select.appendChild(option);
+      }
+    }
+  });
+  
+  // Ensure minute selects have only 00, 15, 30, 45
+  const minuteSelects = [startTimeMinuteInput, endTimeMinuteInput];
+  
+  minuteSelects.forEach(select => {
+    if (select) {
+      select.innerHTML = ''; // Clear existing options
+      
+      // Add only the allowed minute values
+      const allowedMinutes = ['00', '15', '30', '45'];
+      allowedMinutes.forEach(minute => {
+        const option = document.createElement('option');
+        option.value = minute;
+        option.textContent = minute;
+        select.appendChild(option);
+      });
+    }
+  });
 }
 
 // Load booking data from Firestore
@@ -168,6 +218,7 @@ async function loadBookingData() {
     // Store original values for change detection
     originalStatus = booking.status;
     originalPrice = booking.total_price;
+    originalNotes = booking.notes || "";
     
     if (booking.start_time) {
       originalStartTime = booking.start_time instanceof Timestamp ? 
@@ -267,7 +318,8 @@ function populateForm() {
   // Set page title with booking ID
   const pageTitle = document.querySelector(".page-title");
   if (pageTitle) {
-    pageTitle.textContent = `Edit Booking: ${bookingId.replace("booking_", "")}`;
+    const displayId = bookingId.replace("booking_", "");
+    pageTitle.innerHTML = `<i class="bi bi-calendar-check"></i> Edit Booking: ${displayId}`;
   }
   
   // Set customer info
@@ -297,6 +349,11 @@ function populateForm() {
     carLicense.textContent = carData.license_plate || "No license plate";
   }
   
+  const carId = document.getElementById("car-id");
+  if (carId && carData) {
+    carId.textContent = `Car ID: ${carData.id || "Unknown"}`;
+  }
+  
   // Set form values - status
   if (statusSelect && booking.status) {
     statusSelect.value = booking.status;
@@ -311,8 +368,35 @@ function populateForm() {
       startDateInput.value = formatDateForInput(startDate);
     }
     
-    if (startTimeInput) {
-      startTimeInput.value = formatTimeForInput(startDate);
+    // Set hour and minute separately with 15-minute increments
+    if (startTimeHourInput) {
+      startTimeHourInput.value = String(startDate.getHours()).padStart(2, '0');
+    }
+    
+    if (startTimeMinuteInput) {
+      // Round minutes to nearest 15-minute interval
+      const minutes = startDate.getMinutes();
+      let roundedMinutes;
+      
+      if (minutes < 8) {
+        roundedMinutes = '00';
+      } else if (minutes < 23) {
+        roundedMinutes = '15';
+      } else if (minutes < 38) {
+        roundedMinutes = '30';
+      } else if (minutes < 53) {
+        roundedMinutes = '45';
+      } else {
+        roundedMinutes = '00';
+        // Add an hour if we round up to the next hour
+        if (startTimeHourInput) {
+          let hour = parseInt(startTimeHourInput.value, 10);
+          hour = (hour + 1) % 24;
+          startTimeHourInput.value = hour.toString().padStart(2, '0');
+        }
+      }
+      
+      startTimeMinuteInput.value = roundedMinutes;
     }
   }
   
@@ -324,8 +408,35 @@ function populateForm() {
       endDateInput.value = formatDateForInput(endDate);
     }
     
-    if (endTimeInput) {
-      endTimeInput.value = formatTimeForInput(endDate);
+    // Set hour and minute separately with 15-minute increments
+    if (endTimeHourInput) {
+      endTimeHourInput.value = String(endDate.getHours()).padStart(2, '0');
+    }
+    
+    if (endTimeMinuteInput) {
+      // Round minutes to nearest 15-minute interval
+      const minutes = endDate.getMinutes();
+      let roundedMinutes;
+      
+      if (minutes < 8) {
+        roundedMinutes = '00';
+      } else if (minutes < 23) {
+        roundedMinutes = '15';
+      } else if (minutes < 38) {
+        roundedMinutes = '30';
+      } else if (minutes < 53) {
+        roundedMinutes = '45';
+      } else {
+        roundedMinutes = '00';
+        // Add an hour if we round up to the next hour
+        if (endTimeHourInput) {
+          let hour = parseInt(endTimeHourInput.value, 10);
+          hour = (hour + 1) % 24;
+          endTimeHourInput.value = hour.toString().padStart(2, '0');
+        }
+      }
+      
+      endTimeMinuteInput.value = roundedMinutes;
     }
   }
   
@@ -342,6 +453,7 @@ function populateForm() {
   // After a brief delay, mark initial load as complete
   setTimeout(() => {
     isInitialLoad = false;
+    debug("Initial form load complete");
   }, 500);
 }
 
@@ -351,13 +463,6 @@ function formatDateForInput(date) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-// Format time for input field (HH:MM)
-function formatTimeForInput(date) {
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
 }
 
 // Set up event listeners
@@ -373,14 +478,7 @@ function setupEventListeners() {
   if (cancelBtn) {
     cancelBtn.addEventListener("click", (e) => {
       e.preventDefault();
-      
-      if (hasChanges) {
-        if (confirm("You have unsaved changes. Are you sure you want to cancel?")) {
-          goBackToBookings();
-        }
-      } else {
-        goBackToBookings();
-      }
+      handleCancel();
     });
   }
   
@@ -388,15 +486,40 @@ function setupEventListeners() {
   if (backBtn) {
     backBtn.addEventListener("click", (e) => {
       e.preventDefault();
-      
-      if (hasChanges) {
-        if (confirm("You have unsaved changes. Are you sure you want to go back?")) {
-          goBackToBookings();
-        }
-      } else {
-        goBackToBookings();
-      }
+      handleCancel();
     });
+  }
+  
+  // Additional actions
+  const sendReceiptBtn = document.getElementById("send-receipt-btn");
+  if (sendReceiptBtn) {
+    sendReceiptBtn.addEventListener("click", sendReceipt);
+  }
+  
+  const updateStatusBtn = document.getElementById("update-status-btn");
+  if (updateStatusBtn) {
+    updateStatusBtn.addEventListener("click", showStatusUpdateOptions);
+  }
+  
+  const deleteBookingBtn = document.getElementById("delete-booking-btn");
+  if (deleteBookingBtn) {
+    deleteBookingBtn.addEventListener("click", showDeleteConfirmation);
+  }
+  
+  // Status modal buttons
+  const statusOptions = document.querySelectorAll(".status-option");
+  statusOptions.forEach(option => {
+    option.addEventListener("click", () => {
+      const newStatus = option.dataset.status;
+      updateBookingStatus(newStatus);
+      closeModal('status-modal');
+    });
+  });
+  
+  // Delete confirmation modal
+  const confirmDeleteBtn = document.getElementById("confirm-delete");
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener("click", deleteBooking);
   }
 }
 
@@ -412,21 +535,43 @@ function setupChangeDetection() {
   });
   
   // Special handling for time/date inputs that affect the same field
-  if (startDateInput && startTimeInput) {
+  if (startDateInput && startTimeHourInput && startTimeMinuteInput) {
     const originalStartHandler = () => {
-      checkSpecificChange('start_time', getDateTimeFromInputs(startDateInput, startTimeInput));
+      checkSpecificChange('start_time', getDateTimeFromSplitInputs(
+        startDateInput, 
+        startTimeHourInput, 
+        startTimeMinuteInput
+      ));
     };
     startDateInput.addEventListener('change', originalStartHandler);
-    startTimeInput.addEventListener('change', originalStartHandler);
+    startTimeHourInput.addEventListener('change', originalStartHandler);
+    startTimeMinuteInput.addEventListener('change', originalStartHandler);
   }
   
-  if (endDateInput && endTimeInput) {
+  if (endDateInput && endTimeHourInput && endTimeMinuteInput) {
     const originalEndHandler = () => {
-      checkSpecificChange('end_time', getDateTimeFromInputs(endDateInput, endTimeInput));
+      checkSpecificChange('end_time', getDateTimeFromSplitInputs(
+        endDateInput, 
+        endTimeHourInput, 
+        endTimeMinuteInput
+      ));
     };
     endDateInput.addEventListener('change', originalEndHandler);
-    endTimeInput.addEventListener('change', originalEndHandler);
+    endTimeHourInput.addEventListener('change', originalEndHandler);
+    endTimeMinuteInput.addEventListener('change', originalEndHandler);
   }
+}
+
+// Helper to get Date object from separate date, hour and minute inputs
+function getDateTimeFromSplitInputs(dateInput, hourInput, minuteInput) {
+  if (!dateInput.value || !hourInput.value || !minuteInput.value) return null;
+  
+  const [year, month, day] = dateInput.value.split('-').map(num => parseInt(num, 10));
+  const hours = parseInt(hourInput.value, 10);
+  const minutes = parseInt(minuteInput.value, 10);
+  
+  // Create new date (month is 0-indexed in JavaScript)
+  return new Date(year, month - 1, day, hours, minutes, 0);
 }
 
 // Check if form has changes compared to original data
@@ -447,24 +592,36 @@ function checkForChanges() {
   }
   
   // Check notes
-  if (notesInput && notesInput.value !== (booking.notes || "")) {
+  if (notesInput && notesInput.value !== originalNotes) {
     currentHasChanges = true;
   }
   
   // Check dates and times
-  if (startDateInput && startTimeInput) {
-    const currentStartTime = getDateTimeFromInputs(startDateInput, startTimeInput);
-    if (originalStartTime && currentStartTime && 
-        Math.abs(currentStartTime - originalStartTime) > 60000) { // Allow 1 minute variance
-      currentHasChanges = true;
+  if (startDateInput && startTimeHourInput && startTimeMinuteInput) {
+    const currentStartTime = getDateTimeFromSplitInputs(
+      startDateInput, 
+      startTimeHourInput, 
+      startTimeMinuteInput
+    );
+    if (originalStartTime && currentStartTime) {
+      const startTimeDiff = Math.abs(currentStartTime - originalStartTime);
+      if (startTimeDiff > 60000) { // Allow 1 minute variance
+        currentHasChanges = true;
+      }
     }
   }
   
-  if (endDateInput && endTimeInput) {
-    const currentEndTime = getDateTimeFromInputs(endDateInput, endTimeInput);
-    if (originalEndTime && currentEndTime && 
-        Math.abs(currentEndTime - originalEndTime) > 60000) { // Allow 1 minute variance
-      currentHasChanges = true;
+  if (endDateInput && endTimeHourInput && endTimeMinuteInput) {
+    const currentEndTime = getDateTimeFromSplitInputs(
+      endDateInput, 
+      endTimeHourInput, 
+      endTimeMinuteInput
+    );
+    if (originalEndTime && currentEndTime) {
+      const endTimeDiff = Math.abs(currentEndTime - originalEndTime);
+      if (endTimeDiff > 60000) { // Allow 1 minute variance
+        currentHasChanges = true;
+      }
     }
   }
   
@@ -490,26 +647,21 @@ function checkSpecificChange(field, newValue) {
       changed = parseFloat(newValue) !== originalPrice;
       break;
     case 'start_time':
-      changed = originalStartTime && Math.abs(newValue - originalStartTime) > 60000;
+      if (originalStartTime && newValue) {
+        changed = Math.abs(newValue - originalStartTime) > 60000;
+      }
       break;
     case 'end_time':
-      changed = originalEndTime && Math.abs(newValue - originalEndTime) > 60000;
+      if (originalEndTime && newValue) {
+        changed = Math.abs(newValue - originalEndTime) > 60000;
+      }
       break;
   }
   
   if (changed && !hasChanges) {
     hasChanges = true;
     updateSaveButton();
-  } else if (!changed && checkIfOnlyThisFieldChanged()) {
-    hasChanges = false;
-    updateSaveButton();
   }
-}
-
-// Check if only the specified field has changed
-function checkIfOnlyThisFieldChanged() {
-  // Implement if needed for more complex form validation
-  return false;
 }
 
 // Update save button state based on changes
@@ -525,6 +677,13 @@ function updateSaveButton() {
     if (unsavedIndicator) {
       unsavedIndicator.style.display = "inline-block";
     }
+    
+    // Also update the bottom save button if it exists
+    const saveBtnBottom = document.getElementById("save-btn-bottom");
+    if (saveBtnBottom) {
+      saveBtnBottom.disabled = false;
+      saveBtnBottom.classList.remove("disabled-btn");
+    }
   } else {
     saveBtn.disabled = true;
     saveBtn.classList.add("disabled-btn");
@@ -534,18 +693,25 @@ function updateSaveButton() {
     if (unsavedIndicator) {
       unsavedIndicator.style.display = "none";
     }
+    
+    // Also update the bottom save button if it exists
+    const saveBtnBottom = document.getElementById("save-btn-bottom");
+    if (saveBtnBottom) {
+      saveBtnBottom.disabled = true;
+      saveBtnBottom.classList.add("disabled-btn");
+    }
   }
 }
 
-// Helper to get Date object from separate date and time inputs
-function getDateTimeFromInputs(dateInput, timeInput) {
-  if (!dateInput.value || !timeInput.value) return null;
-  
-  const [year, month, day] = dateInput.value.split('-').map(num => parseInt(num, 10));
-  const [hours, minutes] = timeInput.value.split(':').map(num => parseInt(num, 10));
-  
-  // Create new date (month is 0-indexed in JavaScript)
-  return new Date(year, month - 1, day, hours, minutes, 0);
+// Handle cancel action
+function handleCancel() {
+  if (hasChanges) {
+    if (confirm("You have unsaved changes. Are you sure you want to cancel?")) {
+      goBackToBookings();
+    }
+  } else {
+    goBackToBookings();
+  }
 }
 
 // Handle form submission
@@ -577,19 +743,25 @@ async function handleFormSubmit(e) {
     }
     
     // Notes
-    if (notesInput && notesInput.value !== (booking.notes || "")) {
+    if (notesInput && notesInput.value !== originalNotes) {
       updatedData.notes = notesInput.value;
     }
     
     // Start time
-    if (startDateInput && startTimeInput) {
-      const newStartTime = getDateTimeFromInputs(startDateInput, startTimeInput);
+    if (startDateInput && startTimeHourInput && startTimeMinuteInput) {
+      const newStartTime = getDateTimeFromSplitInputs(
+        startDateInput, 
+        startTimeHourInput, 
+        startTimeMinuteInput
+      );
+      
       if (newStartTime) {
         updatedData.start_time = Timestamp.fromDate(newStartTime);
         
         // Update duration_minutes if end time is also set
-        const newEndTime = endDateInput && endTimeInput ? 
-          getDateTimeFromInputs(endDateInput, endTimeInput) : null;
+        const newEndTime = endDateInput && endTimeHourInput && endTimeMinuteInput ? 
+          getDateTimeFromSplitInputs(endDateInput, endTimeHourInput, endTimeMinuteInput) : null;
+          
         if (newEndTime) {
           const durationMinutes = Math.round((newEndTime - newStartTime) / (1000 * 60));
           updatedData.duration_minutes = durationMinutes;
@@ -598,8 +770,13 @@ async function handleFormSubmit(e) {
     }
     
     // End time
-    if (endDateInput && endTimeInput) {
-      const newEndTime = getDateTimeFromInputs(endDateInput, endTimeInput);
+    if (endDateInput && endTimeHourInput && endTimeMinuteInput) {
+      const newEndTime = getDateTimeFromSplitInputs(
+        endDateInput, 
+        endTimeHourInput, 
+        endTimeMinuteInput
+      );
+      
       if (newEndTime) {
         updatedData.end_time = Timestamp.fromDate(newEndTime);
         
@@ -653,7 +830,8 @@ async function handleFormSubmit(e) {
     
     // Update original values
     if (updatedData.status) originalStatus = updatedData.status;
-    if (updatedData.total_price) originalPrice = updatedData.total_price;
+    if (updatedData.total_price !== undefined) originalPrice = updatedData.total_price;
+    if (updatedData.notes !== undefined) originalNotes = updatedData.notes;
     if (updatedData.start_time) originalStartTime = updatedData.start_time.toDate();
     if (updatedData.end_time) originalEndTime = updatedData.end_time.toDate();
     
@@ -676,6 +854,152 @@ function goBackToBookings() {
   window.location.href = "admin-bookings.html";
 }
 
+// Update booking status
+async function updateBookingStatus(newStatus) {
+  if (newStatus === booking.status) {
+    showMessage(`Booking is already marked as ${newStatus}`, "info");
+    return;
+  }
+  
+  try {
+    setLoading(true);
+    
+    const updateData = {
+      status: newStatus,
+      updated_at: serverTimestamp()
+    };
+    
+    // Update main bookings collection
+    await updateDoc(doc(db, "bookings", bookingId), updateData);
+    
+    // Update timesheet if car_id exists
+    if (booking.car_id) {
+      try {
+        await updateDoc(
+          doc(db, "timesheets", booking.car_id.toString(), "bookings", bookingId),
+          updateData
+        );
+      } catch (e) {
+        console.error("Error updating timesheet:", e);
+      }
+    }
+    
+    // Update user bookings if user_id exists
+    if (booking.user_id) {
+      try {
+        await updateDoc(
+          doc(db, "users", booking.user_id, "bookings", bookingId),
+          updateData
+        );
+      } catch (e) {
+        console.error("Error updating user bookings:", e);
+      }
+    }
+    
+    // Update status in form
+    if (statusSelect) {
+      statusSelect.value = newStatus;
+    }
+    
+    // Update original status and booking object
+    originalStatus = newStatus;
+    booking.status = newStatus;
+    
+    showMessage(`Booking status updated to ${newStatus}`, "success");
+    setLoading(false);
+  } catch (error) {
+    console.error("Error updating booking status:", error);
+    showMessage("Failed to update booking status", "error");
+    setLoading(false);
+  }
+}
+
+// Delete booking
+async function deleteBooking() {
+  try {
+    setLoading(true);
+    
+    // Delete from main bookings collection
+    await deleteDoc(doc(db, "bookings", bookingId));
+    
+    // Delete from timesheet if car_id exists
+    if (booking.car_id) {
+      try {
+        await deleteDoc(doc(db, "timesheets", booking.car_id.toString(), "bookings", bookingId));
+      } catch (e) {
+        console.error("Error deleting from timesheet:", e);
+      }
+    }
+    
+    // Delete from user bookings if user_id exists
+    if (booking.user_id) {
+      try {
+        await deleteDoc(doc(db, "users", booking.user_id, "bookings", bookingId));
+      } catch (e) {
+        console.error("Error deleting from user bookings:", e);
+      }
+    }
+    
+    showMessage("Booking deleted successfully", "success");
+    
+    // Redirect to bookings page after short delay
+    setTimeout(() => {
+      goBackToBookings();
+    }, 1000);
+  } catch (error) {
+    console.error("Error deleting booking:", error);
+    showMessage("Failed to delete booking", "error");
+    setLoading(false);
+  }
+}
+
+// Setup modal functionality
+function setupModalClose() {
+  const modals = document.querySelectorAll(".modal");
+  const closeButtons = document.querySelectorAll(".close-modal");
+  
+  closeButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      const modal = button.closest(".modal");
+      if (modal) {
+        closeModal(modal.id);
+      }
+    });
+  });
+  
+  // Close when clicking outside the modal content
+  window.addEventListener("click", event => {
+    modals.forEach(modal => {
+      if (event.target === modal) {
+        closeModal(modal.id);
+      }
+    });
+  });
+}
+
+// Close modal
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
+
+// Show delete confirmation modal
+function showDeleteConfirmation() {
+  document.getElementById("delete-modal").style.display = "flex";
+}
+
+// Show status update options
+function showStatusUpdateOptions() {
+  document.getElementById("status-modal").style.display = "flex";
+}
+
+// Send receipt
+function sendReceipt() {
+  showMessage("Email receipt functionality will be available soon", "info");
+}
+
 // Show a message to the user
 function showMessage(message, type = "info") {
   // Create the message container if it doesn't exist
@@ -694,22 +1018,12 @@ function showMessage(message, type = "info") {
   // Create message element
   const messageElement = document.createElement("div");
   messageElement.className = `message ${type}`;
-  messageElement.style.backgroundColor = type === "error" ? "#f44336" : 
-                                        type === "success" ? "#4caf50" : 
-                                        "#2196f3";
-  messageElement.style.color = "white";
-  messageElement.style.padding = "12px 16px";
-  messageElement.style.marginBottom = "10px";
-  messageElement.style.borderRadius = "4px";
-  messageElement.style.boxShadow = "0 2px 5px rgba(0, 0, 0, 0.2)";
-  messageElement.style.display = "flex";
-  messageElement.style.alignItems = "center";
-  messageElement.style.justifyContent = "space-between";
-  messageElement.style.animation = "slideIn 0.3s ease-out forwards";
   
   messageElement.innerHTML = `
-    <div>${message}</div>
-    <button class="close-message" style="background: none; border: none; color: white; cursor: pointer;">
+    <div class="message-content">
+      <span>${message}</span>
+    </div>
+    <button class="close-message">
       <i class="bi bi-x"></i>
     </button>
   `;
@@ -719,7 +1033,9 @@ function showMessage(message, type = "info") {
   closeButton.addEventListener("click", () => {
     messageElement.style.animation = "slideOut 0.3s ease-out forwards";
     setTimeout(() => {
-      messageContainer.removeChild(messageElement);
+      if (messageElement.parentNode) {
+        messageContainer.removeChild(messageElement);
+      }
     }, 300);
   });
   
@@ -771,49 +1087,6 @@ function setLoading(isLoading) {
   }
 }
 
-// Utility function to capitalize first letter
-function capitalizeFirst(string) {
-  if (!string) return "Unknown";
-  return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-// Add CSS animations directly
-const styleElement = document.createElement('style');
-styleElement.textContent = `
-  @keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-  }
-  
-  @keyframes slideOut {
-    from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(100%); opacity: 0; }
-  }
-  
-  .disabled-btn {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  
-  #unsaved-indicator {
-    display: none;
-    width: 8px;
-    height: 8px;
-    background-color: #ff3e1d;
-    border-radius: 50%;
-    margin-left: 8px;
-    animation: pulse 1.5s infinite;
-  }
-  
-  @keyframes pulse {
-    0% { transform: scale(0.8); opacity: 0.8; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(0.8); opacity: 0.8; }
-  }
-`;
-
-document.head.appendChild(styleElement);
-
 // Exit confirmation when there are unsaved changes
 window.addEventListener("beforeunload", function(e) {
   if (hasChanges) {
@@ -822,6 +1095,3 @@ window.addEventListener("beforeunload", function(e) {
     return message;
   }
 });
-
-// Log completion of script loading
-debug("Admin booking edit script fully loaded");
