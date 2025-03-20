@@ -1,137 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard | BaoCarLiao</title>
-    <link rel="stylesheet" href="../static/css/users/user.css">
-    <link rel="stylesheet" href="../static/css/users/user-dashboard.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-</head>
-<body>
+    <link rel="stylesheet" href="../static/css/users/user.css" />
+    <link rel="stylesheet" href="../static/css/users/user-dashboard.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+    />
+  </head>
+  <body>
     <div id="header"></div>
     <main>
-        <!-- Welcome Section -->
-        <section id="welcome-section">
-            <div class="welcome-container">
-                <h1>Welcome, <span id="user-name">User</span></h1>
-                <p>Find and book available cars near you</p>
-            </div>
-        </section>
+      <!-- Welcome Section -->
+      <section id="welcome-section">
+        <div class="welcome-container">
+          <h1>Welcome, <span id="user-name">User</span></h1>
+          <p>Find and book available cars near you</p>
+        </div>
+      </section>
 
-        <!-- Quick Search Section -->
-        <section id="quick-search">
-            <div class="search-card">
-                <h2><i class="bi bi-search"></i> Find a Car</h2>
-                <div class="search-form">
-                    <div class="input-group">
-                        <input type="text" id="location-input" placeholder="Enter location">
-                        <button id="current-location-btn" class="icon-btn" aria-label="Use current location">
-                            <i class="bi bi-geo-alt"></i>
-                        </button>
-                    </div>
-                    <div class="date-time-container">
-                        <div class="input-group">
-                            <label for="pickup-date">Pickup Date</label>
-                            <input type="date" id="pickup-date">
-                        </div>
-                        <div class="input-group">
-                            <label for="pickup-time-hours">Pickup Time</label>
-                            <div class="time-select-container">
-                                <select id="pickup-time-hours" class="time-select">
-                                    <!-- Will be populated with hours dynamically -->
-                                </select>
-                                <span class="time-separator">:</span>
-                                <select id="pickup-time-minutes" class="time-select">
-                                    <option value="0">00</option>
-                                    <option value="15">15</option>
-                                    <option value="30">30</option>
-                                    <option value="45">45</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <label>Duration</label>
-                        <div class="duration-select-container">
-                            <div class="duration-select">
-                                <select id="duration-days">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                </select>
-                                <label for="duration-days">Days</label>
-                            </div>
-                            
-                            <div class="duration-select">
-                                <select id="duration-hours">
-                                    <!-- Will be populated with hours dynamically -->
-                                </select>
-                                <label for="duration-hours">Hours</label>
-                            </div>
-                            
-                            <div class="duration-select">
-                                <select id="duration-minutes">
-                                    <option value="0">0</option>
-                                    <option value="15">15</option>
-                                    <option value="30">30</option>
-                                    <option value="45">45</option>
-                                </select>
-                                <label for="duration-minutes">Minutes</label>
-                            </div>
-                        </div>
-                    </div>
-                    <button id="search-btn" class="primary-btn">
-                        <i class="bi bi-search"></i> Search Cars
-                    </button>
-                </div>
+      <!-- Quick Search Section -->
+      <section id="quick-search">
+        <div class="search-card">
+          <h2><i class="bi bi-search"></i> Find a Car</h2>
+          <div class="search-form">
+            <div class="input-group">
+              <input
+                type="text"
+                id="location-input"
+                placeholder="Enter location"
+              />
+              <button
+                id="current-location-btn"
+                class="icon-btn"
+                aria-label="Use current location"
+              >
+                <i class="bi bi-geo-alt"></i>
+              </button>
             </div>
-        </section>
+            <div class="date-time-container">
+              <div class="input-group">
+                <label for="pickup-date">Pickup Date</label>
+                <input type="date" id="pickup-date" />
+              </div>
+              <div class="input-group">
+                <label for="pickup-time-hours">Pickup Time</label>
+                <div class="time-select-container">
+                  <select id="pickup-time-hours" class="time-select">
+                    <!-- Will be populated with hours dynamically -->
+                  </select>
+                  <span class="time-separator">:</span>
+                  <select id="pickup-time-minutes" class="time-select">
+                    <option value="0">00</option>
+                    <option value="15">15</option>
+                    <option value="30">30</option>
+                    <option value="45">45</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="input-group">
+              <label>Duration</label>
+              <div class="duration-select-container">
+                <div class="duration-select">
+                  <select id="duration-days">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                  </select>
+                  <label for="duration-days">Days</label>
+                </div>
 
-        <!-- Map Section -->
-        <section id="map-section">
-            <div class="section-header">
-                <h2><i class="bi bi-geo-alt"></i> Nearby Cars</h2>
-                <div class="map-filters">
-                    <select id="car-type-filter">
-                        <option value="all">All Car Types</option>
-                        <option value="sedan">Sedan</option>
-                        <option value="suv">SUV</option>
-                        <option value="compact">Compact</option>
-                    </select>
+                <div class="duration-select">
+                  <select id="duration-hours">
+                    <!-- Will be populated with hours dynamically -->
+                  </select>
+                  <label for="duration-hours">Hours</label>
                 </div>
-            </div>
-            <div id="map"></div>
-            <div id="nearby-cars" class="cars-grid">
-                <!-- Will be populated with nearby cars -->
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <p>Finding cars near you...</p>
-                </div>
-            </div>
-        </section>
 
-        <!-- Active Bookings Section -->
-        <section id="active-bookings">
-            <div class="section-header">
-                <h2><i class="bi bi-calendar-check"></i> Your Bookings</h2>
-                <a href="user-bookings.html" class="view-all">View All <i class="bi bi-chevron-right"></i></a>
-            </div>
-            <div class="bookings-container">
-                <!-- Loading indicator for bookings -->
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <p>Loading your bookings...</p>
+                <div class="duration-select">
+                  <select id="duration-minutes">
+                    <option value="0">0</option>
+                    <option value="15">15</option>
+                    <option value="30">30</option>
+                    <option value="45">45</option>
+                  </select>
+                  <label for="duration-minutes">Minutes</label>
                 </div>
-                <!-- Will be populated with active bookings -->
-                <div id="no-bookings-message" class="empty-state" style="display: none;">
-                    <i class="bi bi-calendar-x"></i>
-                    <p>You have no active bookings</p>
-                    <a href="#quick-search" class="primary-btn">Find a car now</a>
-                </div>
+              </div>
             </div>
-        </section>
+            <button id="search-btn" class="primary-btn">
+              <i class="bi bi-search"></i> Search Cars
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Map Section -->
+      <section id="map-section">
+        <div class="section-header">
+          <h2><i class="bi bi-geo-alt"></i> Nearby Cars</h2>
+          <div class="map-filters">
+            <select id="car-type-filter">
+              <option value="all">All Car Types</option>
+              <option value="sedan">Sedan</option>
+              <option value="suv">SUV</option>
+              <option value="compact">Compact</option>
+            </select>
+          </div>
+        </div>
+        <div id="map"></div>
+        <div id="nearby-cars" class="cars-grid">
+          <!-- Will be populated with nearby cars -->
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Finding cars near you...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Active Bookings Section -->
+      <section id="active-bookings">
+        <div class="section-header">
+          <h2><i class="bi bi-calendar-check"></i> Your Bookings</h2>
+          <a href="user-bookings.html" class="view-all"
+            >View All <i class="bi bi-chevron-right"></i
+          ></a>
+        </div>
+        <div class="bookings-container">
+          <!-- Bookings will be dynamically inserted here -->
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading your bookings...</p>
+          </div>
+        </div>
+      </section>
     </main>
 
     <div id="footer"></div>
@@ -141,5 +148,5 @@
     <script src="../static/js/common/firebase-config.js" type="module"></script>
     <script src="../static/js/common/auth.js" type="module"></script>
     <script src="../static/js/user/user-dashboard.js" type="module"></script>
-</body>
+  </body>
 </html>

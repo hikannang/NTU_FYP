@@ -369,252 +369,429 @@ async function loadUserData(userId) {
   }
 }
 
-// Load active bookings
+// Updated function to load active bookings with better error handling
 async function loadActiveBookings(userId) {
   try {
-    // Get references to DOM elements
-    const bookingsContainer = document.getElementById("active-bookings-list");
-    if (!bookingsContainer) return;
-
+    console.log("Loading active bookings for user:", userId);
+    const bookingsContainer = document.querySelector(".bookings-container");
+    
+    if (!bookingsContainer) {
+      console.error("Bookings container not found");
+      return;
+    }
+    
     // Show loading state
-    bookingsContainer.innerHTML =
-      '<div class="loading-state"><div class="spinner"></div><p>Loading your bookings...</p></div>';
+    bookingsContainer.innerHTML = `
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading your bookings...</p>
+      </div>
+    `;
 
-    // Get current timestamp
-    const now = new Date();
-
-    // Query for active and upcoming bookings across all cars
-    const allBookings = [];
-
-    // Fetch all cars first
-    const carsSnapshot = await getDocs(collection(db, "cars"));
-
-    // Get bookings for each car
-    const bookingPromises = carsSnapshot.docs.map(async (carDoc) => {
-      const carId = carDoc.id;
-
-      // Query for bookings for this car
-      const bookingsRef = collection(db, "timesheets", carId, "bookings");
-      const bookingsQuery = query(
-        bookingsRef,
-        where("user_id", "==", userId),
-        where("status", "in", ["active", "upcoming"]),
-        where("end_time", ">=", now)
-      );
-
-      const carBookingsSnapshot = await getDocs(bookingsQuery);
-      return Promise.all(
-        carBookingsSnapshot.docs.map(async (bookingDoc) => {
-          const bookingData = bookingDoc.data();
-          return {
-            id: bookingDoc.id,
-            carId: carId,
-            ...bookingData,
-          };
-        })
-      );
-    });
-
-    // Wait for all booking promises to resolve
-    const bookingsArrays = await Promise.all(bookingPromises);
-
-    // Flatten the arrays into a single bookings array
-    const bookings = bookingsArrays.flat();
-
-    // Get reference to the active bookings container
-    const activeBookingsContainer = document.getElementById(
-      "active-bookings-container"
-    );
-
-    // If no active bookings were found
-    if (bookings.length === 0) {
-      activeBookingsContainer.innerHTML = "";
-      activeBookingsContainer.appendChild(createNoBookingsMessage());
+    // Verify userId is valid
+    if (!userId) {
+      console.error("No valid userId provided to loadActiveBookings");
+      bookingsContainer.innerHTML = `
+        <div class="empty-state">
+          <i class="bi bi-calendar-x"></i>
+          <p>You have no active bookings</p>
+          <a href="#quick-search" class="primary-btn">Find a car now</a>
+        </div>
+      `;
       return;
     }
 
-    // Sort bookings by start time
-    bookings.sort((a, b) => {
-      return a.start_time.seconds - b.start_time.seconds;
-    });
-
-    // Clear the container
-    activeBookingsContainer.innerHTML = "";
-
-    // Create and append booking elements
-    for (const booking of bookings) {
-      // Get car details for this booking
-      const carDetails = await getCarDetails(booking.carId);
-
-      // Create booking element
-      const bookingElement = createBookingElement({
-        ...booking,
-        car: carDetails,
+    console.log("Checking for bookings in user collection:", userId);
+    
+    // Option 1: Try getting bookings from user subcollection
+    try {
+      // Get current timestamp
+      const now = new Date();
+      
+      // First, check if the bookings subcollection exists
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (!userDoc.exists()) {
+        console.error("User document does not exist");
+        throw new Error("User document not found");
+      }
+      
+      console.log("User document found, checking for bookings subcollection");
+      
+      // Create a simplified query that's less likely to fail
+      const bookingsRef = collection(db, "users", userId, "bookings");
+      const bookingsSnapshot = await getDocs(bookingsRef);
+      
+      console.log(`Found ${bookingsSnapshot.size} total bookings`);
+      
+      // If no bookings at all, show empty state
+      if (bookingsSnapshot.empty) {
+        bookingsContainer.innerHTML = `
+          <div class="empty-state">
+            <i class="bi bi-calendar-x"></i>
+            <p>You have no active bookings</p>
+            <a href="#quick-search" class="primary-btn">Find a car now</a>
+          </div>
+        `;
+        return;
+      }
+      
+      // Process all bookings and filter client-side for simplicity
+      const allBookings = [];
+      bookingsSnapshot.forEach(doc => {
+        const bookingData = doc.data();
+        
+        // Add ID to the booking data
+        bookingData.id = doc.id;
+        
+        // Convert timestamps to Date objects
+        if (bookingData.start_time && typeof bookingData.start_time.toDate === 'function') {
+          bookingData.start_time = bookingData.start_time.toDate();
+        } else if (bookingData.start_time && bookingData.start_time.seconds) {
+          bookingData.start_time = new Date(bookingData.start_time.seconds * 1000);
+        }
+        
+        if (bookingData.end_time && typeof bookingData.end_time.toDate === 'function') {
+          bookingData.end_time = bookingData.end_time.toDate();
+        } else if (bookingData.end_time && bookingData.end_time.seconds) {
+          bookingData.end_time = new Date(bookingData.end_time.seconds * 1000);
+        }
+        
+        // Only include active or upcoming bookings
+        if (
+          (bookingData.status === "active" || bookingData.status === "upcoming") &&
+          bookingData.end_time >= now
+        ) {
+          allBookings.push(bookingData);
+        }
       });
-
-      // Append to container
-      activeBookingsContainer.appendChild(bookingElement);
+      
+      console.log(`Found ${allBookings.length} active/upcoming bookings`);
+      
+      // If no active bookings, show empty state
+      if (allBookings.length === 0) {
+        bookingsContainer.innerHTML = `
+          <div class="empty-state">
+            <i class="bi bi-calendar-x"></i>
+            <p>You have no active bookings</p>
+            <a href="#quick-search" class="primary-btn">Find a car now</a>
+          </div>
+        `;
+        return;
+      }
+      
+      // Sort bookings: active first, then by start time
+      allBookings.sort((a, b) => {
+        const aActive = a.start_time <= now && a.end_time >= now;
+        const bActive = b.start_time <= now && b.end_time >= now;
+        
+        if (aActive && !bActive) return -1;
+        if (!aActive && bActive) return 1;
+        return a.start_time - b.start_time;
+      });
+      
+      // Take only the first 3
+      const displayBookings = allBookings.slice(0, 3);
+      
+      // Clear container
+      bookingsContainer.innerHTML = '';
+      
+      // Create and display booking cards
+      for (const booking of displayBookings) {
+        try {
+          // Try to get car details if car_id exists
+          if (booking.car_id) {
+            try {
+              const carDoc = await getDoc(doc(db, "cars", booking.car_id));
+              if (carDoc.exists()) {
+                booking.car = carDoc.data();
+                booking.car.id = carDoc.id;
+              }
+            } catch (error) {
+              console.warn(`Could not get car details for booking ${booking.id}:`, error);
+            }
+          }
+          
+          // Create booking card element
+          const bookingCard = createBookingCard(booking);
+          bookingsContainer.appendChild(bookingCard);
+        } catch (error) {
+          console.error(`Error creating booking card for ${booking.id}:`, error);
+        }
+      }
+      
+      console.log("Successfully displayed booking cards");
+      
+    } catch (error) {
+      console.error("Error with user bookings collection:", error);
+      
+      // Option 2: Try getting bookings from main bookings collection
+      try {
+        console.log("Trying to find bookings in main bookings collection");
+        const now = new Date();
+        
+        const mainBookingsQuery = query(
+          collection(db, "bookings"),
+          where("user_id", "==", userId),
+          where("status", "in", ["active", "upcoming"]),
+          where("end_time", ">=", now)
+        );
+        
+        const mainBookingsSnapshot = await getDocs(mainBookingsQuery);
+        console.log(`Found ${mainBookingsSnapshot.size} bookings in main collection`);
+        
+        if (mainBookingsSnapshot.empty) {
+          bookingsContainer.innerHTML = `
+            <div class="empty-state">
+              <i class="bi bi-calendar-x"></i>
+              <p>You have no active bookings</p>
+              <a href="#quick-search" class="primary-btn">Find a car now</a>
+            </div>
+          `;
+          return;
+        }
+        
+        // Process bookings
+        const bookings = [];
+        mainBookingsSnapshot.forEach(doc => {
+          const booking = doc.data();
+          booking.id = doc.id;
+          
+          // Convert timestamps
+          if (booking.start_time && typeof booking.start_time.toDate === 'function') {
+            booking.start_time = booking.start_time.toDate();
+          } else if (booking.start_time && booking.start_time.seconds) {
+            booking.start_time = new Date(booking.start_time.seconds * 1000);
+          }
+          
+          if (booking.end_time && typeof booking.end_time.toDate === 'function') {
+            booking.end_time = booking.end_time.toDate();
+          } else if (booking.end_time && booking.end_time.seconds) {
+            booking.end_time = new Date(booking.end_time.seconds * 1000);
+          }
+          
+          bookings.push(booking);
+        });
+        
+        // Sort and limit bookings
+        bookings.sort((a, b) => {
+          const aActive = a.start_time <= now && a.end_time >= now;
+          const bActive = b.start_time <= now && b.end_time >= now;
+          
+          if (aActive && !bActive) return -1;
+          if (!aActive && bActive) return 1;
+          return a.start_time - b.start_time;
+        });
+        
+        const displayBookings = bookings.slice(0, 3);
+        bookingsContainer.innerHTML = '';
+        
+        // Create booking cards
+        for (const booking of displayBookings) {
+          if (booking.car_id) {
+            try {
+              const carDoc = await getDoc(doc(db, "cars", booking.car_id));
+              if (carDoc.exists()) {
+                booking.car = carDoc.data();
+                booking.car.id = carDoc.id;
+              }
+            } catch (error) {
+              console.warn(`Could not get car details for booking ${booking.id}:`, error);
+            }
+          }
+          
+          const bookingCard = createBookingCard(booking);
+          bookingsContainer.appendChild(bookingCard);
+        }
+        
+      } catch (fallbackError) {
+        console.error("Both booking retrieval methods failed:", fallbackError);
+        bookingsContainer.innerHTML = `
+          <div class="empty-state">
+            <i class="bi bi-calendar-x"></i>
+            <p>You have no active bookings</p>
+            <a href="#quick-search" class="primary-btn">Find a car now</a>
+          </div>
+        `;
+      }
     }
+    
   } catch (error) {
-    console.error("Error loading active bookings:", error);
-
-    // Get reference to the active bookings container
-    const activeBookingsContainer = document.getElementById(
-      "active-bookings-container"
-    );
-
-    // Show error state
-    activeBookingsContainer.innerHTML = `
-                        <div class="error-state">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <p>Failed to load your bookings. Please try again.</p>
-                        </div>
-                    `;
+    console.error("Error in loadActiveBookings:", error);
+    const bookingsContainer = document.querySelector(".bookings-container");
+    if (bookingsContainer) {
+      bookingsContainer.innerHTML = `
+        <div class="error-state">
+          <i class="bi bi-exclamation-triangle"></i>
+          <p>Failed to load your bookings</p>
+          <button onclick="loadActiveBookings('${userId}')" class="refresh-btn">
+            <i class="bi bi-arrow-clockwise"></i> Try Again
+          </button>
+        </div>
+      `;
+    }
   }
 }
 
-// Create booking card element
-function createBookingElement(booking) {
-  // Create booking card container
+// Enhanced function to create booking card with more details
+function createBookingCard(booking) {
+  console.log("Creating enhanced booking card for:", booking);
+  
+  // Create booking card element
   const bookingCard = document.createElement("div");
   bookingCard.className = "booking-card";
-
-  // Determine booking status class
-  let statusClass = "status-upcoming";
-  let statusText = "Upcoming";
-
-  if (booking.status === "active") {
-    statusClass = "status-ongoing";
-    statusText = "In Progress";
-  }
-
+  
   // Format dates and times
-  const startDate = new Date(booking.start_time.seconds * 1000);
-  const endDate = new Date(booking.end_time.seconds * 1000);
-
-  const formattedStartDate = startDate.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-  const formattedStartTime = startDate.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const formattedEndTime = endDate.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  // Calculate time remaining for ongoing bookings
-  let timeRemainingDisplay = "";
-  if (booking.status === "active") {
-    const now = new Date();
-    const timeRemaining = endDate - now;
-
-    if (timeRemaining > 0) {
-      const hoursRemaining = Math.floor(timeRemaining / (1000 * 60 * 60));
-      const minutesRemaining = Math.floor(
-        (timeRemaining % (1000 * 60 * 60)) / (1000 * 60)
-      );
-      timeRemainingDisplay = `${hoursRemaining}h ${minutesRemaining}m remaining`;
+  const dateOptions = { weekday: 'short', month: 'short', day: 'numeric' };
+  const timeOptions = { hour: '2-digit', minute: '2-digit' };
+  
+  let formattedDate = "N/A";
+  let formattedStartTime = "N/A";
+  let formattedEndTime = "N/A";
+  let durationText = "N/A";
+  
+  try {
+    if (booking.start_time instanceof Date && booking.end_time instanceof Date) {
+      formattedDate = booking.start_time.toLocaleDateString('en-US', dateOptions);
+      formattedStartTime = booking.start_time.toLocaleTimeString('en-US', timeOptions);
+      formattedEndTime = booking.end_time.toLocaleTimeString('en-US', timeOptions);
+      
+      // Calculate duration
+      const durationMs = booking.end_time - booking.start_time;
+      const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+      const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (durationHours > 0) {
+        durationText = `${durationHours} hr${durationHours > 1 ? 's' : ''}`;
+        if (durationMinutes > 0) durationText += ` ${durationMinutes} min`;
+      } else {
+        durationText = `${durationMinutes} minutes`;
+      }
     } else {
-      timeRemainingDisplay = "Ending soon";
+      console.warn("Invalid date objects in booking:", booking);
+    }
+  } catch (e) {
+    console.error("Error formatting booking dates:", e);
+  }
+  
+  // Determine booking status
+  const now = new Date();
+  let statusClass = "upcoming";
+  let statusText = "Upcoming";
+  let timeLeftText = "";
+  
+  if (booking.status === "active" || (booking.start_time <= now && booking.end_time >= now)) {
+    statusClass = "active";
+    statusText = "Active";
+    
+    // Calculate time left
+    const timeLeftMs = booking.end_time - now;
+    if (timeLeftMs > 0) {
+      const hoursLeft = Math.floor(timeLeftMs / (1000 * 60 * 60));
+      const minutesLeft = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (hoursLeft > 0) {
+        timeLeftText = `${hoursLeft}h ${minutesLeft}m remaining`;
+      } else {
+        timeLeftText = `${minutesLeft} minutes remaining`;
+      }
+    }
+  } else if (booking.start_time > now) {
+    // Calculate time until start
+    const timeUntilMs = booking.start_time - now;
+    const daysUntil = Math.floor(timeUntilMs / (1000 * 60 * 60 * 24));
+    const hoursUntil = Math.floor((timeUntilMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    
+    if (daysUntil > 0) {
+      timeLeftText = `Starts in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`;
+    } else if (hoursUntil > 0) {
+      const minutesUntil = Math.floor((timeUntilMs % (1000 * 60 * 60)) / (1000 * 60));
+      timeLeftText = `Starts in ${hoursUntil}h ${minutesUntil}m`;
+    } else {
+      const minutesUntil = Math.floor(timeUntilMs / (1000 * 60));
+      timeLeftText = `Starts in ${minutesUntil} minutes`;
     }
   }
-
-  // Get car info with fallbacks
-  const carInfo = booking.car || {};
-  const carImage =
-    carInfo.image || "../static/images/assets/car-placeholder.png";
-  const carAddress = carInfo.address || "Location not available";
-
-  // Create the card content
+  
+  // Get car info with careful handling of undefined properties
+  const car = booking.car || {};
+  const carMake = car.make || "";
+  const carModel = car.model || "";
+  const carName = carMake + (carMake && carModel ? " " : "") + carModel;
+  const carType = car.car_type || booking.car_type || "Car";
+  const displayName = carName || carType;
+  
+  // Get image with fallback
+  const carImage = car.image_url || `../static/images/car_images/${carType || 'car'}.png`;
+  
+  // Get price (if available)
+  const price = booking.price || car.price_per_hour || 0;
+  const formattedPrice = typeof price === 'number' ? `$${price.toFixed(2)}` : price;
+  
+  // Get pickup location
+  const pickupLocation = booking.pickup_location || car.address || "Address not available";
+  
+  // Calculate total cost if available
+  let totalCost = "";
+  if (booking.total_cost) {
+    totalCost = `<div class="booking-cost">
+      <i class="bi bi-credit-card"></i>
+      <span>Total: $${parseFloat(booking.total_cost).toFixed(2)}</span>
+    </div>`;
+  }
+  
+  // Build HTML content with enhanced details
   bookingCard.innerHTML = `
-                    <div class="booking-status ${statusClass}">
-                        <div class="status-dot"></div>
-                        <div class="status-text">${statusText}</div>
-                        ${
-                          timeRemainingDisplay
-                            ? `<div class="time-remaining">${timeRemainingDisplay}</div>`
-                            : ""
-                        }
-                    </div>
-                    <div class="booking-content">
-                        <div class="car-image">
-                            <img src="${carImage}" alt="Car" onerror="this.src='../static/images/assets/car-placeholder.png';">
-                        </div>
-                        <div class="booking-details">
-                            <h3 class="booking-title">${carInfo.make || ""} ${
-    carInfo.modelName || "Car"
-  }</h3>
-                            <div class="booking-meta">
-                                <div class="booking-time">
-                                    <i class="bi bi-calendar-event"></i>
-                                    <div>
-                                        <div>${formattedStartDate}</div>
-                                        <div>${formattedStartTime} - ${formattedEndTime}</div>
-                                    </div>
-                                </div>
-                                <div class="booking-location">
-                                    <i class="bi bi-geo-alt"></i>
-                                    <span>${carAddress}</span>
-                                </div>
-                            </div>
-                            <div class="booking-action">
-                                <a href="user-booking-details.html?id=${
-                                  booking.id
-                                }&carId=${
-    booking.carId
-  }" class="primary-btn sm">
-                                    View Details <i class="bi bi-arrow-right"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
+    <div class="booking-car-image">
+      <img src="${carImage}" alt="${displayName}" onerror="this.src='../static/images/car_images/car.png';">
+      <div class="status-badge ${statusClass} card-badge">${statusText}</div>
+    </div>
+    <div class="booking-details">
+      <div class="booking-header">
+        <h3 class="booking-car-name">${displayName}</h3>
+        ${price ? `<div class="booking-price">$${parseFloat(price).toFixed(2)}/hr</div>` : ''}
+      </div>
+      
+      <div class="booking-info-grid">
+        <div class="booking-info-item">
+          <i class="bi bi-calendar3"></i>
+          <span>${formattedDate}</span>
+        </div>
+        <div class="booking-info-item">
+          <i class="bi bi-clock"></i>
+          <span>${formattedStartTime} - ${formattedEndTime}</span>
+        </div>
+        <div class="booking-info-item">
+          <i class="bi bi-hourglass-split"></i>
+          <span>${durationText}</span>
+        </div>
+        <div class="booking-info-item">
+          <i class="bi bi-geo-alt"></i>
+          <span title="${pickupLocation}">${truncateText(pickupLocation, 30)}</span>
+        </div>
+      </div>
+      
+      ${timeLeftText ? `<div class="time-remaining"><i class="bi bi-alarm"></i> ${timeLeftText}</div>` : ''}
+      ${totalCost}
+      
+      <div class="booking-actions">
+        <a href="user-booking-details.html?id=${booking.id}" class="booking-view-link">
+          View Details <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  `;
+  
   return bookingCard;
 }
 
-// Create no bookings message
-function createNoBookingsMessage() {
-  const emptyState = document.createElement("div");
-  emptyState.className = "empty-state";
-  emptyState.innerHTML = `
-                    <i class="bi bi-calendar-x"></i>
-                    <p>You don't have any active bookings</p>
-                    <button class="primary-btn" onclick="window.location.href='#quick-search'">
-                        <i class="bi bi-search"></i> Find a Car
-                    </button>
-                `;
-  return emptyState;
+// Helper function to truncate text with ellipsis
+function truncateText(text, maxLength) {
+  if (!text) return "";
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 }
 
-// Get car details
-async function getCarDetails(carId) {
-  try {
-    const carDoc = await getDoc(doc(db, "cars", carId));
-    if (carDoc.exists()) {
-      const carData = carDoc.data();
-
-      // Parse car type to extract make and model
-      const parsedCarType = parseCarType(carData.car_type || "");
-
-      return {
-        id: carId,
-        ...carData,
-        make: parsedCarType.make,
-        modelName: parsedCarType.model,
-        image: `../static/images/car_images/${carData.car_type || "car"}.png`,
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error("Error getting car details:", error);
-    return null;
-  }
-}
 
 // Initialize search functionality
 function initializeSearch() {
