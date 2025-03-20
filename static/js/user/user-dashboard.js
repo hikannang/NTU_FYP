@@ -647,208 +647,100 @@ async function loadActiveBookings(userId) {
   }
 }
 
-// Enhanced function to create booking card with improved display
-async function createBookingCard(booking) {
-  console.log("Creating enhanced booking card for:", booking);
-  
+// Simple, straightforward createBookingCard function
+function createBookingCard(booking) {
   // Create booking card element
   const bookingCard = document.createElement("div");
   bookingCard.className = "booking-card";
   
-  // Get car details first before building the card
-  let carDetails = null;
+  // Get car info
+  const car = booking.car || {};
   
-  if (booking.car_id) {
-    try {
-      // First try to get car details if not already attached
-      if (!booking.car) {
-        const carDoc = await getDoc(doc(db, "cars", booking.car_id));
-        if (carDoc.exists()) {
-          booking.car = carDoc.data();
-          booking.car.id = carDoc.id;
-        }
-      }
-      
-      // Now try to get car model details if we have car_type
-      const car_type = booking.car?.car_type || booking.car_type || "";
-      
-      // Extract model name from car_type (e.g., modely_white -> modely)
-      const modelName = car_type.split('_')[0];
-      
-      if (modelName) {
-        const modelDoc = await getDoc(doc(db, "car_models", modelName));
-        if (modelDoc.exists()) {
-          carDetails = modelDoc.data();
-        }
-      }
-    } catch (error) {
-      console.warn("Error fetching additional car details:", error);
-    }
-  }
+  // Convert timestamps to dates
+  const startTime = booking.start_time instanceof Date ? booking.start_time : 
+                   booking.start_time?.toDate ? booking.start_time.toDate() : 
+                   new Date(booking.start_time);
+                   
+  const endTime = booking.end_time instanceof Date ? booking.end_time : 
+                 booking.end_time?.toDate ? booking.end_time.toDate() : 
+                 new Date(booking.end_time);
   
-  // Format dates and times
-  const dateOptions = { weekday: 'short', month: 'short', day: 'numeric' };
-  const timeOptions = { hour: '2-digit', minute: '2-digit' };
+  // Format dates
+  const formattedDate = startTime.toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric'
+  });
   
-  let formattedDate = "N/A";
-  let formattedStartTime = "N/A";
-  let formattedEndTime = "N/A";
-  let durationText = "N/A";
+  const formattedStartTime = startTime.toLocaleTimeString('en-US', {
+    hour: 'numeric', minute: '2-digit', hour12: true
+  });
   
-  try {
-    const startTime = booking.start_time instanceof Date ? booking.start_time : 
-                      booking.start_time?.toDate ? booking.start_time.toDate() : 
-                      new Date(booking.start_time);
-                      
-    const endTime = booking.end_time instanceof Date ? booking.end_time : 
-                    booking.end_time?.toDate ? booking.end_time.toDate() : 
-                    new Date(booking.end_time);
-    
-    if (startTime && endTime) {
-      formattedDate = startTime.toLocaleDateString('en-US', dateOptions);
-      formattedStartTime = startTime.toLocaleTimeString('en-US', timeOptions);
-      formattedEndTime = endTime.toLocaleTimeString('en-US', timeOptions);
-      
-      // Calculate duration
-      const durationMs = endTime - startTime;
-      const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
-      const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-      
-      if (durationHours > 0) {
-        durationText = `${durationHours} hr${durationHours > 1 ? 's' : ''}`;
-        if (durationMinutes > 0) {
-          durationText += ` ${durationMinutes} min`;
-        }
-      } else {
-        durationText = `${durationMinutes} minutes`;
-      }
-    }
-  } catch (e) {
-    console.error("Error formatting booking dates:", e);
-  }
+  const formattedEndTime = endTime.toLocaleTimeString('en-US', {
+    hour: 'numeric', minute: '2-digit', hour12: true
+  });
   
-  // Determine booking status
+  // Calculate duration
+  const durationMs = endTime - startTime;
+  const hours = Math.floor(durationMs / (1000 * 60 * 60));
+  const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+  const durationText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes} min`;
+  
+  // Determine status
   const now = new Date();
   let statusClass = "upcoming";
   let statusText = "Upcoming";
   let timeLeftText = "";
   
-  try {
-    const startTime = booking.start_time instanceof Date ? booking.start_time : 
-                      booking.start_time?.toDate ? booking.start_time.toDate() : 
-                      new Date(booking.start_time);
-                      
-    const endTime = booking.end_time instanceof Date ? booking.end_time : 
-                    booking.end_time?.toDate ? booking.end_time.toDate() : 
-                    new Date(booking.end_time);
-    
-    if (booking.status === "cancelled") {
-      statusClass = "cancelled";
-      statusText = "Cancelled";
-    } else if (booking.status === "completed" || (endTime && now > endTime)) {
-      statusClass = "completed";
-      statusText = "Completed";
-    } else if (booking.status === "active" || (startTime && endTime && startTime <= now && endTime >= now)) {
-      statusClass = "active";
-      statusText = "Active";
-      
-      // Calculate time left
-      const timeLeftMs = endTime - now;
-      if (timeLeftMs > 0) {
-        const hoursLeft = Math.floor(timeLeftMs / (1000 * 60 * 60));
-        const minutesLeft = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
-        
-        if (hoursLeft > 0) {
-          timeLeftText = `${hoursLeft}h ${minutesLeft}m remaining`;
-        } else {
-          timeLeftText = `${minutesLeft} minutes remaining`;
-        }
-      }
-    } else {
-      // Calculate time until start
-      const startTime = booking.start_time instanceof Date ? booking.start_time : 
-                        booking.start_time?.toDate ? booking.start_time.toDate() : 
-                        new Date(booking.start_time);
-                        
-      if (startTime && now < startTime) {
-        const timeUntilMs = startTime - now;
-        const daysUntil = Math.floor(timeUntilMs / (1000 * 60 * 60 * 24));
-        const hoursUntil = Math.floor((timeUntilMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        
-        if (daysUntil > 0) {
-          timeLeftText = `Starts in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`;
-        } else {
-          timeLeftText = `Starts in ${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
-        }
-      }
-    }
-  } catch (e) {
-    console.error("Error determining booking status:", e);
+  if (now >= startTime && now <= endTime) {
+    statusClass = "active";
+    statusText = "Active";
+    const timeLeft = endTime - now;
+    const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+    const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    timeLeftText = `${hoursLeft}h ${minutesLeft}m remaining`;
+  } else if (now < startTime) {
+    const timeUntil = startTime - now;
+    const daysUntil = Math.floor(timeUntil / (1000 * 60 * 60 * 24));
+    const hoursUntil = Math.floor((timeUntil % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    timeLeftText = daysUntil > 0 ? 
+      `Starts in ${daysUntil} day${daysUntil > 1 ? 's' : ''}` : 
+      `Starts in ${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
   }
   
-  // Format car name with color 
-  let displayName = "Unknown Car";
-  let carColor = "";
+  // Get car type
+  const carType = car.car_type || booking.car_type || "";
+  const modelId = carType.split("_")[0];
   
-  // First check if we have car model details from car_models collection
-  if (carDetails && carDetails.name) {
-    displayName = carDetails.name;
-    carColor = carDetails.color || "";
-  } 
-  // Otherwise try to extract from car or booking data
-  else {
-    const car = booking.car || {};
-    
-    // Try to get info from car details
-    if (car.car_type) {
-      const parts = car.car_type.split('_');
-      const modelPart = parts[0];
-      carColor = parts[1] || "";
-      
-      // Convert model format to proper name (e.g., modely -> Model Y)
-      if (modelPart.includes("model")) {
-        displayName = modelPart.replace("model", "Model ");
-      } else {
-        displayName = modelPart;
-      }
-    } else if (car.name) {
-      displayName = car.name;
-    }
-  }
+  // Simple car name mapping based on modelId
+  let carName = "Unknown Car";
+  if (modelId === "modely") carName = "Tesla Model Y";
+  else if (modelId === "model3") carName = "Tesla Model 3";
+  else if (modelId === "models") carName = "Tesla Model S";
+  else if (modelId === "modelx") carName = "Tesla Model X";
+  else if (modelId === "vezel") carName = "Honda Vezel"; 
   
-  // Format full display name with color
-  const fullDisplayName = carColor ? `${displayName} (${carColor})` : displayName;
+  // Extract color
+  const carColor = car.color || car.car_color || carType.split("_")[1] || "";
+  const colorText = carColor ? ` (${carColor})` : "";
   
-  // Get image with fallback
-  const carImage = booking.car?.image_url || 
-                  `../static/images/car_images/${booking.car?.car_type || booking.car_type || 'car'}.png`;
+  // Extract license plate
+  const licensePlate = car.license_plate || "No plate";
   
-  // Get price (if available)
-  const price = booking.price || booking.car?.price_per_hour || 0;
+  // Get car image
+  const carImage = car.image_url || `../static/images/car_images/${carType || 'car'}.png`;
   
   // Get pickup location
-  const pickupLocation = booking.pickup_location || booking.car?.address || "Address not available";
+  const pickupLocation = booking.pickup_location || car.address || "Location not available";
   
-  // Calculate total cost if available
-  let totalCost = "";
-  if (booking.total_cost || booking.total_price) {
-    const costValue = booking.total_cost || booking.total_price;
-    totalCost = `<div class="booking-cost">
-      <i class="bi bi-credit-card"></i>
-      <span>Total: $${parseFloat(costValue).toFixed(2)}</span>
-    </div>`;
-  }
-  
-  // Build HTML content with enhanced details
+  // Build HTML
   bookingCard.innerHTML = `
     <div class="booking-car-image">
-      <img src="${carImage}" alt="${fullDisplayName}" onerror="this.src='../static/images/car_images/car.png';">
-      <div class="status-badge ${statusClass} card-badge">${statusText}</div>
+      <img src="${carImage}" alt="${carName}" onerror="this.src='../static/images/car_images/car.png';">
+      <div class="status-badge ${statusClass}">${statusText}</div>
     </div>
     <div class="booking-details">
-      <div class="booking-header">
-        <h3 class="booking-car-name">${fullDisplayName}</h3>
-        ${price ? `<div class="booking-price">$${parseFloat(price).toFixed(2)}/hr</div>` : ''}
+      <div class="car-header">
+        <h3>${carName}${colorText}</h3>
+        <div class="license-plate-badge">${licensePlate}</div>
       </div>
       
       <div class="booking-info-grid">
@@ -871,7 +763,6 @@ async function createBookingCard(booking) {
       </div>
       
       ${timeLeftText ? `<div class="time-remaining"><i class="bi bi-alarm"></i> ${timeLeftText}</div>` : ''}
-      ${totalCost}
       
       <div class="booking-actions">
         <a href="user-booking-details.html?id=${booking.id}" class="booking-view-link">
@@ -884,10 +775,10 @@ async function createBookingCard(booking) {
   return bookingCard;
 }
 
-// Helper function to truncate text with ellipsis
+// Helper function for text truncation
 function truncateText(text, maxLength) {
-  if (!text) return "";
-  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+  if (!text) return '';
+  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
 }
 
 
@@ -1306,7 +1197,7 @@ function parseCarType(carType) {
   return { make, model, color };
 }
 
-// Modified createCarElement function
+// Complete createCarElement function
 function createCarElement(car) {
   const carEl = document.createElement("div");
   carEl.className = "car-card";
