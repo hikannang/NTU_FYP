@@ -1,4 +1,3 @@
-// user-dashboard.js
 import { db, auth } from "../common/firebase-config.js";
 import {
   doc,
@@ -350,24 +349,38 @@ function updateTimeBasedOnDate() {
   }
 }
 
-// Load user data
-async function loadUserData(userId) {
-  try {
-    const userDoc = await getDoc(doc(db, "users", userId));
+  // Load user data - Fix
+  async function loadUserData(userId) {
+    try {
+      console.log("Loading user data for ID:", userId);
+      const userRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userRef);
 
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        console.log("User data loaded:", userData);
 
-      // Update user name display
-      const userNameElement = document.getElementById("user-name");
-      if (userNameElement) {
-        userNameElement.textContent = userData.firstName || "User";
+        // Update user name display - Fixed to use firstName
+        const userNameElement = document.getElementById("user-name");
+        if (userNameElement) {
+          // Make sure we're using the correct field name from your database structure
+          if (userData.firstName) {
+            userNameElement.textContent = userData.firstName;
+            console.log("User name updated to:", userData.firstName);
+          } else {
+            console.warn("firstName field missing in user data:", userData);
+            userNameElement.textContent = "User";
+          }
+        } else {
+          console.error("User name element not found in DOM");
+        }
+      } else {
+        console.error("User document does not exist for ID:", userId);
       }
+    } catch (error) {
+      console.error("Error loading user data:", error);
     }
-  } catch (error) {
-    console.error("Error loading user data:", error);
   }
-}
 
 // Updated function to load active bookings with better error handling
 async function loadActiveBookings(userId) {
@@ -634,13 +647,44 @@ async function loadActiveBookings(userId) {
   }
 }
 
-// Enhanced function to create booking card with more details
-function createBookingCard(booking) {
+// Enhanced function to create booking card with improved display
+async function createBookingCard(booking) {
   console.log("Creating enhanced booking card for:", booking);
   
   // Create booking card element
   const bookingCard = document.createElement("div");
   bookingCard.className = "booking-card";
+  
+  // Get car details first before building the card
+  let carDetails = null;
+  
+  if (booking.car_id) {
+    try {
+      // First try to get car details if not already attached
+      if (!booking.car) {
+        const carDoc = await getDoc(doc(db, "cars", booking.car_id));
+        if (carDoc.exists()) {
+          booking.car = carDoc.data();
+          booking.car.id = carDoc.id;
+        }
+      }
+      
+      // Now try to get car model details if we have car_type
+      const car_type = booking.car?.car_type || booking.car_type || "";
+      
+      // Extract model name from car_type (e.g., modely_white -> modely)
+      const modelName = car_type.split('_')[0];
+      
+      if (modelName) {
+        const modelDoc = await getDoc(doc(db, "car_models", modelName));
+        if (modelDoc.exists()) {
+          carDetails = modelDoc.data();
+        }
+      }
+    } catch (error) {
+      console.warn("Error fetching additional car details:", error);
+    }
+  }
   
   // Format dates and times
   const dateOptions = { weekday: 'short', month: 'short', day: 'numeric' };
@@ -652,24 +696,32 @@ function createBookingCard(booking) {
   let durationText = "N/A";
   
   try {
-    if (booking.start_time instanceof Date && booking.end_time instanceof Date) {
-      formattedDate = booking.start_time.toLocaleDateString('en-US', dateOptions);
-      formattedStartTime = booking.start_time.toLocaleTimeString('en-US', timeOptions);
-      formattedEndTime = booking.end_time.toLocaleTimeString('en-US', timeOptions);
+    const startTime = booking.start_time instanceof Date ? booking.start_time : 
+                      booking.start_time?.toDate ? booking.start_time.toDate() : 
+                      new Date(booking.start_time);
+                      
+    const endTime = booking.end_time instanceof Date ? booking.end_time : 
+                    booking.end_time?.toDate ? booking.end_time.toDate() : 
+                    new Date(booking.end_time);
+    
+    if (startTime && endTime) {
+      formattedDate = startTime.toLocaleDateString('en-US', dateOptions);
+      formattedStartTime = startTime.toLocaleTimeString('en-US', timeOptions);
+      formattedEndTime = endTime.toLocaleTimeString('en-US', timeOptions);
       
       // Calculate duration
-      const durationMs = booking.end_time - booking.start_time;
+      const durationMs = endTime - startTime;
       const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
       const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
       
       if (durationHours > 0) {
         durationText = `${durationHours} hr${durationHours > 1 ? 's' : ''}`;
-        if (durationMinutes > 0) durationText += ` ${durationMinutes} min`;
+        if (durationMinutes > 0) {
+          durationText += ` ${durationMinutes} min`;
+        }
       } else {
         durationText = `${durationMinutes} minutes`;
       }
-    } else {
-      console.warn("Invalid date objects in booking:", booking);
     }
   } catch (e) {
     console.error("Error formatting booking dates:", e);
@@ -681,75 +733,121 @@ function createBookingCard(booking) {
   let statusText = "Upcoming";
   let timeLeftText = "";
   
-  if (booking.status === "active" || (booking.start_time <= now && booking.end_time >= now)) {
-    statusClass = "active";
-    statusText = "Active";
+  try {
+    const startTime = booking.start_time instanceof Date ? booking.start_time : 
+                      booking.start_time?.toDate ? booking.start_time.toDate() : 
+                      new Date(booking.start_time);
+                      
+    const endTime = booking.end_time instanceof Date ? booking.end_time : 
+                    booking.end_time?.toDate ? booking.end_time.toDate() : 
+                    new Date(booking.end_time);
     
-    // Calculate time left
-    const timeLeftMs = booking.end_time - now;
-    if (timeLeftMs > 0) {
-      const hoursLeft = Math.floor(timeLeftMs / (1000 * 60 * 60));
-      const minutesLeft = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
+    if (booking.status === "cancelled") {
+      statusClass = "cancelled";
+      statusText = "Cancelled";
+    } else if (booking.status === "completed" || (endTime && now > endTime)) {
+      statusClass = "completed";
+      statusText = "Completed";
+    } else if (booking.status === "active" || (startTime && endTime && startTime <= now && endTime >= now)) {
+      statusClass = "active";
+      statusText = "Active";
       
-      if (hoursLeft > 0) {
-        timeLeftText = `${hoursLeft}h ${minutesLeft}m remaining`;
-      } else {
-        timeLeftText = `${minutesLeft} minutes remaining`;
+      // Calculate time left
+      const timeLeftMs = endTime - now;
+      if (timeLeftMs > 0) {
+        const hoursLeft = Math.floor(timeLeftMs / (1000 * 60 * 60));
+        const minutesLeft = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (hoursLeft > 0) {
+          timeLeftText = `${hoursLeft}h ${minutesLeft}m remaining`;
+        } else {
+          timeLeftText = `${minutesLeft} minutes remaining`;
+        }
+      }
+    } else {
+      // Calculate time until start
+      const startTime = booking.start_time instanceof Date ? booking.start_time : 
+                        booking.start_time?.toDate ? booking.start_time.toDate() : 
+                        new Date(booking.start_time);
+                        
+      if (startTime && now < startTime) {
+        const timeUntilMs = startTime - now;
+        const daysUntil = Math.floor(timeUntilMs / (1000 * 60 * 60 * 24));
+        const hoursUntil = Math.floor((timeUntilMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        
+        if (daysUntil > 0) {
+          timeLeftText = `Starts in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`;
+        } else {
+          timeLeftText = `Starts in ${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
+        }
       }
     }
-  } else if (booking.start_time > now) {
-    // Calculate time until start
-    const timeUntilMs = booking.start_time - now;
-    const daysUntil = Math.floor(timeUntilMs / (1000 * 60 * 60 * 24));
-    const hoursUntil = Math.floor((timeUntilMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  } catch (e) {
+    console.error("Error determining booking status:", e);
+  }
+  
+  // Format car name with color 
+  let displayName = "Unknown Car";
+  let carColor = "";
+  
+  // First check if we have car model details from car_models collection
+  if (carDetails && carDetails.name) {
+    displayName = carDetails.name;
+    carColor = carDetails.color || "";
+  } 
+  // Otherwise try to extract from car or booking data
+  else {
+    const car = booking.car || {};
     
-    if (daysUntil > 0) {
-      timeLeftText = `Starts in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`;
-    } else if (hoursUntil > 0) {
-      const minutesUntil = Math.floor((timeUntilMs % (1000 * 60 * 60)) / (1000 * 60));
-      timeLeftText = `Starts in ${hoursUntil}h ${minutesUntil}m`;
-    } else {
-      const minutesUntil = Math.floor(timeUntilMs / (1000 * 60));
-      timeLeftText = `Starts in ${minutesUntil} minutes`;
+    // Try to get info from car details
+    if (car.car_type) {
+      const parts = car.car_type.split('_');
+      const modelPart = parts[0];
+      carColor = parts[1] || "";
+      
+      // Convert model format to proper name (e.g., modely -> Model Y)
+      if (modelPart.includes("model")) {
+        displayName = modelPart.replace("model", "Model ");
+      } else {
+        displayName = modelPart;
+      }
+    } else if (car.name) {
+      displayName = car.name;
     }
   }
   
-  // Get car info with careful handling of undefined properties
-  const car = booking.car || {};
-  const carMake = car.make || "";
-  const carModel = car.model || "";
-  const carName = carMake + (carMake && carModel ? " " : "") + carModel;
-  const carType = car.car_type || booking.car_type || "Car";
-  const displayName = carName || carType;
+  // Format full display name with color
+  const fullDisplayName = carColor ? `${displayName} (${carColor})` : displayName;
   
   // Get image with fallback
-  const carImage = car.image_url || `../static/images/car_images/${carType || 'car'}.png`;
+  const carImage = booking.car?.image_url || 
+                  `../static/images/car_images/${booking.car?.car_type || booking.car_type || 'car'}.png`;
   
   // Get price (if available)
-  const price = booking.price || car.price_per_hour || 0;
-  const formattedPrice = typeof price === 'number' ? `$${price.toFixed(2)}` : price;
+  const price = booking.price || booking.car?.price_per_hour || 0;
   
   // Get pickup location
-  const pickupLocation = booking.pickup_location || car.address || "Address not available";
+  const pickupLocation = booking.pickup_location || booking.car?.address || "Address not available";
   
   // Calculate total cost if available
   let totalCost = "";
-  if (booking.total_cost) {
+  if (booking.total_cost || booking.total_price) {
+    const costValue = booking.total_cost || booking.total_price;
     totalCost = `<div class="booking-cost">
       <i class="bi bi-credit-card"></i>
-      <span>Total: $${parseFloat(booking.total_cost).toFixed(2)}</span>
+      <span>Total: $${parseFloat(costValue).toFixed(2)}</span>
     </div>`;
   }
   
   // Build HTML content with enhanced details
   bookingCard.innerHTML = `
     <div class="booking-car-image">
-      <img src="${carImage}" alt="${displayName}" onerror="this.src='../static/images/car_images/car.png';">
+      <img src="${carImage}" alt="${fullDisplayName}" onerror="this.src='../static/images/car_images/car.png';">
       <div class="status-badge ${statusClass} card-badge">${statusText}</div>
     </div>
     <div class="booking-details">
       <div class="booking-header">
-        <h3 class="booking-car-name">${displayName}</h3>
+        <h3 class="booking-car-name">${fullDisplayName}</h3>
         ${price ? `<div class="booking-price">$${parseFloat(price).toFixed(2)}/hr</div>` : ''}
       </div>
       
@@ -1208,57 +1306,57 @@ function parseCarType(carType) {
   return { make, model, color };
 }
 
-// Create car element
+// Modified createCarElement function
 function createCarElement(car) {
   const carEl = document.createElement("div");
   carEl.className = "car-card";
 
-  // Get raw car type (without color)
+  // Get the car type for dataset filtering
   const baseCarType = car.car_type ? car.car_type.split("_")[0] : "unknown";
   carEl.dataset.type = baseCarType.toLowerCase();
 
   // Prepare distance display
   let distanceDisplay = "";
   if (car.distance !== null) {
-    distanceDisplay = `<span class="car-distance"><i class="bi bi-geo"></i> ${car.distance.toFixed(
-      1
-    )} km</span>`;
+    distanceDisplay = `<span class="car-distance"><i class="bi bi-geo"></i> ${car.distance.toFixed(1)} km</span>`;
   }
 
   // Prepare price display
   const priceDisplay = car.price_per_hour
     ? `$${car.price_per_hour.toFixed(2)}/hour`
     : "";
+    
+  // Get car color for display
+  const carColor = car.car_color || car.color || "";
+  const colorText = carColor ? ` (${carColor})` : "";
+  
+  // Get license plate and car ID
+  const licensePlate = car.license_plate || "No plate";
+  const carId = car.id ? car.id.substring(0, 6) : "";
+  const licensePlatePill = `${licensePlate}${carId ? ` (${carId})` : ''}`;
 
-  // Create HTML content
+  // Create HTML content with updated car name (with color) and license plate badge
   carEl.innerHTML = `
-                    <div class="car-image">
-                        <img src="${car.image}" alt="${car.make} ${
-    car.modelName
-  }" onerror="this.src='../static/images/assets/car-placeholder.png';">
-                    </div>
-                    <div class="car-info">
-                        <div class="car-header">
-                            <h3>${car.make} ${car.modelName}</h3>
-                            <div class="car-type-badge">${
-                              baseCarType || "Standard"
-                            }</div>
-                        </div>
-                        <div class="car-meta">
-                            ${distanceDisplay}
-                            <span class="car-price">${priceDisplay}</span>
-                        </div>
-                        <p class="car-location">
-                            <i class="bi bi-geo-alt"></i> 
-                            ${car.address || "Location not available"}
-                        </p>
-                        <a href="user-car-details.html?id=${
-                          car.id
-                        }" class="view-details-btn">
-                            View Details <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </div>
-                `;
+    <div class="car-image">
+      <img src="${car.image}" alt="${car.make} ${car.modelName}" onerror="this.src='../static/images/assets/car-placeholder.png';">
+    </div>
+    <div class="car-info">
+      <div class="car-header">
+        <h3>${car.make} ${car.modelName}${colorText}</h3>
+        <div class="license-plate-badge">${licensePlatePill}</div>
+      </div>
+      <div class="car-meta">
+        ${distanceDisplay}
+        <span class="car-price">${priceDisplay}</span>
+      </div>
+      <p class="car-location">
+        <i class="bi bi-geo-alt"></i> 
+        ${car.address || "Location not available"}
+      </p>
+      <a href="user-car-details.html?id=${car.id}" class="view-details-btn">
+        View Details <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>`;
 
   return carEl;
 }

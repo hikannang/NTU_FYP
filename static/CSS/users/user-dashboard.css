@@ -1045,158 +1045,199 @@ section {
   border-radius: var(--border-radius);
   overflow: hidden;
   box-shadow: var(--card-shadow);
-  transition: all var(--transition-speed);
+  transition: all 0.25s ease;
   display: flex;
-  margin-bottom: 20px;
+  margin-bottom: 12px; /* Reduced from 15px */
   width: 100%;
   height: auto;
-  min-height: 160px;
-}
-
-.booking-card:last-child {
-  margin-bottom: 0;
+  min-height: 135px; /* Slightly reduced height */
+  border: 1px solid transparent;
 }
 
 .booking-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--card-hover-shadow);
-  border: 1px solid var(--primary-light);
+  border-color: var(--primary-light);
 }
 
+/* Enlarged car image container */
 .booking-car-image {
-  width: 140px;
-  padding: 15px;
+  width: 200px; /* Increased from 180px */
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-light);
+  background: linear-gradient(135deg, #f5f7fa, #eef2f7);
+  padding: 8px; /* Reduced padding */
+  overflow: hidden;
 }
 
 .booking-car-image img {
   width: 100%;
   height: auto;
-  max-height: 100px;
+  max-height: 130px; /* Increased from 120px */
   object-fit: contain;
-  border-radius: 6px;
   transition: transform var(--transition-speed);
 }
 
+.booking-car-image::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.5;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .booking-card:hover .booking-car-image img {
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
 .card-badge {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
 }
 
+/* Compact booking details */
 .booking-details {
   flex: 1;
-  padding: 18px;
+  padding: 12px 14px; /* Reduced padding */
   display: flex;
   flex-direction: column;
+  gap: 6px; /* Reduced gap for tighter spacing */
 }
 
 .booking-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+  align-items: flex-start;
+  margin-bottom: 6px; /* Reduced margin */
 }
 
 .booking-car-name {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 600;
   color: var(--text-dark);
   max-width: 70%;
-}
-
-.booking-price {
-  font-weight: 600;
-  color: var(--primary-color);
-  font-size: 1.1rem;
+  line-height: 1.25;
 }
 
 .booking-info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px 30px;
-  margin-bottom: 15px;
+  gap: 8px 20px; /* Reduced gap */
+  margin-bottom: 8px; /* Reduced margin */
 }
 
 .booking-info-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px; /* Reduced gap */
   color: var(--text-medium);
-  font-size: 0.9rem;
-}
-
-.booking-info-item i {
-  color: var(--primary-color);
-  font-size: 1rem;
-  width: 18px;
-  text-align: center;
-  flex-shrink: 0;
+  font-size: 0.85rem; /* Slightly smaller font */
 }
 
 .time-remaining {
-  margin-bottom: 10px;
-  padding: 8px 12px;
+  margin-bottom: 6px; /* Reduced margin */
+  padding: 5px 10px; /* Reduced padding */
   background-color: var(--bg-light);
   color: var(--text-dark);
   font-weight: 500;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
-.time-remaining i {
-  color: var(--primary-color);
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.status-badge.upcoming {
+/* Make upcoming time remaining have blue background */
+.booking-card:not(.active) .time-remaining {
   background-color: var(--primary-light);
-  color: var(--primary-color);
-}
-
-.status-badge.active {
-  background-color: rgba(76, 175, 80, 0.1);
-  color: var(--success-color);
+  color: var(--primary-dark);
 }
 
 .booking-cost {
-  margin-bottom: 10px;
+  margin-bottom: 6px; /* Reduced margin */
   font-weight: 600;
-  color: var(--text-dark);
+  font-size: 0.95rem;
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.booking-cost i {
-  color: var(--primary-color);
+  gap: 6px;
 }
 
 .booking-actions {
   margin-top: auto;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
+  padding-top: 4px; /* Reduced padding */
+}
+
+.booking-view-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 5px;
+}
+
+.booking-view-link:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.booking-view-link i {
+  transition: transform 0.2s ease;
+}
+
+.booking-view-link:hover i {
+  transform: translateX(3px);
+}
+
+/* Updated status badge colors */
+.status-badge {
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+
+.status-badge.upcoming {
+  background-color: var(--primary-color); /* Blue color for upcoming */
+  color: white;
+}
+
+.status-badge.active {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.status-badge.completed {
+  background-color: var(--text-medium);
+  color: white;
+}
+
+.status-badge.cancelled {
+  background-color: var(--danger-color);
+  color: white;
 }
 
 .booking-view-link {
@@ -1233,13 +1274,13 @@ section {
 @media (max-width: 768px) {
   .booking-info-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
   }
   
   .booking-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 5px;
+    gap: 4px;
   }
   
   .booking-car-name {
@@ -1248,17 +1289,18 @@ section {
 }
 
 @media (max-width: 576px) {
-  .booking-card {
+  booking-card {
     flex-direction: column;
+    min-height: auto;
   }
   
   .booking-car-image {
     width: 100%;
-    height: 120px;
-    padding: 15px 15px 5px 15px;
+    height: 140px;
+    padding: 10px;
   }
   
   .booking-details {
-    padding: 15px;
+    padding: 12px 14px;
   }
 }
