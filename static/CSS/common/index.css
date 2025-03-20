@@ -65,43 +65,60 @@ h1 {
   margin-bottom: 30px;
 }
 
-/* Form Styles */
+/* Enhanced input group for password field */
 .input-group {
   position: relative;
   margin-bottom: 20px;
+  background-color: #f7f9fc;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
 }
 
-.input-group i {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6b7280;
+.input-group:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.input-group i:not(.password-toggle i) {
+  font-size: 1.2rem;
+  color: #64748b;
+  margin: 0 15px;
+  flex-shrink: 0;
 }
 
 .input-group input {
   width: 100%;
-  padding: 16px 20px 16px 45px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 15px;
-  transition: border-color 0.2s;
-  background-color: #f9fafb;
-}
-
-.input-group input:focus {
+  padding: 15px 0;
+  background: transparent;
+  border: none;
   outline: none;
-  border-color: #1e88e5;
-  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+  font-size: 16px;
+  color: #1e293b;
 }
 
+/* Position the password toggle inside the input */
 .password-toggle {
   position: absolute;
   right: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: #6b7280;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 1.2rem;
+  transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: #334155;
 }
 
 .remember-forgot {
