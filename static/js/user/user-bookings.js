@@ -367,186 +367,220 @@ async function loadUserBookings() {
       loadingIndicator.style.display = "none";
     }
     
-    // Create a booking card element
-    function createBookingCard(booking, bookingType) {
-      console.log("Creating booking card for:", booking.id, "Type:", bookingType);
-      
-      const bookingCard = document.createElement("div");
-      bookingCard.className = "booking-card";
-      
-      // Ensure we have valid date objects
-      let startTime, endTime;
-      
-      if (booking.startTimeDate) {
-        startTime = booking.startTimeDate;
-      } else if (booking.start_time) {
-        if (booking.start_time.toDate) {
-          startTime = booking.start_time.toDate();
-        } else if (booking.start_time.seconds) {
-          startTime = new Date(booking.start_time.seconds * 1000);
-        }
-      } else {
-        startTime = new Date(); // Fallback
-        console.warn("Missing start time for booking:", booking.id);
-      }
-      
-      if (booking.endTimeDate) {
-        endTime = booking.endTimeDate;
-      } else if (booking.end_time) {
-        if (booking.end_time.toDate) {
-          endTime = booking.end_time.toDate();
-        } else if (booking.end_time.seconds) {
-          endTime = new Date(booking.end_time.seconds * 1000);
-        }
-      } else {
-        endTime = new Date(); // Fallback
-        console.warn("Missing end time for booking:", booking.id);
-      }
-    
-      // Format dates and times
-      const dateOptions = { weekday: "short", month: "short", day: "numeric" };
-      const timeOptions = { hour: "2-digit", minute: "2-digit" };
-    
-      const formattedDate = startTime.toLocaleDateString("en-US", dateOptions);
-      const formattedStartTime = startTime.toLocaleTimeString("en-US", timeOptions);
-      const formattedEndTime = endTime.toLocaleTimeString("en-US", timeOptions);
-    
-      // Calculate time remaining or time until booking (for active and upcoming)
-      let timeText = "";
-      const now = new Date();
-    
-      if (bookingType === "active") {
-        const minutesRemaining = Math.floor((endTime - now) / 60000);
-        const hoursRemaining = Math.floor(minutesRemaining / 60);
-        const mins = minutesRemaining % 60;
-    
-        if (hoursRemaining > 0) {
-          timeText = `${hoursRemaining}h ${mins}m remaining`;
-        } else {
-          timeText = `${mins} minutes remaining`;
-        }
-      } else if (bookingType === "upcoming") {
-        const minutesUntil = Math.floor((startTime - now) / 60000);
-        const hoursUntil = Math.floor(minutesUntil / 60);
-        const daysUntil = Math.floor(hoursUntil / 24);
-    
-        if (daysUntil > 0) {
-          timeText = `Starts in ${daysUntil} day${daysUntil > 1 ? "s" : ""}`;
-        } else if (hoursUntil > 0) {
-          const mins = minutesUntil % 60;
-          timeText = `Starts in ${hoursUntil}h ${mins}m`;
-        } else {
-          timeText = `Starts in ${minutesUntil} minutes`;
-        }
-      }
-    
-      // Determine if AR wayfinding should be enabled
-      const thirtyMinutesBeforeStart = new Date(startTime);
-      thirtyMinutesBeforeStart.setMinutes(
-        thirtyMinutesBeforeStart.getMinutes() - 30
-      );
-    
-      const isAREnabled =
-        bookingType === "active" ||
-        (bookingType === "upcoming" && now >= thirtyMinutesBeforeStart);
-    
-      // Get car type safely
-      const carType = booking.car && booking.car.car_type ? booking.car.car_type : booking.car_type || 'car';
-      const carAddress = booking.car && booking.car.address ? booking.car.address : 'Address not available';
-    
-      // Set card HTML content
-      bookingCard.innerHTML = `
-            <div class="booking-status ${bookingType}">
-                <span>${
-                  bookingType.charAt(0).toUpperCase() + bookingType.slice(1)
-                }</span>
-            </div>
-            
-            <div class="booking-header">
-                <div class="car-image">
-                    <img src="../static/images/car_images/${carType.toLowerCase()}.png" 
-                        alt="${carType}" 
-                        onerror="this.onerror=null; this.src='../static/images/assets/car-placeholder.jpg'">
-                </div>
-                <div class="booking-info">
-                    <h3>${carType}</h3>
-                    <div class="booking-time">
-                        <div><i class="bi bi-calendar"></i> ${formattedDate}</div>
-                        <div><i class="bi bi-clock"></i> ${formattedStartTime} - ${formattedEndTime}</div>
-                    </div>
-                    ${
-                      timeText
-                        ? `<div class="time-remaining">${timeText}</div>`
-                        : ""
-                    }
-                </div>
-            </div>
-            
-            <div class="booking-details">
-                <div class="detail-item">
-                    <i class="bi bi-geo-alt"></i>
-                    <span>${carAddress}</span>
-                </div>
-                <div class="detail-item">
-                    <i class="bi bi-tag"></i>
-                    <span>Booking #${booking.id.slice(-6)}</span>
-                </div>
-            </div>
-            
-            <div class="booking-actions">
-                <a href="user-booking-details.html?id=${booking.id}&carId=${
-        booking.car_id || ''
-      }" class="primary-btn">
-                    View Details
-                </a>
-                ${
-                  bookingType === "upcoming"
-                    ? `
-                    <button class="secondary-btn cancel-btn" data-booking-id="${booking.id}" data-car-id="${booking.car_id || ''}">
-                        Cancel Booking
-                    </button>
-                `
-                    : ""
-                }
-                ${
-                  isAREnabled
-                    ? `
-                    <button class="ar-btn" data-booking-id="${booking.id}" data-car-id="${booking.car_id || ''}">
-                        <i class="bi bi-pin-map-fill"></i> Find Car
-                    </button>
-                `
-                    : ""
-                }
-            </div>
-        `;
-    
-      // Add event listeners to buttons
-      if (bookingType === "upcoming") {
-        const cancelButton = bookingCard.querySelector(".cancel-btn");
-        if (cancelButton) {
-          cancelButton.addEventListener("click", () =>
-            cancelBooking(
-              booking.id, 
-              booking.car_id || ''
-            )
-          );
-        }
-      }
-    
-      if (isAREnabled) {
-        const arButton = bookingCard.querySelector(".ar-btn");
-        if (arButton) {
-          arButton.addEventListener("click", () =>
-            launchARWayfinding(
-              booking.id, 
-              booking.car_id || ''
-            )
-          );
-        }
-      }
-    
-      return bookingCard;
+    // Create a booking card element with improved car name display
+function createBookingCard(booking, bookingType) {
+  console.log("Creating booking card for:", booking.id, "Type:", bookingType);
+  
+  const bookingCard = document.createElement("div");
+  bookingCard.className = "booking-card";
+  
+  // Ensure we have valid date objects
+  let startTime, endTime;
+  
+  if (booking.startTimeDate) {
+    startTime = booking.startTimeDate;
+  } else if (booking.start_time) {
+    if (booking.start_time.toDate) {
+      startTime = booking.start_time.toDate();
+    } else if (booking.start_time.seconds) {
+      startTime = new Date(booking.start_time.seconds * 1000);
     }
+  } else {
+    startTime = new Date(); // Fallback
+    console.warn("Missing start time for booking:", booking.id);
+  }
+  
+  if (booking.endTimeDate) {
+    endTime = booking.endTimeDate;
+  } else if (booking.end_time) {
+    if (booking.end_time.toDate) {
+      endTime = booking.end_time.toDate();
+    } else if (booking.end_time.seconds) {
+      endTime = new Date(booking.end_time.seconds * 1000);
+    }
+  } else {
+    endTime = new Date(); // Fallback
+    console.warn("Missing end time for booking:", booking.id);
+  }
+
+  // Format dates and times
+  const dateOptions = { weekday: "short", month: "short", day: "numeric" };
+  const timeOptions = { hour: "2-digit", minute: "2-digit" };
+
+  const formattedDate = startTime.toLocaleDateString("en-US", dateOptions);
+  const formattedStartTime = startTime.toLocaleTimeString("en-US", timeOptions);
+  const formattedEndTime = endTime.toLocaleTimeString("en-US", timeOptions);
+
+  // Calculate time remaining or time until booking (for active and upcoming)
+  let timeText = "";
+  const now = new Date();
+
+  if (bookingType === "active") {
+    const minutesRemaining = Math.floor((endTime - now) / 60000);
+    const hoursRemaining = Math.floor(minutesRemaining / 60);
+    const mins = minutesRemaining % 60;
+
+    if (hoursRemaining > 0) {
+      timeText = `${hoursRemaining}h ${mins}m remaining`;
+    } else {
+      timeText = `${mins} minutes remaining`;
+    }
+  } else if (bookingType === "upcoming") {
+    const minutesUntil = Math.floor((startTime - now) / 60000);
+    const hoursUntil = Math.floor(minutesUntil / 60);
+    const daysUntil = Math.floor(hoursUntil / 24);
+
+    if (daysUntil > 0) {
+      timeText = `Starts in ${daysUntil} day${daysUntil > 1 ? "s" : ""}`;
+    } else if (hoursUntil > 0) {
+      const mins = minutesUntil % 60;
+      timeText = `Starts in ${hoursUntil}h ${mins}m`;
+    } else {
+      timeText = `Starts in ${minutesUntil} minutes`;
+    }
+  }
+
+  // Determine if AR wayfinding should be enabled
+  const thirtyMinutesBeforeStart = new Date(startTime);
+  thirtyMinutesBeforeStart.setMinutes(
+    thirtyMinutesBeforeStart.getMinutes() - 30
+  );
+
+  const isAREnabled =
+    bookingType === "active" ||
+    (bookingType === "upcoming" && now >= thirtyMinutesBeforeStart);
+
+  // Extract car information
+  const carType = booking.car && booking.car.car_type ? booking.car.car_type : booking.car_type || 'car';
+  const carAddress = booking.car && booking.car.address ? booking.car.address : 'Address not available';
+  
+  // Extract model_id from car_type (e.g., "modely_white" → "modely")
+  const modelId = carType.split('_')[0];
+  
+  // Extract color from car_type or car object
+  let carColor = "";
+  if (carType.includes('_')) {
+    carColor = carType.split('_')[1];
+    // Capitalize first letter of color
+    carColor = carColor.charAt(0).toUpperCase() + carColor.slice(1);
+  } else if (booking.car && booking.car.car_color) {
+    carColor = booking.car.car_color;
+  }
+  
+  // Determine car name from car_models collection data or our mapping
+  let carName = "";
+  
+  // Use car_models data if available in the booking
+  if (booking.car && booking.car.model_data && booking.car.model_data.name) {
+    carName = booking.car.model_data.name;
+  } 
+  // Otherwise use our mapping of model_ids to proper names
+  else {
+    // Map model ID to proper car name
+    if (modelId === "modely") carName = "Tesla Model Y";
+    else if (modelId === "model3") carName = "Tesla Model 3";
+    else if (modelId === "models") carName = "Tesla Model S";
+    else if (modelId === "modelx") carName = "Tesla Model X";
+    else if (modelId === "vezel") carName = "Honda Vezel";
+    else carName = modelId.charAt(0).toUpperCase() + modelId.slice(1); // Capitalize first letter
+  }
+  
+  // Create the display name with color in parentheses if available
+  const displayName = carColor ? `${carName} (${carColor})` : carName;
+
+  // Set card HTML content
+  bookingCard.innerHTML = `
+        <div class="booking-status ${bookingType}">
+            <span>${
+              bookingType.charAt(0).toUpperCase() + bookingType.slice(1)
+            }</span>
+        </div>
+        
+        <div class="booking-header">
+            <div class="car-image">
+                <img src="../static/images/car_images/${carType.toLowerCase()}.png" 
+                    alt="${displayName}" 
+                    onerror="this.onerror=null; this.src='../static/images/assets/car-placeholder.jpg'">
+            </div>
+            <div class="booking-info">
+                <h3>${displayName}</h3>
+                <div class="booking-time">
+                    <div><i class="bi bi-calendar"></i> ${formattedDate}</div>
+                    <div><i class="bi bi-clock"></i> ${formattedStartTime} - ${formattedEndTime}</div>
+                </div>
+                ${
+                  timeText
+                    ? `<div class="time-remaining">${timeText}</div>`
+                    : ""
+                }
+            </div>
+        </div>
+        
+        <div class="booking-details">
+            <div class="detail-item">
+                <i class="bi bi-geo-alt"></i>
+                <span>${carAddress}</span>
+            </div>
+            <div class="detail-item">
+                <i class="bi bi-tag"></i>
+                <span>Booking #${booking.id.slice(-6)}</span>
+            </div>
+        </div>
+        
+        <div class="booking-actions">
+            <a href="user-booking-details.html?id=${booking.id}&carId=${
+    booking.car_id || ''
+  }" class="primary-btn">
+                View Details
+            </a>
+            ${
+              bookingType === "upcoming"
+                ? `
+                <button class="secondary-btn cancel-btn" data-booking-id="${booking.id}" data-car-id="${booking.car_id || ''}">
+                    Cancel Booking
+                </button>
+            `
+                : ""
+            }
+            ${
+              isAREnabled
+                ? `
+                <button class="ar-btn" data-booking-id="${booking.id}" data-car-id="${booking.car_id || ''}">
+                    <i class="bi bi-pin-map-fill"></i> Find Car
+                </button>
+            `
+                : ""
+            }
+        </div>
+    `;
+
+  // Add event listeners to buttons
+  if (bookingType === "upcoming") {
+    const cancelButton = bookingCard.querySelector(".cancel-btn");
+    if (cancelButton) {
+      cancelButton.addEventListener("click", () =>
+        cancelBooking(
+          booking.id, 
+          booking.car_id || ''
+        )
+      );
+    }
+  }
+
+  if (isAREnabled) {
+    const arButton = bookingCard.querySelector(".ar-btn");
+    if (arButton) {
+      arButton.addEventListener("click", () =>
+        launchARWayfinding(
+          booking.id, 
+          booking.car_id || ''
+        )
+      );
+    }
+  }
+
+  return bookingCard;
+}
     
     // Create empty state message
     function createEmptyStateMessage(message) {
