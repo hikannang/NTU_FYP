@@ -43,7 +43,7 @@
 
 /* ====== GLOBAL STYLES ====== */
 body {
-  background-color: var(--gray-50);
+  background-color: var(red);
   color: var(--text-primary);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", sans-serif;
@@ -623,7 +623,9 @@ main {
   background-color: var(--primary);
   border-radius: 50%;
   margin-right: 8px;
-} /* Enhanced info grid without changing HTML */
+} 
+
+/* Enhanced info grid without changing HTML */
 .booking-info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -638,6 +640,7 @@ main {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-bottom: 8px; /* Reduced from default */
 }
 
 .booking-info-item i {
@@ -669,16 +672,17 @@ main {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 18px;
+  padding: 14px 20px;
   background-color: var(--primary-light);
   color: var(--primary-dark);
   border-radius: var(--border-radius-sm);
   font-size: 0.95rem;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 16px; /* Reduced bottom margin to 16px */
   border-left: 4px solid var(--primary);
   transition: transform var(--transition-speed) ease;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+  margin: 0 20px 16px 20px;
 }
 
 /* Handle time remaining for active bookings without changing HTML */
@@ -704,6 +708,7 @@ main {
   justify-content: space-between;
   padding-top: 20px;
   border-top: 1px solid var(--gray-200);
+  padding: 20px;
 }
 
 .booking-view-link {
@@ -1073,4 +1078,211 @@ main {
   .modal-footer button {
     width: 100%;
   }
+}
+
+/* Make all status badges visible without hover */
+.booking-status {
+  padding: 6px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 30px;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 5;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  display: flex !important; /* Force display with !important */
+  align-items: center;
+  gap: 6px;
+  opacity: 1 !important; /* Force visibility with !important */
+  visibility: visible !important; /* Ensure visibility */
+}
+
+/* Status badge colors with distinct visual styling for each status */
+.booking-status.active {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.booking-status.upcoming {
+  background-color: rgba(59, 130, 246, 0.15); 
+  color: var(--primary);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.booking-status.past {
+  background-color: rgba(100, 116, 139, 0.15);
+  color: var(--gray-600);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.booking-status.cancelled {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Add indicator dots with different colors for each status */
+.booking-status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  animation: pulse 2s infinite;
+}
+
+.booking-status.active::before {
+  background-color: var(--success);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.booking-status.upcoming::before {
+  background-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.booking-status.past::before {
+  background-color: var(--gray-500);
+  box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.2);
+}
+
+.booking-status.cancelled::before {
+  background-color: var(--danger);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+/* Fix any CSS that might hide status badges */
+.booking-card .booking-status {
+  opacity: 1 !important;
+}
+
+.booking-card:not(:hover) .booking-status {
+  display: flex !important;
+}
+
+/* Animation for the pulse effect */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* ====== BOOKING CARD IMAGE ====== */
+.car-image {
+  height: 180px;
+  position: relative;
+  background: linear-gradient(135deg, #f5f9ff, #e6f0f9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.car-image::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(circle, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.5;
+}
+
+.car-image img {
+  max-width: 95%;
+  height: auto;
+  object-fit: contain;
+  transition: transform var(--transition-speed) ease;
+  z-index: 2;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+}
+
+.booking-card:hover .car-image img {
+  transform: translateY(-5px);
+}
+
+/* Consistent padding for booking info elements */
+.booking-info, 
+.booking-time,
+.booking-details .detail-item {
+  padding: 16px 20px; /* Standardized padding for all elements */
+}
+
+/* Additional styles for consistency */
+.booking-info-grid {
+  padding: 16px 20px;
+  gap: 10px; /* Reduced gap between elements */
+}
+
+.time-remaining {
+  padding: 14px 20px;
+  margin: 0 20px 16px 20px; /* Reduced bottom margin to 16px */
+}
+
+/* Ensure all content sections have consistent padding */
+.booking-header,
+.booking-actions {
+  padding: 20px;
+}
+
+/* Reduced spacing between booking info items */
+.booking-info-item {
+  margin-bottom: 8px; /* Reduced from default */
+}
+
+/* Remove any default margins between sections */
+.booking-time, 
+.booking-location {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Adjust vertical spacing between major sections */
+.booking-info + .booking-time,
+.booking-time + .booking-location {
+  margin-top: 8px; /* Reduced space between sections */
+}
+
+/* Ensure all content sections have consistent padding */
+.booking-info, 
+.booking-time,
+.booking-details .detail-item {
+  padding: 16px 5px; /* Match the padding of booking detail items */
+}
+
+/* Additional styles for consistency */
+.booking-info-grid {
+  padding: 16px 20px;
+  gap: 10px;
+}
+
+.time-remaining {
+  padding: 14px 20px;
+  margin: 0 20px 16px 20px;
+}
+
+/* Ensure all content sections have consistent padding */
+.booking-header,
+.booking-actions {
+  padding: 20px;
+}
+
+/* Remove any default margins that might be inconsistent */
+.booking-info,
+.booking-time,
+.booking-header,
+.booking-actions {
+  margin: 0;
+}
+
+/* Add space between sections */
+.booking-info + .booking-time,
+.booking-time + .booking-actions {
+  margin-top: 16px;
 }
