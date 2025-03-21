@@ -10,7 +10,7 @@ import {
   updateDoc,
   orderBy,
   Timestamp,
-  writeBatch
+  writeBatch,
 } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 import {
   onAuthStateChanged,
@@ -34,12 +34,13 @@ const bookingsTabContent = document.querySelectorAll(".tab-content");
 const upcomingBookingsContainer = document.getElementById("upcoming-bookings");
 const activeBookingsContainer = document.getElementById("active-bookings");
 const pastBookingsContainer = document.getElementById("past-bookings");
-const cancelledBookingsContainer = document.getElementById("cancelled-bookings");
+const cancelledBookingsContainer =
+  document.getElementById("cancelled-bookings");
 
 // Initialize page
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("Bookings page loaded");
-  
+
   try {
     // Load header and footer
     document.getElementById("header").innerHTML = await fetch(
@@ -58,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.log("User authenticated:", user.uid);
         userId = user.uid;
         setupTabNavigation();
-        
+
         // Load bookings directly from user's bookings collection
         await loadUserBookings();
       } else {
@@ -110,7 +111,7 @@ function setupTabNavigation() {
       // Show selected tab content
       const tabId = tab.getAttribute("data-tab");
       document.getElementById(tabId).style.display = "block";
-      
+
       console.log(`Tab changed to: ${tabId}`);
     });
   });
@@ -121,7 +122,7 @@ function setupTabNavigation() {
 async function loadUserBookings() {
   try {
     console.log("Loading bookings from user's bookings collection");
-    
+
     // Show loading indicator
     loadingIndicator.style.display = "flex";
     noBookingsMessage.style.display = "none";
@@ -133,111 +134,158 @@ async function loadUserBookings() {
       past: [],
       cancelled: [],
     };
-    
+
     // Get current date for categorization
     const now = new Date();
-    
+
     // Query bookings from user's bookings collection
     try {
       const userBookingsRef = collection(db, "users", userId, "bookings");
       const bookingsSnapshot = await getDocs(userBookingsRef);
-      
-      console.log(`Found ${bookingsSnapshot.size} bookings in user's collection`);
-      
+
+      console.log(
+        `Found ${bookingsSnapshot.size} bookings in user's collection`
+      );
+
       if (bookingsSnapshot.empty) {
         console.log("No bookings found for user");
         noBookingsMessage.style.display = "flex";
         loadingIndicator.style.display = "none";
         return;
       }
-      
+
       // Process each booking and load car details
       const bookings = [];
       const carPromises = [];
-      
-      bookingsSnapshot.forEach(docSnapshot => {
+
+      bookingsSnapshot.forEach((docSnapshot) => {
         const bookingData = docSnapshot.data();
         const booking = {
           id: docSnapshot.id,
-          ...bookingData
+          ...bookingData,
         };
-        
+
         console.log("Processing booking:", booking.id);
-        
+
         // Convert timestamps to dates
         try {
           if (booking.start_time) {
-            if (typeof booking.start_time.toDate === 'function') {
+            if (typeof booking.start_time.toDate === "function") {
               booking.startTimeDate = booking.start_time.toDate();
             } else if (booking.start_time.seconds) {
-              booking.startTimeDate = new Date(booking.start_time.seconds * 1000);
+              booking.startTimeDate = new Date(
+                booking.start_time.seconds * 1000
+              );
             }
           }
-          
+
           if (booking.end_time) {
-            if (typeof booking.end_time.toDate === 'function') {
+            if (typeof booking.end_time.toDate === "function") {
               booking.endTimeDate = booking.end_time.toDate();
             } else if (booking.end_time.seconds) {
               booking.endTimeDate = new Date(booking.end_time.seconds * 1000);
             }
           }
         } catch (err) {
-          console.error("Error converting timestamps for booking", booking.id, err);
+          console.error(
+            "Error converting timestamps for booking",
+            booking.id,
+            err
+          );
           booking.startTimeDate = now;
           booking.endTimeDate = new Date(now.getTime() + 3600000); // Default to 1 hour later
         }
-        
-        // Get car details - Alternative approach to avoid "doc is not a function" error
+
+        // Inside loadUserBookings function, we need to modify how the car promises are processed
         if (booking.car_id) {
-          console.log(`Loading car details for booking ${booking.id}, car ${booking.car_id}`);
-          
+          console.log(
+            `Loading car details for booking ${booking.id}, car ${booking.car_id}`
+          );
+
           // Alternative approach: query collection with a filter
-          const carPromise = getDocs(query(collection(db, "cars"), where("__name__", "==", booking.car_id)))
-            .then(querySnapshot => {
+          const carPromise = getDocs(
+            query(
+              collection(db, "cars"),
+              where("__name__", "==", booking.car_id)
+            )
+          )
+            .then(async (querySnapshot) => {
               if (!querySnapshot.empty) {
                 const carDoc = querySnapshot.docs[0];
                 booking.car = carDoc.data();
                 booking.car.id = carDoc.id;
+
+                // Add this block to fetch car model details
+                if (booking.car.car_type) {
+                  const modelId = booking.car.car_type.split("_")[0];
+                  try {
+                    const modelRef = doc(db, "car_models", modelId);
+                    const modelDoc = await getDoc(modelRef);
+
+                    if (modelDoc.exists()) {
+                      booking.car.model_data = modelDoc.data();
+                      console.log(
+                        `Loaded model data for ${modelId}:`,
+                        booking.car.model_data
+                      );
+                    } else {
+                      console.warn(
+                        `Car model ${modelId} not found in car_models collection`
+                      );
+                    }
+                  } catch (modelError) {
+                    console.error(
+                      `Error fetching model data for ${modelId}:`,
+                      modelError
+                    );
+                  }
+                }
+
                 console.log(`Car details loaded for ${booking.id}`);
               } else {
-                console.warn(`Car ${booking.car_id} not found for booking ${booking.id}`);
-                booking.car = { 
+                console.warn(
+                  `Car ${booking.car_id} not found for booking ${booking.id}`
+                );
+                booking.car = {
                   car_type: booking.car_type || "Unknown Car",
-                  address: "Address unavailable" 
+                  address: "Address unavailable",
                 };
               }
             })
-            .catch(error => {
-              console.error(`Error fetching car ${booking.car_id} for booking ${booking.id}:`, error);
-              booking.car = { 
+            .catch((error) => {
+              console.error(
+                `Error fetching car ${booking.car_id} for booking ${booking.id}:`,
+                error
+              );
+              booking.car = {
                 car_type: booking.car_type || "Unknown Car",
-                address: "Error loading address" 
+                address: "Error loading address",
               };
             });
-            
+
           carPromises.push(carPromise);
         } else {
           console.warn(`Booking ${booking.id} has no car_id`);
-          booking.car = { 
+          booking.car = {
             car_type: booking.car_type || "Unknown Car",
-            address: "Car information unavailable"
+            address: "Car information unavailable",
           };
         }
-        
+
         bookings.push(booking);
       });
-      
+
       // Wait for all car details to be loaded
       await Promise.allSettled(carPromises);
       console.log(`Processed ${bookings.length} bookings with car details`);
-      
+
       // Categorize bookings
-      bookings.forEach(booking => {
+      bookings.forEach((booking) => {
         if (!booking.startTimeDate || !booking.endTimeDate) {
           console.warn(`Booking ${booking.id} has invalid dates, skipping`);
           return;
         }
-        
+
         if (booking.status === "cancelled") {
           bookingsData.cancelled.push(booking);
         } else if (booking.startTimeDate > now) {
@@ -248,126 +296,125 @@ async function loadUserBookings() {
           bookingsData.active.push(booking);
         }
       });
-      
+
       console.log("Categorized bookings:", {
         upcoming: bookingsData.upcoming.length,
         active: bookingsData.active.length,
         past: bookingsData.past.length,
-        cancelled: bookingsData.cancelled.length
+        cancelled: bookingsData.cancelled.length,
       });
-      
+
       // Sort each category
       bookingsData.upcoming.sort((a, b) => a.startTimeDate - b.startTimeDate);
       bookingsData.active.sort((a, b) => a.endTimeDate - b.endTimeDate);
       bookingsData.past.sort((a, b) => b.startTimeDate - a.startTimeDate);
       bookingsData.cancelled.sort((a, b) => b.startTimeDate - a.startTimeDate);
-      
+
       // Update UI
       updateBookingsUI();
     } catch (innerError) {
       console.error("Error processing bookings:", innerError);
       throw innerError;
     }
-    
   } catch (error) {
     console.error("Error loading bookings:", error);
     showErrorMessage(`Failed to load your bookings: ${error.message}`);
     loadingIndicator.style.display = "none";
   }
 }
-    
-    // Update UI with bookings data
-    function updateBookingsUI() {
-      console.group("Updating booking UI");
-      console.log("Upcoming bookings:", bookingsData.upcoming.length);
-      console.log("Active bookings:", bookingsData.active.length);
-      console.log("Past bookings:", bookingsData.past.length);
-      console.log("Cancelled bookings:", bookingsData.cancelled.length);
-      console.groupEnd();
-      
-      // Clear all containers
-      upcomingBookingsContainer.innerHTML = "";
-      activeBookingsContainer.innerHTML = "";
-      pastBookingsContainer.innerHTML = "";
-      cancelledBookingsContainer.innerHTML = "";
-    
-      // Check if there are any bookings at all
-      const totalBookings =
-        bookingsData.upcoming.length +
-        bookingsData.active.length +
-        bookingsData.past.length +
-        bookingsData.cancelled.length;
-    
-      console.log("Total bookings:", totalBookings);
-    
-      if (totalBookings === 0) {
-        noBookingsMessage.style.display = "flex";
-        loadingIndicator.style.display = "none";
-        return;
-      }
-    
-      // Populate upcoming bookings
-      if (bookingsData.upcoming.length > 0) {
-        bookingsData.upcoming.forEach((booking) => {
-          upcomingBookingsContainer.appendChild(
-            createBookingCard(booking, "upcoming")
-          );
-        });
-        console.log("Populated upcoming bookings:", bookingsData.upcoming.length);
-      } else {
-        upcomingBookingsContainer.innerHTML = createEmptyStateMessage(
-          "No upcoming bookings"
-        );
-        console.log("No upcoming bookings");
-      }
-    
-      // Populate active bookings
-      if (bookingsData.active.length > 0) {
-        bookingsData.active.forEach((booking) => {
-          activeBookingsContainer.appendChild(createBookingCard(booking, "active"));
-        });
-        console.log("Populated active bookings:", bookingsData.active.length);
-      } else {
-        activeBookingsContainer.innerHTML =
-          createEmptyStateMessage("No active bookings");
-        console.log("No active bookings");
-      }
-    
-      // Populate past bookings
-      if (bookingsData.past.length > 0) {
-        bookingsData.past.forEach((booking) => {
-          pastBookingsContainer.appendChild(createBookingCard(booking, "past"));
-        });
-        console.log("Populated past bookings:", bookingsData.past.length);
-      } else {
-        pastBookingsContainer.innerHTML =
-          createEmptyStateMessage("No past bookings");
-        console.log("No past bookings");
-      }
-    
-      // Populate cancelled bookings
-      if (bookingsData.cancelled.length > 0) {
-        bookingsData.cancelled.forEach((booking) => {
-          cancelledBookingsContainer.appendChild(
-            createBookingCard(booking, "cancelled")
-          );
-        });
-        console.log("Populated cancelled bookings:", bookingsData.cancelled.length);
-      } else {
-        cancelledBookingsContainer.innerHTML = createEmptyStateMessage(
-          "No cancelled bookings"
-        );
-        console.log("No cancelled bookings");
-      }
-    
-      // Set active tab based on which category has bookings
-      setInitialActiveTab();
-      
-      // Hide loading indicator
-      loadingIndicator.style.display = "none";
-    }
-    
-    // Create a booking card element with improved car name display
+
+// Update UI with bookings data
+function updateBookingsUI() {
+  console.group("Updating booking UI");
+  console.log("Upcoming bookings:", bookingsData.upcoming.length);
+  console.log("Active bookings:", bookingsData.active.length);
+  console.log("Past bookings:", bookingsData.past.length);
+  console.log("Cancelled bookings:", bookingsData.cancelled.length);
+  console.groupEnd();
+
+  // Clear all containers
+  upcomingBookingsContainer.innerHTML = "";
+  activeBookingsContainer.innerHTML = "";
+  pastBookingsContainer.innerHTML = "";
+  cancelledBookingsContainer.innerHTML = "";
+
+  // Check if there are any bookings at all
+  const totalBookings =
+    bookingsData.upcoming.length +
+    bookingsData.active.length +
+    bookingsData.past.length +
+    bookingsData.cancelled.length;
+
+  console.log("Total bookings:", totalBookings);
+
+  if (totalBookings === 0) {
+    noBookingsMessage.style.display = "flex";
+    loadingIndicator.style.display = "none";
+    return;
+  }
+
+  // Populate upcoming bookings
+  if (bookingsData.upcoming.length > 0) {
+    bookingsData.upcoming.forEach((booking) => {
+      upcomingBookingsContainer.appendChild(
+        createBookingCard(booking, "upcoming")
+      );
+    });
+    console.log("Populated upcoming bookings:", bookingsData.upcoming.length);
+  } else {
+    upcomingBookingsContainer.innerHTML = createEmptyStateMessage(
+      "No upcoming bookings"
+    );
+    console.log("No upcoming bookings");
+  }
+
+  // Populate active bookings
+  if (bookingsData.active.length > 0) {
+    bookingsData.active.forEach((booking) => {
+      activeBookingsContainer.appendChild(createBookingCard(booking, "active"));
+    });
+    console.log("Populated active bookings:", bookingsData.active.length);
+  } else {
+    activeBookingsContainer.innerHTML =
+      createEmptyStateMessage("No active bookings");
+    console.log("No active bookings");
+  }
+
+  // Populate past bookings
+  if (bookingsData.past.length > 0) {
+    bookingsData.past.forEach((booking) => {
+      pastBookingsContainer.appendChild(createBookingCard(booking, "past"));
+    });
+    console.log("Populated past bookings:", bookingsData.past.length);
+  } else {
+    pastBookingsContainer.innerHTML =
+      createEmptyStateMessage("No past bookings");
+    console.log("No past bookings");
+  }
+
+  // Populate cancelled bookings
+  if (bookingsData.cancelled.length > 0) {
+    bookingsData.cancelled.forEach((booking) => {
+      cancelledBookingsContainer.appendChild(
+        createBookingCard(booking, "cancelled")
+      );
+    });
+    console.log("Populated cancelled bookings:", bookingsData.cancelled.length);
+  } else {
+    cancelledBookingsContainer.innerHTML = createEmptyStateMessage(
+      "No cancelled bookings"
+    );
+    console.log("No cancelled bookings");
+  }
+
+  // Set active tab based on which category has bookings
+  setInitialActiveTab();
+
+  // Hide loading indicator
+  loadingIndicator.style.display = "none";
+}
+
+// Create a booking card element with improved car name display
 function createBookingCard(booking, bookingType) {
   console.log("Creating booking card for:", booking.id, "Type:", bookingType);
   
@@ -384,6 +431,8 @@ function createBookingCard(booking, bookingType) {
       startTime = booking.start_time.toDate();
     } else if (booking.start_time.seconds) {
       startTime = new Date(booking.start_time.seconds * 1000);
+    } else {
+      startTime = new Date(booking.start_time);
     }
   } else {
     startTime = new Date(); // Fallback
@@ -397,29 +446,31 @@ function createBookingCard(booking, bookingType) {
       endTime = booking.end_time.toDate();
     } else if (booking.end_time.seconds) {
       endTime = new Date(booking.end_time.seconds * 1000);
+    } else {
+      endTime = new Date(booking.end_time);
     }
   } else {
     endTime = new Date(); // Fallback
     console.warn("Missing end time for booking:", booking.id);
   }
-
+  
   // Format dates and times
   const dateOptions = { weekday: "short", month: "short", day: "numeric" };
   const timeOptions = { hour: "2-digit", minute: "2-digit" };
-
+  
   const formattedDate = startTime.toLocaleDateString("en-US", dateOptions);
   const formattedStartTime = startTime.toLocaleTimeString("en-US", timeOptions);
   const formattedEndTime = endTime.toLocaleTimeString("en-US", timeOptions);
-
+  
   // Calculate time remaining or time until booking (for active and upcoming)
   let timeText = "";
   const now = new Date();
-
+  
   if (bookingType === "active") {
     const minutesRemaining = Math.floor((endTime - now) / 60000);
     const hoursRemaining = Math.floor(minutesRemaining / 60);
     const mins = minutesRemaining % 60;
-
+    
     if (hoursRemaining > 0) {
       timeText = `${hoursRemaining}h ${mins}m remaining`;
     } else {
@@ -429,7 +480,7 @@ function createBookingCard(booking, bookingType) {
     const minutesUntil = Math.floor((startTime - now) / 60000);
     const hoursUntil = Math.floor(minutesUntil / 60);
     const daysUntil = Math.floor(hoursUntil / 24);
-
+    
     if (daysUntil > 0) {
       timeText = `Starts in ${daysUntil} day${daysUntil > 1 ? "s" : ""}`;
     } else if (hoursUntil > 0) {
@@ -439,271 +490,264 @@ function createBookingCard(booking, bookingType) {
       timeText = `Starts in ${minutesUntil} minutes`;
     }
   }
-
+  
   // Determine if AR wayfinding should be enabled
   const thirtyMinutesBeforeStart = new Date(startTime);
-  thirtyMinutesBeforeStart.setMinutes(
-    thirtyMinutesBeforeStart.getMinutes() - 30
-  );
-
+  thirtyMinutesBeforeStart.setMinutes(thirtyMinutesBeforeStart.getMinutes() - 30);
+  
   const isAREnabled =
     bookingType === "active" ||
     (bookingType === "upcoming" && now >= thirtyMinutesBeforeStart);
-
-  // Extract car information
-  const carType = booking.car && booking.car.car_type ? booking.car.car_type : booking.car_type || 'car';
-  const carAddress = booking.car && booking.car.address ? booking.car.address : 'Address not available';
   
-  // Extract model_id from car_type (e.g., "modely_white" → "modely")
-  const modelId = carType.split('_')[0];
-  
-  // Extract color from car_type or car object
+  // Get car info with proper model name from car_models collection
+  let displayName = "Unknown Car";
   let carColor = "";
-  if (carType.includes('_')) {
-    carColor = carType.split('_')[1];
-    // Capitalize first letter of color
+  
+  // Extract model name and color from car data
+  if (booking.car && booking.car.car_type) {
+    const carType = booking.car.car_type;
+    const modelId = carType.split('_')[0];
+    
+    // If we have model data from car_models collection, use it
+    if (booking.car.model_data && booking.car.model_data.name) {
+      displayName = booking.car.model_data.name;
+      carColor = booking.car.model_data.color || carType.split('_')[1] || "";
+    }
+    // Otherwise fall back to mapping
+    else {
+      if (modelId === "modely") displayName = "Tesla Model Y";
+      else if (modelId === "model3") displayName = "Tesla Model 3";
+      else if (modelId === "models") displayName = "Tesla Model S";
+      else if (modelId === "modelx") displayName = "Tesla Model X";
+      else if (modelId === "vezel") displayName = "Honda Vezel";
+      else displayName = modelId.charAt(0).toUpperCase() + modelId.slice(1);
+      
+      carColor = carType.split('_')[1] || "";
+    }
+  } else if (booking.car_type) {
+    // No car object but we have car_type in the booking
+    const modelId = booking.car_type.split('_')[0];
+    
+    if (modelId === "modely") displayName = "Tesla Model Y";
+    else if (modelId === "model3") displayName = "Tesla Model 3";
+    else if (modelId === "models") displayName = "Tesla Model S";
+    else if (modelId === "modelx") displayName = "Tesla Model X";
+    else if (modelId === "vezel") displayName = "Honda Vezel";
+    else displayName = modelId.charAt(0).toUpperCase() + modelId.slice(1);
+    
+    carColor = booking.car_type.split('_')[1] || "";
+  }
+  
+  // Capitalize color and add to display name if available
+  if (carColor) {
     carColor = carColor.charAt(0).toUpperCase() + carColor.slice(1);
-  } else if (booking.car && booking.car.car_color) {
-    carColor = booking.car.car_color;
+    displayName = `${displayName} (${carColor})`;
   }
   
-  // Determine car name from car_models collection data or our mapping
-  let carName = "";
+  // Get car image source
+  const carImageSrc = `../static/images/car_images/${(booking.car?.car_type || booking.car_type || 'car').toLowerCase()}.png`;
   
-  // Use car_models data if available in the booking
-  if (booking.car && booking.car.model_data && booking.car.model_data.name) {
-    carName = booking.car.model_data.name;
-  } 
-  // Otherwise use our mapping of model_ids to proper names
-  else {
-    // Map model ID to proper car name
-    if (modelId === "modely") carName = "Tesla Model Y";
-    else if (modelId === "model3") carName = "Tesla Model 3";
-    else if (modelId === "models") carName = "Tesla Model S";
-    else if (modelId === "modelx") carName = "Tesla Model X";
-    else if (modelId === "vezel") carName = "Honda Vezel";
-    else carName = modelId.charAt(0).toUpperCase() + modelId.slice(1); // Capitalize first letter
-  }
+  // Get address
+  const address = booking.car?.address || booking.pickup_location || booking.address || "Address not available";
   
-  // Create the display name with color in parentheses if available
-  const displayName = carColor ? `${carName} (${carColor})` : carName;
-
-  // Set card HTML content
+  // Set card HTML content - removed the carId parameter from the URL
   bookingCard.innerHTML = `
-        <div class="booking-status ${bookingType}">
-            <span>${
-              bookingType.charAt(0).toUpperCase() + bookingType.slice(1)
-            }</span>
+    <div class="booking-status ${bookingType}">
+      <span>${bookingType.charAt(0).toUpperCase() + bookingType.slice(1)}</span>
+    </div>
+    
+    <div class="booking-header">
+      <div class="car-image">
+        <img src="${carImageSrc}" 
+             alt="${displayName}" 
+             onerror="this.onerror=null; this.src='../static/images/assets/car-placeholder.jpg'">
+      </div>
+      <div class="booking-info">
+        <h3>${displayName}</h3>
+        <div class="booking-time">
+          <div><i class="bi bi-calendar"></i> ${formattedDate}</div>
+          <div><i class="bi bi-clock"></i> ${formattedStartTime} - ${formattedEndTime}</div>
         </div>
-        
-        <div class="booking-header">
-            <div class="car-image">
-                <img src="../static/images/car_images/${carType.toLowerCase()}.png" 
-                    alt="${displayName}" 
-                    onerror="this.onerror=null; this.src='../static/images/assets/car-placeholder.jpg'">
-            </div>
-            <div class="booking-info">
-                <h3>${displayName}</h3>
-                <div class="booking-time">
-                    <div><i class="bi bi-calendar"></i> ${formattedDate}</div>
-                    <div><i class="bi bi-clock"></i> ${formattedStartTime} - ${formattedEndTime}</div>
-                </div>
-                ${
-                  timeText
-                    ? `<div class="time-remaining">${timeText}</div>`
-                    : ""
-                }
-            </div>
-        </div>
-        
-        <div class="booking-details">
-            <div class="detail-item">
-                <i class="bi bi-geo-alt"></i>
-                <span>${carAddress}</span>
-            </div>
-            <div class="detail-item">
-                <i class="bi bi-tag"></i>
-                <span>Booking #${booking.id.slice(-6)}</span>
-            </div>
-        </div>
-        
-        <div class="booking-actions">
-            <a href="user-booking-details.html?id=${booking.id}&carId=${
-    booking.car_id || ''
-  }" class="primary-btn">
-                View Details
-            </a>
-            ${
-              bookingType === "upcoming"
-                ? `
-                <button class="secondary-btn cancel-btn" data-booking-id="${booking.id}" data-car-id="${booking.car_id || ''}">
-                    Cancel Booking
-                </button>
-            `
-                : ""
-            }
-            ${
-              isAREnabled
-                ? `
-                <button class="ar-btn" data-booking-id="${booking.id}" data-car-id="${booking.car_id || ''}">
-                    <i class="bi bi-pin-map-fill"></i> Find Car
-                </button>
-            `
-                : ""
-            }
-        </div>
-    `;
+        ${timeText ? `<div class="time-remaining">${timeText}</div>` : ""}
+      </div>
+    </div>
+    
+    <div class="booking-details">
+      <div class="detail-item">
+        <i class="bi bi-geo-alt"></i>
+        <span>${address}</span>
+      </div>
+      <div class="detail-item">
+        <i class="bi bi-tag"></i>
+        <span>Booking #${booking.id.slice(-6)}</span>
+      </div>
+    </div>
+    
+    <div class="booking-actions">
+      <a href="user-booking-details.html?id=${booking.id}" class="primary-btn">
+        View Details
+      </a>
+      ${
+        bookingType === "upcoming"
+          ? `
+          <button class="secondary-btn cancel-btn" data-booking-id="${booking.id}">
+            Cancel Booking
+          </button>
+        `
+          : ""
+      }
+      ${
+        isAREnabled
+          ? `
+          <button class="ar-btn" data-booking-id="${booking.id}">
+            <i class="bi bi-pin-map-fill"></i> Find Car
+          </button>
+        `
+          : ""
+      }
+    </div>
+  `;
 
   // Add event listeners to buttons
   if (bookingType === "upcoming") {
     const cancelButton = bookingCard.querySelector(".cancel-btn");
     if (cancelButton) {
-      cancelButton.addEventListener("click", () =>
-        cancelBooking(
-          booking.id, 
-          booking.car_id || ''
-        )
-      );
+      cancelButton.addEventListener("click", () => cancelBooking(booking.id));
     }
   }
 
   if (isAREnabled) {
     const arButton = bookingCard.querySelector(".ar-btn");
     if (arButton) {
-      arButton.addEventListener("click", () =>
-        launchARWayfinding(
-          booking.id, 
-          booking.car_id || ''
-        )
-      );
+      arButton.addEventListener("click", () => launchARWayfinding(booking.id));
     }
   }
 
   return bookingCard;
 }
-    
-    // Create empty state message
-    function createEmptyStateMessage(message) {
-      return `
+
+// Create empty state message
+function createEmptyStateMessage(message) {
+  return `
             <div class="empty-state">
                 <i class="bi bi-calendar-x"></i>
                 <p>${message}</p>
             </div>
         `;
-    }
-    
-    // Show error message
-    function showErrorMessage(message) {
-      console.error("ERROR:", message);
-      
-      const errorDiv = document.createElement("div");
-      errorDiv.className = "error-message";
-      errorDiv.innerHTML = `
+}
+
+// Show error message
+function showErrorMessage(message) {
+  console.error("ERROR:", message);
+
+  const errorDiv = document.createElement("div");
+  errorDiv.className = "error-message";
+  errorDiv.innerHTML = `
             <i class="bi bi-exclamation-triangle"></i>
             <p>${message}</p>
             <button onclick="location.reload()" class="secondary-btn">Retry</button>
         `;
-    
-      // Clear loading indicator and show error
-      if (loadingIndicator) {
-        loadingIndicator.style.display = "none";
-      }
-      
-      const container = document.querySelector(".container");
-      if (container) {
-        container.appendChild(errorDiv);
-      } else {
-        document.body.appendChild(errorDiv);
-      }
-    }
-    
-    // Set initial active tab based on which category has bookings
-    function setInitialActiveTab() {
-      let activeTabIndex = 0;
-    
-      if (bookingsData.active.length > 0) {
-        activeTabIndex = 1; // Active tab
-      } else if (bookingsData.upcoming.length > 0) {
-        activeTabIndex = 0; // Upcoming tab
-      } else if (bookingsData.past.length > 0) {
-        activeTabIndex = 2; // Past tab
-      } else if (bookingsData.cancelled.length > 0) {
-        activeTabIndex = 3; // Cancelled tab
-      }
-    
-      // Trigger click on the appropriate tab
-      if (bookingsTabs[activeTabIndex]) {
-        bookingsTabs[activeTabIndex].click();
-        console.log(`Set initial active tab to index ${activeTabIndex}`);
-      }
-    }
-    
-    // Cancel booking
-    async function cancelBooking(bookingId, carId) {
-      if (!bookingId) {
-        alert("Invalid booking ID");
-        return;
-      }
-      
-      if (!confirm("Are you sure you want to cancel this booking?")) {
-        return;
-      }
-    
+
+  // Clear loading indicator and show error
+  if (loadingIndicator) {
+    loadingIndicator.style.display = "none";
+  }
+
+  const container = document.querySelector(".container");
+  if (container) {
+    container.appendChild(errorDiv);
+  } else {
+    document.body.appendChild(errorDiv);
+  }
+}
+
+// Set initial active tab based on which category has bookings
+function setInitialActiveTab() {
+  let activeTabIndex = 0;
+
+  if (bookingsData.active.length > 0) {
+    activeTabIndex = 1; // Active tab
+  } else if (bookingsData.upcoming.length > 0) {
+    activeTabIndex = 0; // Upcoming tab
+  } else if (bookingsData.past.length > 0) {
+    activeTabIndex = 2; // Past tab
+  } else if (bookingsData.cancelled.length > 0) {
+    activeTabIndex = 3; // Cancelled tab
+  }
+
+  // Trigger click on the appropriate tab
+  if (bookingsTabs[activeTabIndex]) {
+    bookingsTabs[activeTabIndex].click();
+    console.log(`Set initial active tab to index ${activeTabIndex}`);
+  }
+}
+
+// Cancel booking
+async function cancelBooking(bookingId, carId) {
+  if (!bookingId) {
+    alert("Invalid booking ID");
+    return;
+  }
+
+  if (!confirm("Are you sure you want to cancel this booking?")) {
+    return;
+  }
+
+  try {
+    console.log(`Cancelling booking ${bookingId} for car ${carId}`);
+
+    // Update the booking status in user's bookings collection
+    await updateDoc(doc(db, "users", userId, "bookings", bookingId), {
+      status: "cancelled",
+    });
+
+    // Also update in timesheet collection if car ID is available
+    if (carId) {
       try {
-        console.log(`Cancelling booking ${bookingId} for car ${carId}`);
-        
-        // Update the booking status in user's bookings collection
-        await updateDoc(doc(db, "users", userId, "bookings", bookingId), {
+        await updateDoc(doc(db, "timesheets", carId, "bookings", bookingId), {
           status: "cancelled",
         });
-        
-        // Also update in timesheet collection if car ID is available
-        if (carId) {
-          try {
-            await updateDoc(doc(db, "timesheets", carId, "bookings", bookingId), {
-              status: "cancelled",
-            });
-          } catch (e) {
-            console.warn("Could not update timesheet booking:", e);
-          }
-        }
-        
-        // Update in main bookings collection if it exists
-        try {
-          await updateDoc(doc(db, "bookings", bookingId), {
-            status: "cancelled",
-          });
-        } catch (e) {
-          console.warn("Could not update main bookings collection:", e);
-          // This is expected if the main bookings collection doesn't exist
-        }
-        
-        console.log("Booking cancelled successfully");
-        
-        // Reload bookings
-        await loadUserBookings();
-    
-        // Show success message
-        alert("Booking cancelled successfully");
-      } catch (error) {
-        console.error("Error cancelling booking:", error);
-        alert("Failed to cancel booking. Please try again.");
+      } catch (e) {
+        console.warn("Could not update timesheet booking:", e);
       }
     }
-    
-    // Launch AR wayfinding
-    function launchARWayfinding(bookingId, carId) {
-      if (!carId) {
-        alert("Car information unavailable for AR navigation");
-        return;
-      }
-      
-      // Store the IDs in session storage for the AR page to use
-      sessionStorage.setItem("arBookingId", bookingId);
-      sessionStorage.setItem("arCarId", carId);
-      
-      console.log(`Launching AR wayfinding for booking ${bookingId}, car ${carId}`);
-    
-      // Redirect to the AR wayfinding page
-      window.location.href = '../AR/user-ar-wayfinding.html';
+
+    // Update in main bookings collection if it exists
+    try {
+      await updateDoc(doc(db, "bookings", bookingId), {
+        status: "cancelled",
+      });
+    } catch (e) {
+      console.warn("Could not update main bookings collection:", e);
+      // This is expected if the main bookings collection doesn't exist
     }
+
+    console.log("Booking cancelled successfully");
+
+    // Reload bookings
+    await loadUserBookings();
+
+    // Show success message
+    alert("Booking cancelled successfully");
+  } catch (error) {
+    console.error("Error cancelling booking:", error);
+    alert("Failed to cancel booking. Please try again.");
+  }
+}
+
+// Launch AR wayfinding
+function launchARWayfinding(bookingId, carId) {
+  if (!carId) {
+    alert("Car information unavailable for AR navigation");
+    return;
+  }
+
+  // Store the IDs in session storage for the AR page to use
+  sessionStorage.setItem("arBookingId", bookingId);
+  sessionStorage.setItem("arCarId", carId);
+
+  console.log(`Launching AR wayfinding for booking ${bookingId}, car ${carId}`);
+
+  // Redirect to the AR wayfinding page
+  window.location.href = "../AR/user-ar-wayfinding.html";
+}
