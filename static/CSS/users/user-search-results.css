@@ -494,6 +494,7 @@ main {
 
 .view-details-btn:hover {
     background-color: var(--primary-dark);
+    color:white;
 }
 
 /* Map Section - optimized for header, sidebar and to prevent overflow */
