@@ -392,13 +392,16 @@ async function loadSearchResults() {
 
       // Calculate distance if user position is available
       let distance = null;
-      if (userPosition) {
+      if (userPosition && userPosition.lat && userPosition.lng) {
         distance = calculateDistance(
           userPosition.lat,
           userPosition.lng,
           carData.current_location.latitude,
           carData.current_location.longitude
         );
+        console.log(`Car ${carDoc.id} is ${distance.toFixed(2)}km away from user`);
+      } else {
+        console.log(`Car ${carDoc.id}: Cannot calculate distance (no user position)`);
       }
 
       // Add default price if not available
@@ -416,7 +419,7 @@ async function loadSearchResults() {
         modelName: carTypeInfo.model,
         color: carTypeInfo.color,
         image: `../static/images/car_images/${carData.car_type || "car"}.png`,
-        distance: distance,
+        distance: distance, // Store as numeric value for sorting
         totalPrice: totalPrice,
         price_per_hour: hourlyRate,
         // Include features for filtering
@@ -436,8 +439,11 @@ async function loadSearchResults() {
     // Store original results for filtering
     originalResults = [...carResults];
 
-    // Display results
-    displayResults();
+    // Apply initial sort by distance
+    if (sortSelect) {
+      sortSelect.value = "distance"; // Set default sort to distance
+    }
+    sortResults(); // Sort results before displaying
 
     // Initialize map after a small delay to ensure DOM is ready
     setTimeout(() => {
@@ -809,7 +815,13 @@ function clearMarkers() {
 function setupEventListeners() {
   // Sort dropdown
   if (sortSelect) {
-    sortSelect.addEventListener("change", sortResults);
+    // Set default sort to distance
+    sortSelect.value = "distance"; 
+    
+    sortSelect.addEventListener("change", () => {
+      console.log("Sort changed to:", sortSelect.value);
+      sortResults();
+    });
   }
 
   // Filter toggle button
@@ -885,6 +897,7 @@ function sortResults() {
   if (!sortSelect || !carResults.length) return;
 
   const sortValue = sortSelect.value;
+  console.log("Sorting by:", sortValue);
 
   switch (sortValue) {
     case "price-asc":
@@ -898,14 +911,22 @@ function sortResults() {
       );
       break;
     case "distance":
-      // Only sort by distance if we have user position
-      if (carResults.some((car) => car.distance !== null)) {
-        carResults.sort((a, b) => {
-          if (a.distance === null) return 1;
-          if (b.distance === null) return -1;
-          return a.distance - b.distance;
-        });
-      }
+      // Improved distance sorting - handle null/undefined values
+      carResults.sort((a, b) => {
+        // If either car has no distance, place it at the end
+        if (a.distance === null || a.distance === undefined) return 1;
+        if (b.distance === null || b.distance === undefined) return -1;
+        
+        // Otherwise sort by distance (closest first)
+        return parseFloat(a.distance) - parseFloat(b.distance);
+      });
+      
+      // Debug log to verify sorting
+      console.log("Sorted by distance:", carResults.map(car => ({
+        id: car.id,
+        car_type: car.car_type,
+        distance: car.distance ? car.distance.toFixed(2) + ' km' : 'unknown'
+      })));
       break;
     case "name-asc":
       carResults.sort((a, b) =>
@@ -913,9 +934,16 @@ function sortResults() {
       );
       break;
     default:
+      // Default to distance sorting when no sort value specified
+      carResults.sort((a, b) => {
+        if (a.distance === null || a.distance === undefined) return 1;
+        if (b.distance === null || b.distance === undefined) return -1;
+        return parseFloat(a.distance) - parseFloat(b.distance);
+      });
       break;
   }
 
+  // Display sorted results
   displayResults();
 }
 
