@@ -190,21 +190,93 @@ function initializeFilters() {
 }
 
 // Populate car type filter checkboxes
-function populateCarTypeFilters() {
+async function populateCarTypeFilters() {
   if (!carTypesContainer) return;
+  
+  try {
+    carTypesContainer.innerHTML = ''; // Clear existing filters
+    
+    // First get all model data from car_models collection
+    const modelsRef = collection(db, "car_models");
+    const modelsSnapshot = await getDocs(modelsRef);
+    
+    if (modelsSnapshot.empty) {
+      console.log("No car models found in database");
+      return;
+    }
+    
+    // Create a map of model IDs to their proper names
+    const modelNames = {};
+    modelsSnapshot.forEach(doc => {
+      // Check various possible name properties in the document
+      const modelData = doc.data();
+      const name = modelData.name || modelData.model_name || modelData.display_name || doc.id;
+      modelNames[doc.id] = name;
+      console.log(`Model ${doc.id} name: ${name}`);
+    });
+    
+    console.log("Loaded car model names:", modelNames);
+    
+    // Create a unique set of model IDs from available cars
+    const modelIds = new Set();
+    
+    // If we've already loaded cars, use those to determine available models
+    if (originalResults && originalResults.length > 0) {
+      originalResults.forEach(car => {
+        if (car.car_type) {
+          const modelId = car.car_type.split('_')[0];
+          modelIds.add(modelId);
+        }
+      });
+    } 
+    // Otherwise, query the cars collection to get model types
+    else {
+      const carsRef = collection(db, "cars");
+      const carsSnapshot = await getDocs(carsRef);
+      
+      carsSnapshot.forEach(doc => {
+        const carData = doc.data();
+        if (carData.car_type) {
+          const modelId = carData.car_type.split('_')[0];
+          modelIds.add(modelId);
+        }
+      });
+    }
+    
+    // Create filter checkboxes for each model using proper names
+    Array.from(modelIds).sort().forEach(modelId => {
+      // Use the name from our model map, or fallback to a formatted version of the ID
+      const displayName = modelNames[modelId] || formatModelId(modelId);
+      
+      const filterItem = document.createElement("div");
+      filterItem.className = "filter-item";
+      filterItem.innerHTML = `
+        <input type="checkbox" id="type-${modelId}" class="car-type-filter" value="${modelId}">
+        <label for="type-${modelId}">${displayName}</label>
+      `;
+      carTypesContainer.appendChild(filterItem);
+    });
+    
+    console.log(`Generated ${modelIds.size} car type filters`);
+    
+  } catch (error) {
+    console.error("Error populating car type filters:", error);
+  }
+}
 
-  // Car types based on your database structure (just Model and Vezel)
-  const carTypes = ["Model", "Vezel"];
-
-  carTypes.forEach((type) => {
-    const filterItem = document.createElement("div");
-    filterItem.className = "filter-item";
-    filterItem.innerHTML = `
-            <input type="checkbox" id="type-${type.toLowerCase()}" class="car-type-filter" value="${type.toLowerCase()}">
-            <label for="type-${type.toLowerCase()}">${type}</label>
-        `;
-    carTypesContainer.appendChild(filterItem);
-  });
+// Helper function to format model ID if name is not found
+function formatModelId(modelId) {
+  // Format Tesla models
+  if (modelId.toLowerCase() === "modely") return "Tesla Model Y";
+  if (modelId.toLowerCase() === "model3") return "Tesla Model 3";
+  if (modelId.toLowerCase() === "models") return "Tesla Model S";
+  if (modelId.toLowerCase() === "modelx") return "Tesla Model X";
+  
+  // Format other common models
+  if (modelId.toLowerCase() === "vezel") return "Honda Vezel";
+  
+  // Generic formatting: capitalize first letter
+  return modelId.charAt(0).toUpperCase() + modelId.slice(1);
 }
 
 // Add this function to populate fuel type filters
@@ -493,14 +565,11 @@ function createCarCard(car) {
         </div>
     `;
 
-  // Create card content with enhanced design
+  // Create card content with enhanced design - removed car badge
   card.innerHTML = `
         <div class="car-image">
             <img src="${car.image}" alt="${car.make} ${car.modelName}" 
                  onerror="this.src='../static/images/assets/car-placeholder.jpg'">
-            <div class="car-badge">${
-              car.car_type ? car.car_type.split("_")[0] : "Car"
-            }</div>
         </div>
         <div class="card-content">
             <div class="car-info">
