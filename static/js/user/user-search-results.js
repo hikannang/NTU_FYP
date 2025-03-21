@@ -111,7 +111,7 @@ function setupLogoutButton() {
   }, 300);
 }
 
-// Update search summary display
+// Update search summary display with enhanced UI structure
 function updateSearchSummary(params) {
   if (!searchSummary) return;
 
@@ -132,22 +132,30 @@ function updateSearchSummary(params) {
   );
 
   searchSummary.innerHTML = `
-        <div class="summary-item">
-            <i class="bi bi-geo-alt"></i>
-            <span>${params.location}</span>
+    <div class="summary-container">
+      <div class="search-details">
+        <div class="location-time">
+          <h1><i class="bi bi-geo-alt"></i> ${params.location}</h1>
+          <div class="search-time"><i class="bi bi-calendar-event"></i> ${formattedDate} at ${timeString} · ${duration}</div>
+          
+          <div class="search-stats">
+            <div class="stat-item">
+              <i class="bi bi-clock"></i>
+              <span>${duration}</span>
+            </div>
+            <div class="stat-item">
+              <i class="bi bi-calendar-check"></i>
+              <span>${formattedDate}</span>
+            </div>
+          </div>
         </div>
-        <div class="summary-item">
-            <i class="bi bi-calendar-event"></i>
-            <span>${formattedDate} at ${timeString}</span>
-        </div>
-        <div class="summary-item">
-            <i class="bi bi-clock"></i>
-            <span>${duration}</span>
-        </div>
-        <a href="user-dashboard.html" class="modify-search-btn">
-            <i class="bi bi-pencil"></i> Modify Search
+        
+        <a href="user-dashboard.html" class="secondary-btn">
+          <i class="bi bi-pencil"></i> Modify Search
         </a>
-    `;
+      </div>
+    </div>
+  `;
 }
 
 // Format duration text
