@@ -150,7 +150,7 @@ function setupARScene() {
     
     // Set model and position with more reliable configuration
     arPin.setAttribute('gltf-model', '../3dModels/pin.glb');
-    arPin.setAttribute('scale', '0.5 0.5 0.5');
+    arPin.setAttribute('scale', '1 1 1');
     arPin.setAttribute('look-at', '[gps-camera]'); // Make it face the camera
     arPin.setAttribute('gps-entity-place', `latitude: ${target.latitude}; longitude: ${target.longitude}`);
     
@@ -617,7 +617,7 @@ function addModelTestButton() {
             const testEntity = document.createElement('a-entity');
             testEntity.setAttribute('gltf-model', '../AR/static/3dModels/pin.glb');
             testEntity.setAttribute('position', '0 0 -3');  // 3 meters in front of camera
-            testEntity.setAttribute('scale', '0.5 0.5 0.5');
+            testEntity.setAttribute('scale', '1 1 1');
             testEntity.setAttribute('rotation', '0 0 0');
             
             scene.appendChild(testEntity);
