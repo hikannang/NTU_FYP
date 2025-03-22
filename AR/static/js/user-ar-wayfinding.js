@@ -68,9 +68,14 @@ function getUrlParams() {
 
 // Initialize when DOM is loaded
 document.addEventListener("DOMContentLoaded", function () {
+  // Remove any existing onclick attributes that might conflict
+  const elements = document.querySelectorAll("[onclick]");
+  elements.forEach(el => el.removeAttribute("onclick"));
   // Setup global click handler for instruction modal
   window.closeInstructionModal = function () {
-    instructionModal.style.display = "none";
+    console.log("Close instruction modal called");
+    const modal = document.getElementById("instruction-modal");
+    modal.style.display = "none";
     startAR();
   };
 
@@ -213,11 +218,32 @@ function updateCarInfo() {
 
 // Set up event listeners
 function setupEventListeners() {
+  console.log("Setting up event listeners");
+  
   // Modal close button
-  if (modalClose) {
-    modalClose.addEventListener("click", closeInstructionModal);
+  const modalCloseBtn = document.getElementById("modal-close");
+  if (modalCloseBtn) {
+    console.log("Modal close button found");
+    modalCloseBtn.addEventListener("click", function(event) {
+      console.log("Close button clicked");
+      event.preventDefault();
+      event.stopPropagation();
+      closeAndStartAR();
+    });
   }
-
+  
+  // Close modal when clicking anywhere on the modal content
+  const modalContent = document.querySelector(".modal-content");
+  if (modalContent) {
+    modalContent.addEventListener("click", function(event) {
+      // Only if target is the modal content itself, not its children
+      if (event.target === this) {
+        console.log("Modal content clicked");
+        closeAndStartAR();
+      }
+    });
+  }
+  
   // Back button
   if (backButton) {
     backButton.addEventListener("click", navigateBack);
@@ -255,18 +281,15 @@ function setupEventListeners() {
       carInfoShown = false;
     });
   }
+}
 
-  // Instruction modal close button
+// Helper function to close modal and start AR
+function closeAndStartAR() {
+  console.log("Closing modal and starting AR");
   if (instructionModal) {
-    const modalCloseBtn = document.getElementById("modal-close");
-    if (modalCloseBtn) {
-      modalCloseBtn.addEventListener("click", function(event) {
-        event.stopPropagation(); // Prevent event bubbling
-        instructionModal.style.display = "none";
-        startAR();
-      });
-    }
+    instructionModal.style.display = "none";
   }
+  startAR();
 }
 
 // Toggle between AR and Map views
