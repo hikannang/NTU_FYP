@@ -56,6 +56,16 @@ const geolocationOptions = {
   timeout: 15000,
 };
 
+// Early in your initialization code, add this:
+function getUrlParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return {
+    lat: parseFloat(urlParams.get('lat')),
+    lng: parseFloat(urlParams.get('lng')),
+    id: urlParams.get('id')
+  };
+}
+
 // Initialize when DOM is loaded
 document.addEventListener("DOMContentLoaded", function () {
   // Setup global click handler for instruction modal
@@ -68,18 +78,41 @@ document.addEventListener("DOMContentLoaded", function () {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       userId = user.uid;
-
-      // Get car and booking IDs from session storage
-      bookingId = sessionStorage.getItem("arBookingId");
-      carId = sessionStorage.getItem("arCarId");
-
-      if (!bookingId || !carId) {
-        showError(
-          "Booking information is missing. Please return to your bookings."
-        );
-        return;
+      
+      // Get params from URL
+      const urlParams = getUrlParams();
+      
+      // Use URL params first, fallback to sessionStorage
+      bookingId = urlParams.id || sessionStorage.getItem("arBookingId");
+      
+      // If URL has coordinates, use those directly
+      if (urlParams.lat && urlParams.lng) {
+        target.latitude = urlParams.lat;
+        target.longitude = urlParams.lng;
+        
+        // Try to get car details but don't block if missing
+        try {
+          if (bookingId) {
+            await loadCarData();
+          }
+        } catch (error) {
+          console.warn("Could not load full car details, using coordinates only");
+        }
+      } else {
+        // Get carId and load full car data
+        carId = sessionStorage.getItem("arCarId");
+        if (!bookingId || !carId) {
+          showError("Booking information is missing. Please return to your bookings.");
+          return;
+        }
+        
+        try {
+          await loadCarData();
+        } catch (error) {
+          console.error("Error loading car data:", error);
+        }
       }
-
+      
       // Show instruction modal to start
       loadingScreen.style.display = "none";
       instructionModal.style.display = "flex";
@@ -221,6 +254,18 @@ function setupEventListeners() {
       carInfoModal.style.display = "none";
       carInfoShown = false;
     });
+  }
+
+  // Instruction modal close button
+  if (instructionModal) {
+    const modalCloseBtn = document.getElementById("modal-close");
+    if (modalCloseBtn) {
+      modalCloseBtn.addEventListener("click", function(event) {
+        event.stopPropagation(); // Prevent event bubbling
+        instructionModal.style.display = "none";
+        startAR();
+      });
+    }
   }
 }
 
@@ -395,10 +440,14 @@ function showError(message) {
 
 // Show car info modal
 function showCarInfoModal() {
+  console.log("Attempting to show car info modal");
   if (carInfoModal) {
     carInfoModal.style.display = "block";
     carInfoModal.classList.add("active");
     carInfoShown = true;
+    console.log("Car info modal display set to:", carInfoModal.style.display);
+  } else {
+    console.error("carInfoModal element not found");
   }
 }
 
