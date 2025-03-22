@@ -619,7 +619,8 @@ function createBookingCard(booking, bookingType) {
   if (isAREnabled) {
     const arButton = bookingCard.querySelector(".ar-btn");
     if (arButton) {
-      arButton.addEventListener("click", () => launchARWayfinding(booking.id));
+      // Pass both booking.id and booking.car_id to the function
+      arButton.addEventListener("click", () => launchARWayfinding(booking.id, booking.car?.id || booking.car_id));
     }
   }
 
@@ -736,18 +737,75 @@ async function cancelBooking(bookingId, carId) {
 }
 
 // Launch AR wayfinding
-function launchARWayfinding(bookingId, carId) {
-  if (!carId) {
-    alert("Car information unavailable for AR navigation");
+async function launchARWayfinding(bookingId, carId) {
+  try {
+    console.log(`Starting AR wayfinding for booking ${bookingId}, car ${carId}`);
+    
+    // If no carId provided, get it from the booking
+    if (!carId) {
+      console.log(`No carId provided, attempting to retrieve from booking ${bookingId}`);
+      try {
+        const bookingRef = doc(db, "bookings", bookingId);
+        const bookingDoc = await getDoc(bookingRef);
+        
+        if (bookingDoc.exists()) {
+          const bookingData = bookingDoc.data();
+          carId = bookingData.car_id; // or whatever field stores the car ID
+          console.log(`Retrieved carId ${carId} from booking document`);
+        }
+      } catch (err) {
+        console.error("Error retrieving booking data:", err);
+      }
+    }
+    
+    if (!carId) {
+      console.error("No carId provided for AR navigation");
+      alert("Car information unavailable for AR navigation");
+      return;
+    }
+    
+    // Get car data with location information
+    console.log(`Fetching car data for ID: ${carId}`);
+    const carRef = doc(db, "cars", carId);
+    const carDoc = await getDoc(carRef);
+    
+    if (!carDoc.exists()) {
+      console.error(`Car not found in database: ${carId}`);
+      alert("Car information unavailable for AR navigation");
+      return;
+    }
+    
+    const carData = carDoc.data();
+    
+    if (!carData.current_location) {
+      alert("Car location not available for AR navigation");
+      return;
+    }
+    
+    // Construct AR URL with location parameters
+    const lat = carData.current_location.latitude;
+    const lng = carData.current_location.longitude;
+    const arUrl = `../AR/user-ar-wayfinding.html?lat=${lat}&lng=${lng}&id=${bookingId}`;    
+    console.log(`Opening AR navigation at: ${arUrl}`);
+    
+    // Open AR in new window
+    window.open(arUrl, '_blank');
+  } catch (error) {
+    console.error("Error launching AR wayfinding:", error);
+    alert("Failed to launch AR navigation. Please try again.");
+  }
+}
+
+// Check where this function is being called from:
+// It might look something like this:
+document.getElementById("ar-button").addEventListener("click", function() {
+  // Make sure bookingId and carId are properly defined here
+  if (!booking.carId) {
+    console.error("Missing carId for booking:", booking.id);
+    alert("Cannot launch AR: missing car information");
     return;
   }
-
-  // Store the IDs in session storage for the AR page to use
-  sessionStorage.setItem("arBookingId", bookingId);
-  sessionStorage.setItem("arCarId", carId);
-
-  console.log(`Launching AR wayfinding for booking ${bookingId}, car ${carId}`);
-
-  // Redirect to the AR wayfinding page
-  window.location.href = "../AR/user-ar-wayfinding.html";
-}
+  
+  // Call with both parameters
+  launchARWayfinding(booking.id, booking.carId);
+});

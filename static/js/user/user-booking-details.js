@@ -795,8 +795,7 @@ function launchARWayfinding() {
     // Construct AR URL
     const lat = carData.current_location.latitude;
     const lng = carData.current_location.longitude;
-    const arUrl = `../ar/wayfinding.html?lat=${lat}&lng=${lng}&id=${bookingId}`;
-    
+    const arUrl = `../AR/user-ar-wayfinding.html?lat=${lat}&lng=${lng}&id=${bookingId}`;    
     // Open AR in new window
     window.open(arUrl, '_blank');
 }
