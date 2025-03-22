@@ -149,7 +149,7 @@ function setupARScene() {
     arPin.id = 'arPin';
     
     // Set model and position with more reliable configuration
-    arPin.setAttribute('gltf-model', '../AR/static/3dModels/pin.glb');
+    arPin.setAttribute('gltf-model', '../3dModels/pin.glb');
     arPin.setAttribute('scale', '0.5 0.5 0.5');
     arPin.setAttribute('look-at', '[gps-camera]'); // Make it face the camera
     arPin.setAttribute('gps-entity-place', `latitude: ${target.latitude}; longitude: ${target.longitude}`);
@@ -170,7 +170,7 @@ function setupARScene() {
 function addStaticPin(scene) {
     const staticPin = document.createElement('a-entity');
     staticPin.id = 'staticPin';
-    staticPin.setAttribute('gltf-model', '../AR/static/3dModels/pin.glb');
+    staticPin.setAttribute('gltf-model', '../3dModels/pin.glb');
     staticPin.setAttribute('position', '0 -1 -3'); // Position in front of the camera
     staticPin.setAttribute('scale', '0.5 0.5 0.5');
     staticPin.setAttribute('rotation', '0 0 0');
