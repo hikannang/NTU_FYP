@@ -1,6 +1,6 @@
 // Global variables
 var loadingTimeout;
-var distance; // Global variable to track distance from target
+var distance = 0; // Global variable to track distance from target
 var modal;
 var target = { latitude: 0, longitude: 0 };
 var current = { latitude: null, longitude: null };
@@ -20,6 +20,7 @@ const geolocationOptions = { enableHighAccuracy: true };
 
 // Show loading screen while initializing
 function showLoadingScreen() {
+    console.log("Showing loading screen");
     var loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen) {
         loadingScreen.style.display = 'flex';
@@ -33,6 +34,7 @@ function showLoadingScreen() {
 
 // Hide loading screen
 function hideLoadingScreen() {
+    console.log("Hiding loading screen");
     var loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen) {
         loadingScreen.style.display = 'none';
@@ -44,26 +46,48 @@ function hideLoadingScreen() {
 
 // Parse URL parameters to get latitude, longitude, and booking ID
 function getURLParameters() {
+    console.log("Getting URL parameters");
     const urlParams = new URLSearchParams(window.location.search);
     const lat = parseFloat(urlParams.get('lat'));
     const lng = parseFloat(urlParams.get('lng'));
     const id = urlParams.get('id');
     
-    if (lat && lng && id) {
+    console.log("URL parameters:", { lat, lng, id });
+    
+    if (lat && lng) {
         target.latitude = lat;
         target.longitude = lng;
-        bookingId = id;
+        if (id) {
+            bookingId = id;
+        }
         return true;
     } else {
-        console.error('Missing required URL parameters: lat, lng, or id');
+        console.error('Missing required URL parameters: lat, lng');
         return false;
     }
 }
 
-// Fetch booking data from Firestore
+// Mock function for development - replace with actual Firebase call in production
 async function fetchBookingData() {
+    console.log("Fetching booking data");
+    
     try {
         showLoadingScreen();
+        
+        // For testing without Firebase, use hardcoded values
+        setTimeout(() => {
+            carId = "test_car_id";
+            carDirections = "Your car is parked at level 1, parking lot A5. It's a red Toyota Corolla with license plate SGX1234A.";
+            carImageUrl = "https://via.placeholder.com/300x200?text=Car+Image";
+            
+            console.log("Car data loaded:", { carId, carDirections });
+            
+            // Setup AR scene after data is loaded
+            setupARScene();
+            hideLoadingScreen();
+        }, 1500);
+        
+        return true;
         
         // Get a reference to the booking document
         const bookingRef = firebase.firestore().collection('bookings').doc(bookingId);
@@ -93,6 +117,7 @@ async function fetchBookingData() {
             console.error('Booking document does not exist');
             return false;
         }
+        
     } catch (error) {
         console.error('Error fetching booking data:', error);
         return false;
@@ -103,44 +128,103 @@ async function fetchBookingData() {
 
 // Initialize the AR scene
 function setupARScene() {
+    console.log("Setting up AR scene");
+    
     // Create AR entity with the pin model
-    if (document.getElementById('arPin')) {
-        const arPin = document.getElementById('arPin');
+    if (document.querySelector('a-scene')) {
+        // Check if pin already exists
+        let arPin = document.getElementById('arPin');
+        
+        if (!arPin) {
+            arPin = document.createElement('a-entity');
+            arPin.id = 'arPin';
+            arPin.setAttribute('scale', '0.5 0.5 0.5');
+            document.querySelector('a-scene').appendChild(arPin);
+        }
+        
+        // Set model and position
         arPin.setAttribute('gltf-model', 'AR/static/3dModels/pin.glb');
-        arPin.setAttribute('scale', '1 1 1');
-        arPin.setAttribute('gps-projected-entity-place', `latitude: ${target.latitude}; longitude: ${target.longitude}`);
+        arPin.setAttribute('gps-entity-place', `latitude: ${target.latitude}; longitude: ${target.longitude}`);
+        arPin.setAttribute('look-at', '[gps-camera]');
+        
+        console.log("AR pin created with coordinates:", target);
+    } else {
+        console.error("A-Scene not found!");
     }
 }
 
 // Initialize compass and geolocation
 function init() {
+    console.log("Initializing app");
+    
+    // Display instruction modal
+    toggleInstructionModal();
+    
     // Check URL parameters
     if (!getURLParameters()) {
         toggleErrorModal('Invalid URL parameters. Please try again.');
         return;
     }
     
+    // For testing, start with hardcoded position to see UI even without GPS
+    current.latitude = target.latitude - 0.0002; 
+    current.longitude = target.longitude - 0.0003;
+    
+    // Show compass and distance immediately using mock data
+    updateDistanceDisplay();
+    updateUI();
+    
     // Fetch booking data
     fetchBookingData().then(success => {
         if (!success) {
             toggleErrorModal('Could not fetch booking data. Please try again.');
-            return;
         }
     });
     
     // Start watching user position
-    navigator.geolocation.watchPosition(setCurrentPosition, handleGeolocationError, geolocationOptions);
+    navigator.geolocation.watchPosition(
+        setCurrentPosition, 
+        handleGeolocationError, 
+        geolocationOptions
+    );
     
     // Set up device orientation
-    if (!isIOS) {
-        window.addEventListener("deviceorientationabsolute", runCalculation);
+    if (window.DeviceOrientationEvent) {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // iOS 13+ needs permission
+            console.log("iOS device detected, waiting for permission request");
+        } else {
+            // Non-iOS devices
+            window.addEventListener("deviceorientation", runCalculation);
+            console.log("Added deviceorientation event listener");
+        }
+    } else {
+        console.warn("DeviceOrientationEvent not supported!");
     }
     
-    // Display instruction modal
-    toggleInstructionModal();
-    
-    // Start UI updates
-    updateUI();
+    // Create a debug button for iOS permission
+    createIOSPermissionButton();
+}
+
+// Create a button for iOS orientation permission
+function createIOSPermissionButton() {
+    if (isIOS) {
+        const btn = document.createElement('button');
+        btn.innerText = 'Enable Compass';
+        btn.style.position = 'fixed';
+        btn.style.bottom = '20px';
+        btn.style.left = '50%';
+        btn.style.transform = 'translateX(-50%)';
+        btn.style.padding = '10px 20px';
+        btn.style.backgroundColor = '#4285F4';
+        btn.style.color = 'white';
+        btn.style.border = 'none';
+        btn.style.borderRadius = '20px';
+        btn.style.zIndex = '2000';
+        
+        btn.addEventListener('click', startCompass);
+        document.body.appendChild(btn);
+    }
 }
 
 // Handle geolocation errors
@@ -151,30 +235,54 @@ function handleGeolocationError(error) {
 
 // Request permission for device orientation (required for iOS)
 function startCompass() {
-    if (isIOS) {
+    console.log("Starting compass");
+    
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
             .then((response) => {
                 if (response === "granted") {
                     window.addEventListener("deviceorientation", runCalculation);
+                    console.log("Device orientation permission granted");
+                    
+                    // Remove the permission button
+                    const permBtn = document.querySelector('button');
+                    if (permBtn) permBtn.remove();
                 } else {
+                    console.error("Permission not granted for device orientation");
                     toggleErrorModal('Device orientation permission is required for the compass to work.');
                 }
             })
-            .catch(() => toggleErrorModal('Device orientation not supported on this device.'));
+            .catch((error) => {
+                console.error("Error requesting device orientation permission:", error);
+                toggleErrorModal('Could not request device orientation permission.');
+            });
     }
 }
 
 // Update current position from geolocation
 function setCurrentPosition(position) {
+    console.log("Position updated:", position.coords);
     current.latitude = position.coords.latitude;
     current.longitude = position.coords.longitude;
+    updateDistanceDisplay();
 }
 
 // Calculate direction and distance to target
 function runCalculation(event) {
-    var alpha = Math.abs(360 - event.webkitCompassHeading) || event.alpha;
+    if (!event.alpha && event.alpha !== 0) {
+        console.warn("No alpha value in orientation event");
+        return;
+    }
     
-    if (alpha == null || Math.abs(alpha - lastAlpha) > 1) {
+    var alpha = isIOS ? Math.abs(360 - event.webkitCompassHeading) : event.alpha;
+    
+    if (alpha == null) {
+        console.warn("No compass heading available");
+        return;
+    }
+    
+    // Only update if alpha changed significantly or we're forcing an update
+    if (Math.abs(alpha - lastAlpha) > 1) {
         var lat1 = current.latitude * (Math.PI / 180);
         var lon1 = current.longitude * (Math.PI / 180);
         var lat2 = target.latitude * (Math.PI / 180);
@@ -188,7 +296,6 @@ function runCalculation(event) {
         var bearing = Math.atan2(y, x) * (180 / Math.PI);
         
         direction = (alpha + bearing + 360) % 360;
-        direction = direction.toFixed(0);
         
         lastAlpha = alpha;
         
@@ -201,6 +308,8 @@ function runCalculation(event) {
             Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         distance = R * c * 1000; // Distance in meters
+        
+        console.log("Direction:", direction, "Distance:", distance);
         
         updateDistanceDisplay();
         
@@ -216,7 +325,9 @@ function runCalculation(event) {
 function updateDistanceDisplay() {
     var distanceElement = document.getElementById("distanceFromTarget");
     if (distanceElement) {
-        if (distance > 10000) {
+        if (!current.latitude || !current.longitude) {
+            distanceElement.innerHTML = 'Waiting for location...';
+        } else if (distance > 10000) {
             distanceElement.innerHTML = 'Calculating distance...';
         } else if (distance <= 1) {
             distanceElement.innerHTML = 'You have arrived!';
@@ -236,50 +347,48 @@ function updateUI() {
     requestAnimationFrame(updateUI);
 }
 
-// Initialize the app when document is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    init();
-});
-
-// ========== MODAL FUNCTIONS ==========
-
-// Handle instruction modal
+// Toggle instructions modal
 function toggleInstructionModal() {
+    console.log("Toggling instruction modal");
     var modalInstructions = document.getElementById("modalInstructions");
     if (modalInstructions) {
-        modalInstructions.style.zIndex = "6000";
         modalInstructions.style.display = "block";
     }
 }
 
+// Close instructions modal
 function closeInstructionModal() {
+    console.log("Closing instruction modal");
     var modalInstructions = document.getElementById("modalInstructions");
     if (modalInstructions) {
-        modalInstructions.style.display = 'none';
+        modalInstructions.style.display = "none";
     }
 }
 
-// Handle error modal
+// Toggle error modal
 function toggleErrorModal(errorMessage) {
+    console.log("Toggling error modal:", errorMessage);
     var modalError = document.getElementById("modalError");
     var errorText = document.getElementById("errorText");
     
     if (modalError && errorText) {
         errorText.textContent = errorMessage;
-        modalError.style.zIndex = "6000";
         modalError.style.display = "block";
     }
 }
 
+// Close error modal
 function closeErrorModal() {
+    console.log("Closing error modal");
     var modalError = document.getElementById("modalError");
     if (modalError) {
-        modalError.style.display = 'none';
+        modalError.style.display = "none";
     }
 }
 
-// Handle car directions modal
+// Toggle car directions modal
 function toggleCarDirectionsModal() {
+    console.log("Toggling car directions modal");
     var modalCarDirections = document.getElementById("modalCarDirections");
     var carImage = document.getElementById("carImage");
     var directionsText = document.getElementById("directionsText");
@@ -287,151 +396,95 @@ function toggleCarDirectionsModal() {
     if (modalCarDirections && carImage && directionsText) {
         carImage.src = carImageUrl;
         directionsText.textContent = carDirections;
-        modalCarDirections.style.zIndex = "6000";
         modalCarDirections.style.display = "block";
     }
 }
 
+// Close car directions modal
 function closeCarDirectionsModal() {
+    console.log("Closing car directions modal");
     var modalCarDirections = document.getElementById("modalCarDirections");
     if (modalCarDirections) {
-        modalCarDirections.style.display = 'none';
+        modalCarDirections.style.display = "none";
+        isViewingDirections = false; // Reset flag so modal can show again
     }
 }
 
-// ========== EVENT LISTENERS ==========
+// Add debug info to the page
+function addDebugInfo() {
+    const debugDiv = document.createElement('div');
+    debugDiv.style.position = 'fixed';
+    debugDiv.style.bottom = '80px';
+    debugDiv.style.left = '10px';
+    debugDiv.style.backgroundColor = 'rgba(0,0,0,0.7)';
+    debugDiv.style.color = 'white';
+    debugDiv.style.padding = '10px';
+    debugDiv.style.borderRadius = '5px';
+    debugDiv.style.zIndex = '2000';
+    debugDiv.style.maxWidth = '80%';
+    debugDiv.style.fontSize = '12px';
+    debugDiv.id = 'debugInfo';
+    document.body.appendChild(debugDiv);
+    
+    // Update debug info regularly
+    setInterval(() => {
+        const debugInfo = document.getElementById('debugInfo');
+        if (debugInfo) {
+            debugInfo.innerHTML = `
+                <strong>Debug Info:</strong><br>
+                Current: ${current.latitude}, ${current.longitude}<br>
+                Target: ${target.latitude}, ${target.longitude}<br>
+                Distance: ${Math.round(distance)}m<br>
+                Direction: ${Math.round(direction)}°<br>
+                Has orientation: ${window.DeviceOrientationEvent ? 'Yes' : 'No'}<br>
+                Is iOS: ${isIOS ? 'Yes' : 'No'}<br>
+            `;
+        }
+    }, 500);
+}
 
-// Set up event listeners once DOM is fully loaded
+// Initialize the app when document is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle instruction modal close
+    console.log("DOM loaded");
+    
+    // Set up event listeners for modals
     document.querySelector(".modal-instructions-content").addEventListener("click", function() {
         closeInstructionModal();
     });
     
-    document.querySelector(".closeInstructions").addEventListener("click", function() {
-        closeInstructionModal();
-    });
-    
-    // Handle error modal close
-    document.querySelector(".modal-error-content").addEventListener("click", function() {
-        closeErrorModal();
-    });
-    
-    document.querySelector(".closeError").addEventListener("click", function() {
-        closeErrorModal();
-    });
-    
-    // Handle car directions modal close
-    document.querySelector(".modal-car-directions-content").addEventListener("click", function() {
-        closeCarDirectionsModal();
-    });
-    
-    document.querySelector(".closeCarDirections").addEventListener("click", function() {
-        closeCarDirectionsModal();
-    });
-    
-    // Request device orientation permission (for iOS)
-    if (isIOS) {
-        document.addEventListener("click", function() {
-            if (!hasRequestedOrientation) {
-                startCompass();
-                hasRequestedOrientation = true;
-            }
-        }, { once: true });
-    }
-    
-    // Handle reload button
-    var reloadButton = document.getElementById("reloadButton");
-    if (reloadButton) {
-        reloadButton.addEventListener("click", function() {
-            location.reload();
+    if (document.querySelector(".closeInstructions")) {
+        document.querySelector(".closeInstructions").addEventListener("click", function() {
+            closeInstructionModal();
         });
     }
     
-    // Handle back button
-    var backButton = document.getElementById("backButton");
-    if (backButton) {
-        backButton.addEventListener("click", function() {
-            window.history.back();
+    if (document.querySelector(".modal-error-content")) {
+        document.querySelector(".modal-error-content").addEventListener("click", function() {
+            closeErrorModal();
         });
     }
-});
-
-// ========== UTILITY FUNCTIONS ==========
-
-// Calculate distance between two coordinates using Haversine formula
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    var R = 6371; // Radius of the earth in km
-    var dLat = deg2rad(lat2 - lat1);
-    var dLon = deg2rad(lon2 - lon1);
-    var a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    var d = R * c * 1000; // Distance in meters
-    return d;
-}
-
-function deg2rad(deg) {
-    return deg * (Math.PI / 180);
-}
-
-// Format distance for display
-function formatDistance(distance) {
-    if (distance < 1000) {
-        return Math.round(distance) + "m";
-    } else {
-        return (distance / 1000).toFixed(1) + "km";
+    
+    if (document.querySelector(".closeError")) {
+        document.querySelector(".closeError").addEventListener("click", function() {
+            closeErrorModal();
+        });
     }
-}
-
-// Check if device has internet connection
-function checkInternetConnection() {
-    return navigator.onLine;
-}
-
-// Handle offline status
-function handleOffline() {
-    toggleErrorModal('You are offline. Please check your internet connection and try again.');
-}
-
-// Event listeners for online/offline status
-window.addEventListener('online', function() {
-    // Reload to restore functionality when coming back online
-    location.reload();
-});
-
-window.addEventListener('offline', function() {
-    handleOffline();
-});
-
-// Add a variable to track if orientation permission has been requested
-var hasRequestedOrientation = false;
-
-// Add Firebase initialization check
-function checkFirebaseInitialization() {
-    if (typeof firebase === 'undefined' || !firebase.apps.length) {
-        console.error('Firebase is not initialized');
-        toggleErrorModal('Could not connect to the database. Please try again later.');
-        return false;
+    
+    if (document.querySelector(".modal-car-directions-content")) {
+        document.querySelector(".modal-car-directions-content").addEventListener("click", function() {
+            closeCarDirectionsModal();
+        });
     }
-    return true;
-}
-
-// Add this to the init function at the appropriate place
-function setupErrorHandling() {
-    window.onerror = function(message, source, lineno, colno, error) {
-        console.error('Error caught:', error);
-        toggleErrorModal('An error occurred: ' + message);
-        return true; // Prevents default browser error handling
-    };
-}
-
-// Call this early in the init function
-setupErrorHandling();
-
-// Check if the Firebase app is initialized before trying to use it
-if (!checkFirebaseInitialization()) {
-    toggleErrorModal('Database connection failed. Please try again later.');
-}
+    
+    if (document.querySelector(".closeCarDirections")) {
+        document.querySelector(".closeCarDirections").addEventListener("click", function() {
+            closeCarDirectionsModal();
+        });
+    }
+    
+    // Add debug info during development
+    addDebugInfo();
+    
+    // Initialize the app
+    init();
+});
