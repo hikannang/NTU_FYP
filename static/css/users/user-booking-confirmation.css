@@ -1,4 +1,56 @@
-/* user-booking-confirmation.css */
+
+:root {
+  /* Colors */
+  --primary: #1e88e5;
+  --primary-light: #bbdefb;
+  --primary-dark: #1976d2;
+  --success: #4caf50;
+  --success-light: #e8f5e9;
+  --danger: #f44336;
+  --danger-light: #fff3f3;
+  --warning: #ff9800;
+  --warning-light: #fff8e1;
+  
+  /* Neutrals */
+  --gray-50: #f8f9fa;
+  --gray-100: #f5f5f5;
+  --gray-200: #eeeeee;
+  --gray-300: #e0e0e0;
+  --gray-400: #bdbdbd;
+  --gray-500: #9e9e9e;
+  --gray-600: #757575;
+  --gray-700: #616161;
+  --gray-800: #424242;
+  --gray-900: #212121;
+  
+  /* Typography */
+  --text-primary: #333333;
+  --text-secondary: #555555;
+  --text-tertiary: #666666;
+  
+  /* Layout */
+  --header-height: 70px;
+  --sidebar-width: 250px;
+  --footer-height: 60px;
+  --border-radius-sm: 6px;
+  --border-radius: 12px;
+  --border-radius-lg: 16px;
+  --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --card-hover-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  
+  /* Transitions */
+  --transition-speed: 0.2s;
+}
+
+/* Main Layout Adjustments for Header, Sidebar, and Footer */
+main {
+    margin-left: var(--sidebar-width);
+    padding-top: calc(var(--header-height) + 20px);
+    padding-bottom: 60px;
+    min-height: calc(100vh - var(--header-height) - var(--footer-height));
+    width: calc(100% - var(--sidebar-width));
+    box-sizing: border-box;
+}
 
 /* General Layout */
 .container {
@@ -12,6 +64,10 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    padding: 24px;
 }
 
 /* Back Navigation */
@@ -22,18 +78,23 @@
 .back-link {
     display: inline-flex;
     align-items: center;
-    color: #555;
+    color: var(--text-secondary);
     text-decoration: none;
     font-weight: 500;
-    transition: color 0.2s;
+    transition: color var(--transition-speed);
 }
 
 .back-link:hover {
-    color: #1e88e5;
+    color: var(--primary);
 }
 
 .back-link i {
-    margin-right: 5px;
+    margin-right: 8px;
+    transition: transform var(--transition-speed);
+}
+
+.back-link:hover i {
+    transform: translateX(-3px);
 }
 
 /* Confirmation Header */
@@ -80,16 +141,42 @@
 /* Enhanced car image display - UPDATED */
 .car-image {
     width: 100%;
-    height: 200px;
+    height: 95%;
     overflow: hidden;
     border-radius: 8px;
     margin-bottom: 15px;
+    align-items: center;
 }
 
 .car-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+/* Car Image Styling */
+.car-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 250px; /* Adjust this as needed based on your desired container height */
+  overflow: hidden;
+  margin: 0 auto;
+  background-color: var(--gray-50);
+  border-radius: var(--border-radius);
+}
+
+.car-image-container img {
+  height: 95%;
+  width: auto;
+  max-width: 100%; /* Ensures the image doesn't overflow horizontally */
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.car-image-container:hover img {
+  transform: scale(1.02); /* Subtle zoom effect on hover */
 }
 
 .car-info {
@@ -373,7 +460,15 @@
     }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 992px) {
+    main {
+        margin-left: 0;
+        width: 100%;
+        padding-top: calc(var(--header-height) + 10px);
+    }
+}
+
+@media (max-width: 768px) {
     .container {
         padding: 15px;
     }
@@ -396,6 +491,11 @@
     .car-plate {
         font-size: 1rem;
         padding: 3px 10px;
+    }
+    
+    .confirmation-container {
+        padding: 16px;
+        gap: 16px;
     }
     
     .confirmation-actions {

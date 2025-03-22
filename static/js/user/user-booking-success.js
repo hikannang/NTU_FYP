@@ -272,12 +272,14 @@ function displayBookingSummary() {
     // Luggage capacity
     const smallLuggageElement = document.getElementById("small-luggage");
     if (smallLuggageElement && carData) {
-      smallLuggageElement.textContent = carData.small_luggage || "0";
+      smallLuggageElement.textContent =
+        "small_luggage" in carData ? carData.small_luggage.toString() : "0";
     }
 
-    const bigLuggageElement = document.getElementById("big-luggage");
+    const bigLuggageElement = document.getElementById("large-luggage");
     if (bigLuggageElement && carData) {
-      bigLuggageElement.textContent = carData.big_luggage || "0";
+      bigLuggageElement.textContent =
+        "large_luggage" in carData ? carData.large_luggage.toString() : "0";
     }
 
     // Location
