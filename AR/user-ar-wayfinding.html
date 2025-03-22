@@ -14,13 +14,13 @@
     <!-- jQuery and Bootstrap JS first (important for dependency order) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-    
+
     <!-- AR.js and A-Frame libraries (correct order matters) -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.0/dist/aframe-extras.min.js"></script>
-    
+
     <style>
       body {
         margin: 0;
@@ -29,7 +29,7 @@
         width: 100%;
         height: 100%;
       }
-      
+
       #compassDiv {
         position: fixed;
         top: 20px;
@@ -40,7 +40,7 @@
         flex-direction: column;
         align-items: center;
       }
-      
+
       .compass {
         width: 60px;
         height: 60px;
@@ -53,19 +53,20 @@
         margin-bottom: 10px;
         position: relative;
       }
-      
+
       .arrow {
         width: 40px;
         height: 40px;
-        background-color: red;
-        clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
         transform-origin: center;
+        /* Remove these properties as they'll be set by JavaScript */
+        background-color: transparent;
+        clip-path: none;
       }
-      
+
       .uiDisplay {
         background-color: rgba(0, 0, 0, 0.6);
         color: white;
@@ -74,7 +75,7 @@
         font-size: 14px;
         text-align: center;
       }
-      
+
       .modal {
         display: none;
         position: fixed;
@@ -86,7 +87,7 @@
         overflow: auto;
         background-color: rgba(0, 0, 0, 0.7);
       }
-      
+
       .modal-instructions-content,
       .modal-error-content,
       .modal-car-directions-content {
@@ -99,7 +100,7 @@
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         position: relative;
       }
-      
+
       .loading-screen {
         position: fixed;
         z-index: 9999;
@@ -113,7 +114,7 @@
         justify-content: center;
         align-items: center;
       }
-      
+
       .spinner {
         border: 4px solid rgba(255, 255, 255, 0.3);
         border-radius: 50%;
@@ -123,12 +124,16 @@
         animation: spin 1s linear infinite;
         margin-bottom: 10px;
       }
-      
+
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
-      
+
       .common-close-btn {
         position: absolute;
         top: 10px;
@@ -148,13 +153,15 @@
         <ol>
           <li>Point your camera in the direction of your destination</li>
           <li>Follow the compass arrow at the top of the screen</li>
-          <li>The distance to your destination is displayed below the compass</li>
+          <li>
+            The distance to your destination is displayed below the compass
+          </li>
           <li>When you get close to the car, directions will appear</li>
         </ol>
         <p><strong>Click anywhere to dismiss this message</strong></p>
       </div>
     </div>
-    
+
     <!-- Error Modal -->
     <div id="modalError" class="modal">
       <div class="modal-error-content">
@@ -167,13 +174,18 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Car Directions Modal -->
     <div id="modalCarDirections" class="modal">
       <div class="modal-car-directions-content">
         <span class="closeCarDirections common-close-btn">×</span>
         <div class="car-image-container">
-          <img id="carImage" src="https://via.placeholder.com/300x200?text=Car+Image" alt="Car Image" style="max-width: 100%;">
+          <img
+            id="carImage"
+            src="https://via.placeholder.com/300x200?text=Car+Image"
+            alt="Car Image"
+            style="max-width: 100%"
+          />
         </div>
         <div class="directions-container">
           <h3>Car Location Instructions</h3>
@@ -187,7 +199,7 @@
     <div id="compassDiv">
       <!-- Compass -->
       <div class="compass">
-        <div class="arrow"></div>
+        <div class="arrow" style="width: 40px; height: 40px"></div>
       </div>
       <p id="distanceFromTarget" class="uiDisplay">Calculating distance...</p>
     </div>
@@ -197,18 +209,18 @@
       <div class="spinner"></div>
       <p>Loading...</p>
     </div>
-    
+
     <!-- AR Scene -->
     <a-scene 
       vr-mode-ui="enabled: false"
       embedded
-      arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false"
+      arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; trackingMethod: best;"
       renderer="antialias: true; alpha: true">
       
-      <!-- Camera -->
-      <a-camera gps-camera="simulateLatitude: 1.4013549; simulateLongitude: 103.749248" rotation-reader></a-camera>
+      <!-- Camera with look-controls disabled for better AR experience -->
+      <a-camera gps-camera="minDistance: 1;" rotation-reader look-controls-enabled="false"></a-camera>
     </a-scene>
-    
+
     <!-- Custom JavaScript -->
     <script src="./static/js/user-ar-wayfinding.js"></script>
   </body>

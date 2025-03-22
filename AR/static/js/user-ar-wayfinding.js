@@ -132,22 +132,30 @@ function setupARScene() {
     
     // Create AR entity with the pin model
     if (document.querySelector('a-scene')) {
-        // Check if pin already exists
-        let arPin = document.getElementById('arPin');
-        
-        if (!arPin) {
-            arPin = document.createElement('a-entity');
-            arPin.id = 'arPin';
-            arPin.setAttribute('scale', '0.5 0.5 0.5');
-            document.querySelector('a-scene').appendChild(arPin);
+        // Check if pin already exists and remove it if it does
+        let existingPin = document.getElementById('arPin');
+        if (existingPin) {
+            existingPin.parentNode.removeChild(existingPin);
         }
         
+        // Create new pin entity
+        const arPin = document.createElement('a-entity');
+        arPin.id = 'arPin';
+        
         // Set model and position
-        arPin.setAttribute('gltf-model', 'AR/static/3dModels/pin.glb');
+        arPin.setAttribute('gltf-model', './AR/static/3dModels/pin.glb');
+        arPin.setAttribute('scale', '0.5 0.5 0.5');
+        arPin.setAttribute('rotation', '0 0 0');
         arPin.setAttribute('gps-entity-place', `latitude: ${target.latitude}; longitude: ${target.longitude}`);
-        arPin.setAttribute('look-at', '[gps-camera]');
+        arPin.setAttribute('animation', 'property: position; to: 0 1.5 0; dur: 2000; easing: easeInOutQuad; loop: true; dir: alternate');
+        
+        // Add to scene
+        document.querySelector('a-scene').appendChild(arPin);
         
         console.log("AR pin created with coordinates:", target);
+        
+        // Print the path to verify it's correct
+        console.log("GLB model path:", './AR/static/3dModels/pin.glb');
     } else {
         console.error("A-Scene not found!");
     }
@@ -156,6 +164,9 @@ function setupARScene() {
 // Initialize compass and geolocation
 function init() {
     console.log("Initializing app");
+    
+    // Setup the compass with image
+    setupCompass();
     
     // Display instruction modal
     toggleInstructionModal();
@@ -204,6 +215,9 @@ function init() {
     
     // Create a debug button for iOS permission
     createIOSPermissionButton();
+    
+    // Add a button to verify the 3D model path
+    addModelTestButton();
 }
 
 // Create a button for iOS orientation permission
@@ -342,6 +356,7 @@ function updateUI() {
     // Update arrow rotation
     const arrow = document.querySelector(".arrow");
     if (arrow) {
+        // The direction is calculated based on compass heading and bearing to target
         arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
     }
     requestAnimationFrame(updateUI);
@@ -488,3 +503,60 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize the app
     init();
 });
+
+// Replace the triangle with the provided arrow image that rotates towards the target
+function setupCompass() {
+    console.log("Setting up compass with image arrow");
+    
+    const arrow = document.querySelector(".arrow");
+    if (arrow) {
+        // Remove any existing CSS styling that created the triangle
+        arrow.style.backgroundColor = "transparent";
+        arrow.style.clipPath = "none";
+        
+        // Add the arrow image
+        arrow.style.backgroundImage = "url('./AR/static/images/arrow.png')";
+        arrow.style.backgroundSize = "contain";
+        arrow.style.backgroundRepeat = "no-repeat";
+        arrow.style.backgroundPosition = "center";
+        
+        console.log("Arrow image applied to compass");
+    } else {
+        console.error("Arrow element not found");
+    }
+}
+
+// Add a button to test if the 3D model loads properly
+function addModelTestButton() {
+    const btn = document.createElement('button');
+    btn.innerText = 'Test 3D Model';
+    btn.style.position = 'fixed';
+    btn.style.bottom = '120px';
+    btn.style.left = '50%';
+    btn.style.transform = 'translateX(-50%)';
+    btn.style.padding = '10px 20px';
+    btn.style.backgroundColor = '#4CAF50';
+    btn.style.color = 'white';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '20px';
+    btn.style.zIndex = '2000';
+    
+    btn.addEventListener('click', function() {
+        // Create a test entity in the scene to verify the 3D model loads
+        const scene = document.querySelector('a-scene');
+        if (scene) {
+            // Create a test entity that's visible regardless of GPS
+            const testEntity = document.createElement('a-entity');
+            testEntity.setAttribute('gltf-model', './AR/static/3dModels/pin.glb');
+            testEntity.setAttribute('position', '0 0 -3');  // 3 meters in front of camera
+            testEntity.setAttribute('scale', '0.5 0.5 0.5');
+            testEntity.setAttribute('rotation', '0 0 0');
+            
+            scene.appendChild(testEntity);
+            
+            alert('Test 3D model added in front of camera. If you don\'t see it, check the model path.');
+        }
+    });
+    
+    document.body.appendChild(btn);
+}
