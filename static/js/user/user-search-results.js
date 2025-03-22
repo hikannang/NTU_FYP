@@ -581,10 +581,6 @@ function createCarCard(car) {
             <div class="car-info">
                 <div class="car-header">
                     <h3>${car.make} ${car.modelName}</h3>
-                    <span class="car-rating">
-                        <i class="bi bi-star-fill"></i>
-                        ${(Math.random() * (5 - 4.3) + 4.3).toFixed(1)}
-                    </span>
                 </div>
                 ${features}
                 ${distanceDisplay}

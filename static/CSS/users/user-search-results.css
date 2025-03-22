@@ -360,15 +360,20 @@ main {
     position: relative;
     overflow: hidden;
     width: 100%;
-    height: 200px; /* Fixed height container */
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa; /* Light background for better visibility */
 }
 
 /* Updated image styling to maintain aspect ratio */
 .car-image img {
-    width: 100%;
-    height: auto; /* Auto height for proper aspect ratio */
-    object-fit: cover; /* Cover ensures image fills the container */
-    display: block; /* Removes bottom spacing */
+    max-width: 90%;
+    max-height: 90%;
+    width: auto;
+    height: auto;
+    object-fit: contain; /* 'contain' will make sure the entire image is visible */
     transition: transform 0.3s ease;
 }
 
