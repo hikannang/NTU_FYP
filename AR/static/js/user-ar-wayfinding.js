@@ -126,42 +126,100 @@ async function fetchBookingData() {
     }
 }
 
-// Initialize the AR scene
+// Initialize the AR scene with better entity placement
 function setupARScene() {
     console.log("Setting up AR scene");
     
-    // Create AR entity with the pin model
-    if (document.querySelector('a-scene')) {
-        // Check if pin already exists and remove it if it does
-        let existingPin = document.getElementById('arPin');
-        if (existingPin) {
-            existingPin.parentNode.removeChild(existingPin);
+    // Get the scene
+    const scene = document.querySelector('a-scene');
+    if (!scene) {
+        console.error("A-Scene not found!");
+        return;
+    }
+    
+    // Remove any existing pin to avoid duplicates
+    let existingPin = document.getElementById('arPin');
+    if (existingPin) {
+        existingPin.parentNode.removeChild(existingPin);
+        console.log("Removed existing pin");
+    }
+    
+    // Create the AR pin entity with improved attributes
+    const arPin = document.createElement('a-entity');
+    arPin.id = 'arPin';
+    
+    // Set model and position with more reliable configuration
+    arPin.setAttribute('gltf-model', '../AR/static/3dModels/pin.glb');
+    arPin.setAttribute('scale', '0.5 0.5 0.5');
+    arPin.setAttribute('look-at', '[gps-camera]'); // Make it face the camera
+    arPin.setAttribute('gps-entity-place', `latitude: ${target.latitude}; longitude: ${target.longitude}`);
+    
+    // Add animation to make it more visible (floating effect)
+    arPin.setAttribute('animation', 'property: position; to: 0 1 0; dir: alternate; dur: 2000; easing: easeInOutQuad; loop: true;');
+    
+    // Add to scene
+    scene.appendChild(arPin);
+    
+    console.log("AR pin created with coordinates:", target);
+    
+    // Add a static pin as a fallback to verify model loading
+    addStaticPin(scene);
+}
+
+// Add a static pin that's visible regardless of GPS location (for testing)
+function addStaticPin(scene) {
+    const staticPin = document.createElement('a-entity');
+    staticPin.id = 'staticPin';
+    staticPin.setAttribute('gltf-model', '../AR/static/3dModels/pin.glb');
+    staticPin.setAttribute('position', '0 -1 -3'); // Position in front of the camera
+    staticPin.setAttribute('scale', '0.5 0.5 0.5');
+    staticPin.setAttribute('rotation', '0 0 0');
+    
+    scene.appendChild(staticPin);
+    console.log("Added static pin in front of camera for testing");
+}
+
+// Ensure proper configuration of the AR scene
+function enhanceARScene() {
+    // Get the scene and camera
+    const scene = document.querySelector('a-scene');
+    const camera = document.querySelector('[gps-camera]');
+    
+    if (!scene || !camera) {
+        console.error("Required AR elements not found");
+        return;
+    }
+    
+    // Improve camera settings for AR
+    camera.setAttribute('gps-camera', {
+        simulateLatitude: target.latitude,
+        simulateLongitude: target.longitude,
+        positionMinAccuracy: 100, // Be more lenient with GPS accuracy
+        alert: false // Disable alerts
+    });
+    
+    // Configure scene for better performance
+    scene.setAttribute('vr-mode-ui', 'enabled: false');
+    scene.setAttribute('device-orientation-permission-ui', 'enabled: false');
+    scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix;');
+}
+
+// Update existing pin position based on current distance
+function updatePinPosition() {
+    const pin = document.getElementById('arPin');
+    if (pin && distance !== null) {
+        // Make the pin more visible when close
+        if (distance < 50) {
+            pin.setAttribute('scale', '1 1 1'); // Make it larger when close
+        } else {
+            pin.setAttribute('scale', '0.5 0.5 0.5');
         }
         
-        // Create new pin entity
-        const arPin = document.createElement('a-entity');
-        arPin.id = 'arPin';
-        
-        // Set model and position
-        arPin.setAttribute('gltf-model', '../AR/static/3dModels/pin.glb');
-        arPin.setAttribute('scale', '0.5 0.5 0.5');
-        arPin.setAttribute('rotation', '0 0 0');
-        arPin.setAttribute('gps-entity-place', `latitude: ${target.latitude}; longitude: ${target.longitude}`);
-        arPin.setAttribute('animation', 'property: position; to: 0 1.5 0; dur: 2000; easing: easeInOutQuad; loop: true; dir: alternate');
-        
-        // Add to scene
-        document.querySelector('a-scene').appendChild(arPin);
-        
-        console.log("AR pin created with coordinates:", target);
-        
-        // Print the path to verify it's correct
-        console.log("GLB model path:", '../AR/static/3dModels/pin.glb');
-    } else {
-        console.error("A-Scene not found!");
+        console.log("Updated pin with distance:", distance);
     }
 }
 
-// Initialize compass and geolocation
+// Initialize compass and geolocation with enhanced AR features
 function init() {
     console.log("Initializing app");
     
@@ -177,6 +235,11 @@ function init() {
         return;
     }
     
+    // Enhance AR scene configuration
+    setTimeout(() => {
+        enhanceARScene();
+    }, 1000); // Wait for AR.js to initialize
+    
     // For testing, start with hardcoded position to see UI even without GPS
     current.latitude = target.latitude - 0.0002; 
     current.longitude = target.longitude - 0.0003;
@@ -185,12 +248,18 @@ function init() {
     updateDistanceDisplay();
     updateUI();
     
+    // Set up AR scene
+    setupARScene();
+    
     // Fetch booking data
     fetchBookingData().then(success => {
         if (!success) {
             toggleErrorModal('Could not fetch booking data. Please try again.');
         }
     });
+    
+    // Add debug button to toggle static pin view
+    addDebugButton();
     
     // Start watching user position
     navigator.geolocation.watchPosition(
@@ -215,9 +284,6 @@ function init() {
     
     // Create a debug button for iOS permission
     createIOSPermissionButton();
-    
-    // Add a button to verify the 3D model path
-    addModelTestButton();
 }
 
 // Create a button for iOS orientation permission
@@ -333,6 +399,9 @@ function runCalculation(event) {
             isViewingDirections = true;
         }
     }
+    
+    // Add this at the end of the function to update pin position
+    updatePinPosition();
 }
 
 // Update distance display
@@ -554,6 +623,40 @@ function addModelTestButton() {
             scene.appendChild(testEntity);
             
             alert('Test 3D model added in front of camera. If you don\'t see it, check the model path.');
+        }
+    });
+    
+    document.body.appendChild(btn);
+}
+
+// Add a debug button to help with testing
+function addDebugButton() {
+    const btn = document.createElement('button');
+    btn.innerText = '3D Model Test';
+    btn.style.position = 'fixed';
+    btn.style.bottom = '20px';
+    btn.style.right = '20px';
+    btn.style.padding = '10px';
+    btn.style.backgroundColor = '#4CAF50';
+    btn.style.color = 'white';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '50%';
+    btn.style.width = '60px';
+    btn.style.height = '60px';
+    btn.style.zIndex = '2000';
+    
+    btn.addEventListener('click', function() {
+        // Toggle the visibility of the static pin
+        const staticPin = document.getElementById('staticPin');
+        if (staticPin) {
+            const currentPosition = staticPin.getAttribute('position');
+            if (currentPosition.z === -3) {
+                staticPin.setAttribute('position', '0 -1 -1.5'); // Bring closer
+                btn.style.backgroundColor = '#F44336';
+            } else {
+                staticPin.setAttribute('position', '0 -1 -3'); // Move back
+                btn.style.backgroundColor = '#4CAF50';
+            }
         }
     });
     

@@ -211,14 +211,17 @@
     </div>
 
     <!-- AR Scene -->
-    <a-scene 
-      vr-mode-ui="enabled: false"
+    <a-scene
       embedded
-      arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; trackingMethod: best;"
-      renderer="antialias: true; alpha: true">
-      
-      <!-- Camera with look-controls disabled for better AR experience -->
-      <a-camera gps-camera="minDistance: 1;" rotation-reader look-controls-enabled="false"></a-camera>
+      vr-mode-ui="enabled: false"
+      arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; sourceWidth:1920; sourceHeight:1080; displayWidth: 1920; displayHeight: 1080; facingMode: environment;"
+      renderer="antialias: true; alpha: true"
+    >
+      <a-camera
+        gps-camera
+        rotation-reader
+        look-controls-enabled="false"
+      ></a-camera>
     </a-scene>
 
     <!-- Custom JavaScript -->
