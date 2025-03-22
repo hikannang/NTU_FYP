@@ -662,3 +662,86 @@ function addDebugButton() {
     
     document.body.appendChild(btn);
 }
+
+// Add this function to your code
+function addTestModel() {
+    console.log("Adding test model to verify GLB loading");
+    
+    // Get scene
+    const scene = document.querySelector('a-scene');
+    if (!scene) {
+        console.error("Scene not found for test model");
+        return;
+    }
+    
+    // Create test entity
+    const testEntity = document.createElement('a-entity');
+    testEntity.id = 'testModel';
+    
+    // Position it directly in front of the camera
+    testEntity.setAttribute('position', '0 0 -3'); // 3 meters in front
+    testEntity.setAttribute('scale', '0.5 0.5 0.5');
+    testEntity.setAttribute('rotation', '0 0 0');
+    
+    // Try multiple paths to find the working one
+    const paths = [
+        '../3dModels/pin.glb',
+        'static/3dModels/pin.glb',
+        './static/3dModels/pin.glb',
+        '../static/3dModels/pin.glb',
+        'AR/static/3dModels/pin.glb',
+        './AR/static/3dModels/pin.glb',
+    ];
+    
+    // Try each path
+    testEntity.setAttribute('gltf-model', paths[0]);
+    
+    // Add to scene
+    scene.appendChild(testEntity);
+    
+    console.log("Test model added with path:", paths[0]);
+    
+    // Add UI to try different paths
+    addPathTestUI(paths);
+}
+
+// Add UI to test different paths
+function addPathTestUI(paths) {
+    const testUI = document.createElement('div');
+    testUI.style.position = 'fixed';
+    testUI.style.bottom = '10px';
+    testUI.style.left = '10px';
+    testUI.style.zIndex = '1000';
+    testUI.style.backgroundColor = 'rgba(0,0,0,0.7)';
+    testUI.style.padding = '10px';
+    testUI.style.borderRadius = '5px';
+    testUI.style.color = 'white';
+    
+    let html = '<h3>Test Model Paths</h3>';
+    
+    paths.forEach((path, index) => {
+        html += `<button onclick="tryPath(${index})" style="margin: 5px; padding: 5px;">${path}</button><br>`;
+    });
+    
+    testUI.innerHTML = html;
+    document.body.appendChild(testUI);
+    
+    // Add global function to try different paths
+    window.tryPath = function(index) {
+        const testModel = document.getElementById('testModel');
+        if (testModel) {
+            const path = paths[index];
+            console.log("Trying path:", path);
+            testModel.setAttribute('gltf-model', path);
+            
+            // Highlight the working button
+            const buttons = testUI.querySelectorAll('button');
+            buttons.forEach((btn, i) => {
+                btn.style.backgroundColor = i === index ? '#4CAF50' : '#555';
+            });
+        }
+    };
+}
+
+// Call this function after your scene is initialized
+addTestModel();
