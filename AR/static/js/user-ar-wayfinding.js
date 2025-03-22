@@ -143,7 +143,7 @@ function setupARScene() {
         arPin.id = 'arPin';
         
         // Set model and position
-        arPin.setAttribute('gltf-model', './AR/static/3dModels/pin.glb');
+        arPin.setAttribute('gltf-model', '../AR/static/3dModels/pin.glb');
         arPin.setAttribute('scale', '0.5 0.5 0.5');
         arPin.setAttribute('rotation', '0 0 0');
         arPin.setAttribute('gps-entity-place', `latitude: ${target.latitude}; longitude: ${target.longitude}`);
@@ -155,7 +155,7 @@ function setupARScene() {
         console.log("AR pin created with coordinates:", target);
         
         // Print the path to verify it's correct
-        console.log("GLB model path:", './AR/static/3dModels/pin.glb');
+        console.log("GLB model path:", '../AR/static/3dModels/pin.glb');
     } else {
         console.error("A-Scene not found!");
     }
@@ -503,7 +503,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize the app
     init();
 });
-
 // Replace the triangle with the provided arrow image that rotates towards the target
 function setupCompass() {
     console.log("Setting up compass with image arrow");
@@ -515,7 +514,7 @@ function setupCompass() {
         arrow.style.clipPath = "none";
         
         // Add the arrow image
-        arrow.style.backgroundImage = "url('./AR/static/images/arrow.png')";
+        arrow.style.backgroundImage = "url('../AR/static/images/arrow.png')";
         arrow.style.backgroundSize = "contain";
         arrow.style.backgroundRepeat = "no-repeat";
         arrow.style.backgroundPosition = "center";
@@ -547,7 +546,7 @@ function addModelTestButton() {
         if (scene) {
             // Create a test entity that's visible regardless of GPS
             const testEntity = document.createElement('a-entity');
-            testEntity.setAttribute('gltf-model', './AR/static/3dModels/pin.glb');
+            testEntity.setAttribute('gltf-model', '../AR/static/3dModels/pin.glb');
             testEntity.setAttribute('position', '0 0 -3');  // 3 meters in front of camera
             testEntity.setAttribute('scale', '0.5 0.5 0.5');
             testEntity.setAttribute('rotation', '0 0 0');
