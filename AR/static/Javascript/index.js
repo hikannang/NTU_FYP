@@ -371,56 +371,17 @@ function enablePositionHistory() {
     }, 1000);
 }
 
-// Calculate direction of movement from position history
-function calculateMovementDirection() {
-    if (positionHistory.length < 2) return;
-    
-    // Get oldest and newest positions
-    const oldest = positionHistory[0];
-    const newest = positionHistory[positionHistory.length - 1];
-    
-    // Check if movement is significant
-    const latDiff = newest.latitude - oldest.latitude;
-    const lngDiff = newest.longitude - oldest.longitude;
-    
-    if (Math.abs(latDiff) > 0.00001 || Math.abs(lngDiff) > 0.00001) {
-        // Calculate bearing between points
-        const lat1 = oldest.latitude * (Math.PI / 180);
-        const lon1 = oldest.longitude * (Math.PI / 180);
-        const lat2 = newest.latitude * (Math.PI / 180);
-        const lon2 = newest.longitude * (Math.PI / 180);
-        
-        const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
-        const x = Math.cos(lat1) * Math.sin(lat2) -
-                Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
-        
-        const movementBearing = Math.atan2(y, x) * (180 / Math.PI);
-        movementDirection = (movementBearing + 360) % 360;
-        
-        // If orientation not available, use movement direction
-        if (!hasOrientationSupport) {
-            bearing = calculateBearing();
-            direction = (bearing - movementDirection + 360) % 360;
-        }
-    }
+// Add this function to help debug
+function forceShowModal() {
+    console.log("🚨 Force showing modal for testing");
+    showDestinationModal();
 }
 
-// Update current position
-function setCurrentPosition(position) {
-    current.latitude = position.coords.latitude;
-    current.longitude = position.coords.longitude;
-    
-    // Update bearing
-    bearing = calculateBearing();
-    
-    // Update display
-    updateDistanceDisplay();
-}
-
-// Update distance display
+// Updated updateDistanceDisplay function with better logging
 function updateDistanceDisplay() {
     if (current.latitude === null || current.longitude === null || 
         target.latitude === 0 || target.longitude === 0) {
+        console.log("⚠️ Missing coordinates, can't update distance");
         return;
     }
     
@@ -438,6 +399,8 @@ function updateDistanceDisplay() {
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     distance = R * c * 1000; // Distance in meters
     
+    console.log("📏 Distance to target:", Math.floor(distance), "meters");
+    
     // Update UI
     var distanceElement = document.getElementById("distanceFromTarget");
     if (distanceElement) {
@@ -448,19 +411,21 @@ function updateDistanceDisplay() {
         } else {
             distanceElement.innerHTML = Math.floor(distance) + "m to your booked car!";
         }
+    } else {
+        console.error("❌ Distance element not found");
     }
     
-    // Check if arrived at destination
-    if (distance < 40 && !isViewed) {
-        console.log("Within 40m of destination, showing modal");
+    // Check if arrived at destination - use a higher threshold for testing
+    if (distance < 100 && !isViewed) {
+        console.log("🏁 Within 100m of destination, showing modal");
         showDestinationModal();
         isViewed = true;
     }
 }
 
-// Improved showDestinationModal function
+// Fixed showDestinationModal function with improved styling and visibility
 function showDestinationModal() {
-    console.log("Showing destination modal");
+    console.log("🚨 SHOWING DESTINATION MODAL");
     
     // Remove any existing destination modal first to avoid duplicates
     const existingModal = document.getElementById('destinationModal');
@@ -479,7 +444,7 @@ function showDestinationModal() {
     modal.style.width = '100%';
     modal.style.height = '100%';
     modal.style.backgroundColor = 'rgba(0,0,0,0.7)';
-    modal.style.zIndex = '1000';
+    modal.style.zIndex = '9999'; // Very high z-index to ensure visibility
     
     // Create the content container
     const modalContent = document.createElement('div');
@@ -500,9 +465,11 @@ function showDestinationModal() {
     const carType = window.carType || 'default';
     carImage.src = `./static/images/car_images/${carType}.png`;
     carImage.alt = `${carType} Car`;
-    carImage.style.maxWidth = '100%';
+    carImage.style.maxWidth = '80%';
     carImage.style.height = 'auto';
     carImage.style.marginBottom = '15px';
+    carImage.style.display = 'block';
+    carImage.style.margin = '0 auto 15px auto';
     
     // Create heading
     const heading = document.createElement('h2');
@@ -547,22 +514,97 @@ function showDestinationModal() {
     // Add to document
     document.body.appendChild(modal);
     
+    console.log("🚨 MODAL CREATED AND APPENDED");
+    
     // Add click/touch event to close when clicking anywhere
     modal.addEventListener('click', function() {
         modal.style.display = 'none';
+        console.log("Modal closed on click");
     });
     
     modal.addEventListener('touchend', function(e) {
         e.preventDefault();
         modal.style.display = 'none';
+        console.log("Modal closed on touch");
     });
     
     // Also handle error for the car image
     carImage.onerror = function() {
         // If image fails to load, use a default image
+        console.log("Car image failed to load, using default");
         carImage.src = './static/images/car_images/default.png';
     };
 }
+
+// Fix compass calculation - simplify to make it more reliable
+function handleOrientation(event) {
+    // Set flag that we have orientation data
+    hasOrientationSupport = true;
+    
+    // Get raw heading
+    let rawHeading;
+    
+    if (event.webkitCompassHeading !== undefined) {
+        // iOS - already calibrated
+        rawHeading = event.webkitCompassHeading;
+        console.log("📱 iOS compass heading:", rawHeading.toFixed(1));
+    } else if (event.alpha !== null) {
+        // Android - convert alpha to heading
+        rawHeading = (360 - event.alpha) % 360;
+        
+        // Adjust for screen orientation
+        if (window.orientation !== undefined) {
+            if (window.orientation === 90) {
+                rawHeading = (rawHeading + 90) % 360;
+            } else if (window.orientation === -90) {
+                rawHeading = (rawHeading - 90) % 360;
+            } else if (window.orientation === 180) {
+                rawHeading = (rawHeading + 180) % 360;
+            }
+        }
+        
+        console.log("📱 Android compass heading:", rawHeading.toFixed(1));
+    } else {
+        console.log("❌ No valid heading data");
+        return; // No valid data
+    }
+    
+    // Very simple heading smoothing
+    if (smoothedHeading === null) {
+        smoothedHeading = rawHeading;
+    } else {
+        smoothedHeading = smoothedHeading * 0.8 + rawHeading * 0.2;
+    }
+    
+    // Calculate bearing to target
+    bearing = calculateBearing();
+    
+    // Calculate arrow direction
+    direction = (bearing - smoothedHeading + 360) % 360;
+    
+    console.log("🧭 Compass: Heading:", smoothedHeading.toFixed(1), "Bearing:", bearing.toFixed(1), "Arrow:", direction.toFixed(1));
+}
+
+// Simplified and fixed updateUI function
+function updateUI() {
+    const arrow = document.querySelector(".arrow");
+    
+    if (arrow) {
+        // Google Maps uses a slower transition for stability
+        arrow.style.transition = "transform 0.5s ease";
+        
+        // Rotate the arrow with a translate to ensure it's centered
+        arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
+    } else {
+        console.warn("❌ Arrow element not found");
+    }
+    
+    // Continue updating
+    requestAnimationFrame(updateUI);
+}
+
+// Expose function to manually show modal for testing
+window.forceShowModal = forceShowModal;
 
 // Open Google Maps with walking directions
 function openGoogleMaps() {
@@ -579,22 +621,6 @@ function openGoogleMaps() {
     } else {
         alert('Unable to open maps. Location data is not available.');
     }
-}
-
-// Update UI elements (compass arrow) - Google Maps style
-function updateUI() {
-    const arrow = document.querySelector(".arrow");
-    
-    if (arrow) {
-        // Google Maps uses a slower transition for stability
-        arrow.style.transition = "transform 0.5s ease";
-        
-        // Rotate the arrow
-        arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
-    }
-    
-    // Continue updating
-    requestAnimationFrame(updateUI);
 }
 
 // Start location and orientation services
