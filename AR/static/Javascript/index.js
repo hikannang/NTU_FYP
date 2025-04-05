@@ -47,19 +47,23 @@ const db = getFirestore(app);
 // Show loading screen
 function showLoadingScreen() {
     var loadingScreen = document.getElementById('loadingScreen');
-    loadingScreen.style.display = 'flex';
+    if (loadingScreen) {
+        loadingScreen.style.display = 'flex';
 
-    // Set timeout to hide loading screen after 3 seconds
-    loadingTimeout = setTimeout(function () {
-        hideLoadingScreen();
-    }, 3000);
+        // Set timeout to hide loading screen after 3 seconds
+        loadingTimeout = setTimeout(function () {
+            hideLoadingScreen();
+        }, 3000);
+    }
 }
 
 // Hide loading screen
 function hideLoadingScreen() {
     var loadingScreen = document.getElementById('loadingScreen');
-    loadingScreen.style.display = 'none';
-    clearTimeout(loadingTimeout);
+    if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+        clearTimeout(loadingTimeout);
+    }
 }
 
 // Parse URL parameters to get target coordinates and booking ID
@@ -71,17 +75,23 @@ function getUrlParameters() {
     const lng = parseFloat(urlParams.get('lng'));
     bookingId = urlParams.get('id');
     
+    console.log("URL parameters - lat:", lat, "lng:", lng, "bookingId:", bookingId);
+    
     if (lat && lng) {
         target.latitude = lat;
         target.longitude = lng;
         
         // Create AR marker at destination
         createDestinationMarker(lat, lng);
+    } else {
+        console.error("No valid coordinates in URL parameters");
     }
     
     // Fetch car data if booking ID is provided
     if (bookingId) {
         fetchCarData(bookingId);
+    } else {
+        console.warn("No booking ID provided in URL parameters");
     }
 }
 
@@ -91,8 +101,15 @@ function createDestinationMarker(lat, lng) {
         return; // Marker already exists
     }
     
+    console.log("Creating destination marker at:", lat, lng);
+    
     // Get AR scene
     const scene = document.querySelector('a-scene');
+    
+    if (!scene) {
+        console.error("A-Frame scene not found");
+        return;
+    }
     
     // Create entity for destination marker
     const entity = document.createElement('a-entity');
@@ -112,6 +129,8 @@ function createDestinationMarker(lat, lng) {
 // Fetch car data from Firebase
 async function fetchCarData(bookingId) {
     try {
+        console.log("Fetching car data for booking:", bookingId);
+        
         // Get booking document
         const bookingRef = doc(db, "bookings", bookingId);
         const bookingSnapshot = await getDoc(bookingRef);
@@ -119,6 +138,8 @@ async function fetchCarData(bookingId) {
         if (bookingSnapshot.exists()) {
             const bookingData = bookingSnapshot.data();
             const carId = bookingData.car_id;
+            
+            console.log("Found booking, fetching car data for car ID:", carId);
             
             // Get car document
             const carRef = doc(db, "cars", carId.toString());
@@ -129,7 +150,12 @@ async function fetchCarData(bookingId) {
                 
                 // Save car directions for display in the destination modal
                 carDirections = carData.directions || "You have reached your destination.";
+                console.log("Retrieved car directions:", carDirections);
+            } else {
+                console.warn("Car document not found");
             }
+        } else {
+            console.warn("Booking document not found");
         }
     } catch (error) {
         console.error("Error fetching car data:", error);
@@ -138,33 +164,47 @@ async function fetchCarData(bookingId) {
 
 // Initialize geolocation and device orientation
 function init() {
+    console.log("Initializing AR wayfinding");
+    
     // Parse URL parameters
     getUrlParameters();
     
-    // Start geolocation tracking
-    navigator.geolocation.watchPosition(setCurrentPosition, null, { enableHighAccuracy: true });
-    
-    // Add device orientation event listener based on device type
-    if (!isIOS) {
-        window.addEventListener("deviceorientationabsolute", runCalculation);
-    }
-    
-    // Start UI updates
-    updateUI();
+    // We'll start location services when user closes intro modal
+    // This is handled in startServices() function
 }
 
 // Request permission for device orientation (required for iOS)
 function startCompass() {
+    console.log("Requesting compass permissions");
+    
     if (isIOS) {
-        DeviceOrientationEvent.requestPermission()
-            .then((response) => {
-                if (response === "granted") {
-                    window.addEventListener("deviceorientation", runCalculation);
-                } else {
-                    alert("Permission is required for compass functionality");
-                }
-            })
-            .catch(() => alert("Device orientation not supported"));
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission()
+                .then((response) => {
+                    if (response === "granted") {
+                        console.log("iOS orientation permission granted");
+                        window.addEventListener("deviceorientation", runCalculation);
+                    } else {
+                        console.error("iOS orientation permission denied");
+                        alert("Permission is required for compass functionality");
+                    }
+                })
+                .catch((error) => {
+                    console.error("iOS orientation permission error:", error);
+                    alert("Device orientation not supported");
+                });
+        } else {
+            // Older iOS that doesn't need permissions
+            window.addEventListener("deviceorientation", runCalculation);
+        }
+    } else {
+        // Non-iOS devices
+        try {
+            window.addEventListener("deviceorientationabsolute", runCalculation);
+        } catch (e) {
+            console.warn("deviceorientationabsolute not supported, falling back to deviceorientation");
+            window.addEventListener("deviceorientation", runCalculation);
+        }
     }
 }
 
@@ -172,15 +212,21 @@ function startCompass() {
 function setCurrentPosition(position) {
     current.latitude = position.coords.latitude;
     current.longitude = position.coords.longitude;
+    console.log("Current position updated:", current.latitude, current.longitude);
 }
-
-// Initialize the application
-window.addEventListener('DOMContentLoaded', init);
 
 // Calculate compass direction and distance to target
 function runCalculation(event) {
     var alpha = Math.abs(360 - event.webkitCompassHeading) || event.alpha;
+    
+    // Only update if there's a significant change to reduce computation
     if (alpha == null || Math.abs(alpha - lastAlpha) > 1) {
+        // Make sure we have valid coordinates
+        if (current.latitude === null || current.longitude === null || 
+            target.latitude === 0 || target.longitude === 0) {
+            return; // Skip calculation if coordinates aren't valid
+        }
+        
         var lat1 = current.latitude * (Math.PI / 180);
         var lon1 = current.longitude * (Math.PI / 180);
         var lat2 = target.latitude * (Math.PI / 180);
@@ -218,6 +264,7 @@ function runCalculation(event) {
         
         // Show destination modal when user is within 15m
         if (distance < 15 && !isViewed) {
+            console.log("Within 15m of destination, showing modal");
             showDestinationModal();
             isViewed = true;
         }
@@ -246,6 +293,8 @@ function showDestinationModal() {
 
 // Create destination modal structure
 function createDestinationModal() {
+    console.log("Creating destination modal");
+    
     // Create modal container
     const modal = document.createElement('div');
     modal.id = 'destinationModal';
@@ -266,7 +315,6 @@ function createDestinationModal() {
     closeImg.className = 'common-close-img';
     
     closeBtn.appendChild(closeImg);
-    closeBtn.onclick = closeDestinationModal;
     
     // Create heading
     const heading = document.createElement('h2');
@@ -287,45 +335,41 @@ function createDestinationModal() {
     
     // Add to document
     document.body.appendChild(modal);
+    
+    // Add event listeners for both click and touch
+    closeBtn.addEventListener('click', closeDestinationModal);
+    closeBtn.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        closeDestinationModal();
+    });
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeDestinationModal();
+        }
+    });
+    
+    modal.addEventListener('touchend', function(e) {
+        if (e.target === modal) {
+            e.preventDefault();
+            closeDestinationModal();
+        }
+    });
 }
 
 // Close destination modal
 function closeDestinationModal() {
+    console.log("Closing destination modal");
     var modal = document.getElementById('destinationModal');
     if (modal) {
         modal.style.display = 'none';
     }
 }
 
-// Expose the close function to global scope for HTML onclick handlers
-window.closeDestinationModal = closeDestinationModal;
-
-// Add event listener to close modal when clicking outside content
-document.addEventListener('DOMContentLoaded', function() {
-    // Get the destination modal or create it if it doesn't exist
-    let modal = document.getElementById('destinationModal');
-    
-    if (!modal) {
-        createDestinationModal();
-        modal = document.getElementById('destinationModal');
-    }
-    
-    // Add click event listener to close when clicking outside content
-    modal.addEventListener('click', function(event) {
-        if (event.target === modal) {
-            closeDestinationModal();
-        }
-    });
-    
-    // Also ensure the close button works
-    const closeBtn = document.getElementById('destinationModalClose');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeDestinationModal);
-    }
-});
-
 // Map modal functions
 function toggleMModal() {
+    console.log("Opening Google Maps");
+    
     // Get coordinates for maps
     const lat = current.latitude;
     const lng = current.longitude;
@@ -343,66 +387,64 @@ function toggleMModal() {
 
 // Function to close map modal
 function closeModal() {
+    console.log("Closing map modal");
     var modalMap = document.getElementById("modalMap");
-    modalMap.style.display = 'none';
-}
-
-// Map modal close button
-if (document.getElementsByClassName("closeM")[0]) {
-    document.getElementsByClassName("closeM")[0].onclick = function() {
-        closeModal();
-    };
+    if (modalMap) {
+        modalMap.style.display = 'none';
+    }
 }
 
 // Instruction modal functions
 function toggleIModal() {
+    console.log("Opening instruction modal");
     var modalI = document.getElementById("modalI");
-    modalI.style.display = "block";
+    if (modalI) {
+        modalI.style.display = "block";
+    }
 }
 
 function closeModalI() {
+    console.log("Closing instruction modal");
     var modalI = document.getElementById("modalI");
-    modalI.style.display = 'none';
-}
-
-if (document.getElementsByClassName("closeI")[0]) {
-    document.getElementsByClassName("closeI")[0].onclick = function() {
-        closeModalI();
-    };
+    if (modalI) {
+        modalI.style.display = 'none';
+    }
 }
 
 // Introduction modal functions
 function toggleLModal() {
+    console.log("Opening introduction modal");
     var modalL = document.getElementById("modalL");
-    modalL.style.display = "block";
+    if (modalL) {
+        modalL.style.display = "block";
+    }
 }
 
 function closeModalL() {
+    console.log("Closing introduction modal");
     var modalL = document.getElementById("modalL");
-    modalL.style.display = 'none';
-}
-
-if (document.getElementsByClassName("closeL")[0]) {
-    document.getElementsByClassName("closeL")[0].onclick = function() {
-        closeModalL();
-    };
+    if (modalL) {
+        modalL.style.display = 'none';
+        // Start services after intro modal is closed
+        startServices();
+    }
 }
 
 // Error modal functions
 function toggleEModal() {
+    console.log("Opening error modal");
     var modalE = document.getElementById("modalE");
-    modalE.style.display = "block";
+    if (modalE) {
+        modalE.style.display = "block";
+    }
 }
 
 function closeModalE() {
+    console.log("Closing error modal");
     var modalE = document.getElementById("modalE");
-    modalE.style.display = 'none';
-}
-
-if (document.getElementsByClassName("closeE")[0]) {
-    document.getElementsByClassName("closeE")[0].onclick = function() {
-        closeModalE();
-    };
+    if (modalE) {
+        modalE.style.display = 'none';
+    }
 }
 
 // Update UI elements (compass arrow)
@@ -417,135 +459,12 @@ function updateUI() {
     requestAnimationFrame(updateUI);
 }
 
-// Show introduction modal on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Display introduction modal
-    toggleLModal();
-    
-    // Start compass (important for iOS)
-    if (isIOS) {
-        const body = document.querySelector('body');
-        body.addEventListener('click', function() {
-            startCompass();
-        }, { once: true });
-    }
-});
-
-// Remove the menu circles that were for color selection
-document.addEventListener('DOMContentLoaded', function() {
-    const moreOptionsDiv = document.getElementById('moreOptionsDiv');
-    if (moreOptionsDiv) {
-        moreOptionsDiv.style.display = 'none';
-    }
-});
-
-// Expose ALL functions needed by HTML to global scope
-window.closeModalL = closeModalL;
-window.closeModalI = closeModalI;
-window.closeModalE = closeModalE;
-window.closeModal = closeModal;
-window.toggleMModal = toggleMModal;
-window.toggleIModal = toggleIModal;
-window.toggleLModal = toggleLModal;
-window.toggleEModal = toggleEModal;
-window.closeDestinationModal = closeDestinationModal;
-window.startCompass = startCompass; // Important for iOS
-
-// Improve modal interactions with direct click handlers 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM content loaded, setting up modal handlers");
-    
-    // Get modal elements
-    const modalL = document.getElementById("modalL");
-    const modalI = document.getElementById("modalI");
-    const modalE = document.getElementById("modalE");
-    const modalMap = document.getElementById("modalMap");
-    const destinationModal = document.getElementById("destinationModal");
-    
-    // Add click handlers directly to close buttons
-    document.querySelectorAll(".closeL").forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            closeModalL();
-            // Try to start location and compass services after intro is dismissed
-            startServices();
-        });
-    });
-    
-    document.querySelectorAll(".closeI").forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            closeModalI();
-        });
-    });
-    
-    document.querySelectorAll(".closeE").forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            closeModalE();
-        });
-    });
-    
-    document.querySelectorAll(".closeM").forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            closeModal();
-        });
-    });
-    
-    // Add global click handlers to close when clicking anywhere on the modal backgrounds
-    if (modalL) {
-        modalL.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModalL();
-                // Try to start location and compass services after intro is dismissed
-                startServices();
-            }
-        });
-    }
-    
-    if (modalI) {
-        modalI.addEventListener('click', function(e) {
-            if (e.target === this) closeModalI();
-        });
-    }
-    
-    if (modalE) {
-        modalE.addEventListener('click', function(e) {
-            if (e.target === this) closeModalE();
-        });
-    }
-    
-    if (modalMap) {
-        modalMap.addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
-    }
-    
-    if (destinationModal) {
-        destinationModal.addEventListener('click', function(e) {
-            if (e.target === this) closeDestinationModal();
-        });
-    }
-    
-    // Show introduction modal on page load
-    toggleLModal();
-    
-    // Ensure iOS compass gets permission
-    if (isIOS) {
-        document.body.addEventListener('click', function() {
-            console.log("Body clicked, requesting iOS compass permission");
-            startCompass();
-        }, { once: true });
-    }
-    
-    // Initialize service
-    init();
-});
-
 // Function to explicitly trigger location and compass services
 function startServices() {
     console.log("Starting location and compass services");
+    
+    // Start UI updates for compass
+    updateUI();
     
     // Explicitly start geolocation
     navigator.geolocation.getCurrentPosition(
@@ -570,30 +489,114 @@ function startServices() {
         { enableHighAccuracy: true }
     );
     
-    // Explicitly request device orientation
-    if (isIOS) {
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission()
-                .then(function(response) {
-                    if (response === 'granted') {
-                        console.log("iOS orientation permission granted");
-                        window.addEventListener('deviceorientation', runCalculation);
-                    } else {
-                        console.error("iOS orientation permission denied");
-                        alert("Compass requires device orientation permission");
+    // Start compass
+    startCompass();
+}
+
+// Add mobile support for touch events
+function addMobileSupport() {
+    console.log("Adding mobile touch support");
+    
+    // Get all modals
+    const modals = [
+        document.getElementById("modalL"),
+        document.getElementById("modalI"), 
+        document.getElementById("modalE"),
+        document.getElementById("modalMap"),
+        document.getElementById("destinationModal")
+    ];
+    
+    // Add touch event listeners to modal backgrounds
+    modals.forEach(modal => {
+        if (modal) {
+            // Add touchend event for mobile
+            modal.addEventListener('touchend', function(e) {
+                console.log("Touch end on modal:", modal.id);
+                if (e.target === this) {
+                    e.preventDefault();
+                    if (modal.id === "modalL") {
+                        closeModalL();
+                    } else if (modal.id === "modalI") {
+                        closeModalI();
+                    } else if (modal.id === "modalE") {
+                        closeModalE();
+                    } else if (modal.id === "modalMap") {
+                        closeModal();
+                    } else if (modal.id === "destinationModal") {
+                        closeDestinationModal();
                     }
-                })
-                .catch(function(error) {
-                    console.error("iOS orientation permission error:", error);
-                });
-        } else {
-            window.addEventListener('deviceorientation', runCalculation);
+                }
+            });
         }
-    } else {
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientationabsolute', runCalculation);
-        } else {
-            window.addEventListener('deviceorientation', runCalculation);
-        }
+    });
+    
+    // Add touch events to close buttons
+    document.querySelectorAll(".common-close-btn").forEach(btn => {
+        btn.addEventListener('touchend', function(e) {
+            console.log("Touch end on close button");
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (btn.classList.contains("closeL")) {
+                closeModalL();
+            } else if (btn.classList.contains("closeI")) {
+                closeModalI();
+            } else if (btn.classList.contains("closeE")) {
+                closeModalE();
+            } else if (btn.classList.contains("closeM")) {
+                closeModal();
+            } else if (btn.id === "destinationModalClose") {
+                closeDestinationModal();
+            }
+        });
+    });
+    
+    // Add touch event for map button
+    const mapBtn = document.querySelector('.maps');
+    if (mapBtn) {
+        mapBtn.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            toggleMModal();
+        });
     }
 }
+
+// Expose ALL functions needed by HTML to global scope
+window.closeModalL = closeModalL;
+window.closeModalI = closeModalI;
+window.closeModalE = closeModalE;
+window.closeModal = closeModal;
+window.toggleMModal = toggleMModal;
+window.toggleIModal = toggleIModal;
+window.toggleLModal = toggleLModal;
+window.toggleEModal = toggleEModal;
+window.closeDestinationModal = closeDestinationModal;
+window.startCompass = startCompass; // Important for iOS
+
+// Initialize the application when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM content loaded, initializing application");
+    
+    // Hide menu circles that were for color selection
+    const moreOptionsDiv = document.getElementById('moreOptionsDiv');
+    if (moreOptionsDiv) {
+        moreOptionsDiv.style.display = 'none';
+    }
+    
+    // Initialize the application
+    init();
+    
+    // Add mobile support
+    addMobileSupport();
+    
+    // Show introduction modal
+    toggleLModal();
+    
+    // For iOS devices, we need a user interaction to request compass permissions
+    if (isIOS) {
+        document.body.addEventListener('click', function() {
+            console.log("Body clicked, requesting iOS compass permission");
+            startCompass();
+        }, { once: true });
+    }
+});
