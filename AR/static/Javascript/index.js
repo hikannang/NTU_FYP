@@ -469,7 +469,7 @@ function showDestinationModal() {
     const carImage = document.getElementById('carImage');
     if (carImage) {
         // FIXED: Use correct path with ./ instead of ../
-        carImage.src = '../static/images/car_images/default.png';
+        carImage.src = '../../static/images/car_images/default.png';
         
         // Try to load car-specific image
         if (window.carType) {
@@ -482,11 +482,11 @@ function showDestinationModal() {
             };
             actualImage.onerror = function() {
                 console.warn("Failed to load car image:", this.src);
-                carImage.src = '../static/images/car_images/default.png';
+                carImage.src = '../../static/images/car_images/default.png';
             };
             
             // FIXED: Correct path with ./ instead of ../
-            actualImage.src = `../static/images/car_images/${window.carType}.png`;
+            actualImage.src = `../../static/images/car_images/${window.carType}.png`;
         }
     } else {
         console.error("Car image element not found");
