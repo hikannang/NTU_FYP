@@ -143,7 +143,7 @@ function createDestinationMarker(lat, lng) {
     showLoadingScreen();
 }
 
-// Fetch car data from Firebase
+// Updated fetchCarData function to get both car_type and directions
 async function fetchCarData(bookingId) {
     try {
         console.log("Fetching car data for booking:", bookingId);
@@ -156,6 +156,9 @@ async function fetchCarData(bookingId) {
             const bookingData = bookingSnapshot.data();
             const carId = bookingData.car_id;
             
+            // Save car_type for the image path
+            const carType = bookingData.car_type || "default";
+            
             console.log("Found booking, fetching car data for car ID:", carId);
             
             // Get car document
@@ -167,7 +170,12 @@ async function fetchCarData(bookingId) {
                 
                 // Save car directions for display in the destination modal
                 carDirections = carData.directions || "You have reached your destination.";
-                console.log("Retrieved car directions:", carDirections);
+                
+                // Save car_type and carId for later use
+                window.carType = carType;
+                window.carId = carId;
+                
+                console.log("Retrieved car data - Type:", carType, "Directions:", carDirections);
             } else {
                 console.warn("Car document not found");
             }
@@ -444,27 +452,95 @@ function updateDistanceDisplay() {
     
     // Check if arrived at destination
     if (distance < 40 && !isViewed) {
-        console.log("Within 15m of destination, showing modal");
+        console.log("Within 40m of destination, showing modal");
         showDestinationModal();
         isViewed = true;
     }
 }
 
-// Show destination modal with car directions
+// Improved showDestinationModal function
 function showDestinationModal() {
     console.log("Showing destination modal");
     
-    // Update modal content
-    var directionsContent = document.getElementById('directionsContent');
-    if (directionsContent) {
-        directionsContent.textContent = carDirections || "You have reached your destination.";
+    // Remove any existing destination modal first to avoid duplicates
+    const existingModal = document.getElementById('destinationModal');
+    if (existingModal) {
+        existingModal.remove();
     }
     
-    // Show the modal
-    var modal = document.getElementById('destinationModal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
+    // Create a new modal from scratch
+    const modal = document.createElement('div');
+    modal.id = 'destinationModal';
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    
+    // Create the content container
+    const modalContent = document.createElement('div');
+    modalContent.className = 'common-modal-content';
+    modalContent.style.padding = '20px';
+    modalContent.style.textAlign = 'center';
+    modalContent.style.maxWidth = '90%';
+    modalContent.style.maxHeight = '80%';
+    modalContent.style.overflowY = 'auto';
+    modalContent.style.backgroundColor = 'white';
+    modalContent.style.borderRadius = '10px';
+    modalContent.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
+    
+    // Create car image
+    const carImage = document.createElement('img');
+    const carType = window.carType || 'default';
+    carImage.src = `./static/images/car_images/${carType}.png`;
+    carImage.alt = `${carType} Car`;
+    carImage.style.maxWidth = '100%';
+    carImage.style.height = 'auto';
+    carImage.style.marginBottom = '15px';
+    
+    // Create heading
+    const heading = document.createElement('h2');
+    heading.textContent = 'You Have Arrived';
+    heading.style.marginBottom = '15px';
+    heading.style.color = '#333';
+    
+    // Create directions content
+    const directionsDiv = document.createElement('div');
+    directionsDiv.style.fontSize = '16px';
+    directionsDiv.style.lineHeight = '1.5';
+    directionsDiv.style.marginBottom = '20px';
+    directionsDiv.style.color = '#555';
+    directionsDiv.textContent = carDirections || "You have reached your destination.";
+    
+    // Create dismiss text
+    const dismissText = document.createElement('p');
+    dismissText.textContent = 'Tap anywhere to dismiss';
+    dismissText.style.fontStyle = 'italic';
+    dismissText.style.color = '#888';
+    dismissText.style.marginTop = '20px';
+    
+    // Assemble the modal
+    modalContent.appendChild(carImage);
+    modalContent.appendChild(heading);
+    modalContent.appendChild(directionsDiv);
+    modalContent.appendChild(dismissText);
+    modal.appendChild(modalContent);
+    
+    // Add to document
+    document.body.appendChild(modal);
+    
+    // Add click/touch event to close when clicking anywhere
+    modal.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+    
+    modal.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        modal.style.display = 'none';
+    });
+    
+    // Also handle error for the car image
+    carImage.onerror = function() {
+        // If image fails to load, use a default image
+        carImage.src = './static/images/car_images/default.png';
+    };
 }
 
 // Open Google Maps with walking directions
