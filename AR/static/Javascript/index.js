@@ -158,6 +158,7 @@ async function fetchCarData(bookingId) {
             
             // Save car_type for the image path
             const carType = bookingData.car_type || "default";
+            window.carType = carType;
             
             console.log("Found booking, fetching car data for car ID:", carId);
             
@@ -171,19 +172,23 @@ async function fetchCarData(bookingId) {
                 // Save car directions for display in the destination modal
                 carDirections = carData.directions || "Follow the arrow to reach your car.";
                 
-                // Save car_type and carId for later use
-                window.carType = carType;
-                window.carId = carId;
+                // Ensure directions is a global variable
+                window.carDirections = carDirections;
                 
-                console.log("Retrieved car data - Type:", carType, "Directions:", carDirections);
+                console.log("Retrieved car data:");
+                console.log("- Type:", carType);
+                console.log("- Directions:", carDirections);
             } else {
                 console.warn("Car document not found");
+                carDirections = "Follow the arrow to reach your car.";
             }
         } else {
             console.warn("Booking document not found");
+            carDirections = "Follow the arrow to reach your car.";
         }
     } catch (error) {
         console.error("Error fetching car data:", error);
+        carDirections = "Follow the arrow to reach your car.";
     }
 }
 
@@ -451,11 +456,11 @@ function updateDistanceDisplay() {
 function showDestinationModal() {
     console.log("Showing destination modal");
     
-    // Update car image 
+    // Update car image - correct the image path
     const carImage = document.getElementById('carImage');
     if (carImage) {
-        // Set default image first to prevent flashing
-        carImage.src = '../../static/images/car_images/default.png';
+        // Use the correct path starting from the project root
+        carImage.src = './static/images/car_images/default.png';
         
         // Try to load car-specific image
         if (window.carType) {
@@ -463,7 +468,8 @@ function showDestinationModal() {
             actualImage.onload = function() {
                 carImage.src = this.src;
             };
-            actualImage.src = `../../static/images/car_images/${window.carType}.png`;
+            // Fix the path to use the correct relative path
+            actualImage.src = `./static/images/car_images/${window.carType}.png`;
         }
     }
     
@@ -476,7 +482,8 @@ function showDestinationModal() {
     // Show the modal
     const modal = document.getElementById('destinationModal');
     if (modal) {
-        modal.style.display = 'block';
+        // Use display: flex to utilize the flex styles already in your CSS
+        modal.style.display = 'flex';
     }
 }
 
