@@ -297,6 +297,33 @@ function closeDestinationModal() {
     }
 }
 
+// Expose the close function to global scope for HTML onclick handlers
+window.closeDestinationModal = closeDestinationModal;
+
+// Add event listener to close modal when clicking outside content
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the destination modal or create it if it doesn't exist
+    let modal = document.getElementById('destinationModal');
+    
+    if (!modal) {
+        createDestinationModal();
+        modal = document.getElementById('destinationModal');
+    }
+    
+    // Add click event listener to close when clicking outside content
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            closeDestinationModal();
+        }
+    });
+    
+    // Also ensure the close button works
+    const closeBtn = document.getElementById('destinationModalClose');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeDestinationModal);
+    }
+});
+
 // Map modal functions
 function toggleMModal() {
     // Get coordinates for maps
@@ -409,5 +436,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const moreOptionsDiv = document.getElementById('moreOptionsDiv');
     if (moreOptionsDiv) {
         moreOptionsDiv.style.display = 'none';
+    }
+});
+
+// Expose modal functions to global scope
+window.closeModalL = closeModalL;
+window.closeModalI = closeModalI;
+window.closeModalE = closeModalE;
+window.closeModal = closeModal;
+window.toggleMModal = toggleMModal;
+window.toggleIModal = toggleIModal;
+window.toggleLModal = toggleLModal;
+window.toggleEModal = toggleEModal;
+
+// Add proper event listeners for modal interactions
+document.addEventListener('DOMContentLoaded', function() {
+    // Introduction modal (L)
+    const modalLContent = document.querySelector("#modalL .common-modal-content");
+    if (modalLContent) {
+        modalLContent.addEventListener('click', function() {
+            closeModalL();
+        });
+    }
+    
+    // Instruction modal (I)
+    const modalIContent = document.querySelector("#modalI .common-modal-content");
+    if (modalIContent) {
+        modalIContent.addEventListener('click', function() {
+            closeModalI();
+        });
+    }
+    
+    // Error modal (E)
+    const modalEContent = document.querySelector("#modalE .common-modal-content");
+    if (modalEContent) {
+        modalEContent.addEventListener('click', function() {
+            closeModalE();
+        });
     }
 });
