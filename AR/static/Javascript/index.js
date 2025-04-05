@@ -516,10 +516,10 @@ function showDestinationModal() {
         console.error("Directions text element not found");
     }
     
-    // Add debug information about car ID
+    // Add debug information about car ID and booking ID
     const debugInfo = document.getElementById('debugInfo');
     if (debugInfo) {
-        debugInfo.textContent = `Car ID: ${window.carId || 'Not loaded'}, Car Type: ${window.carType || 'Not loaded'}`;
+        debugInfo.textContent = `Booking ID: ${bookingId || 'Not loaded'}, Car ID: ${window.carId || 'Not loaded'}, Car Type: ${window.carType || 'Not loaded'}`;
         debugInfo.style.backgroundColor = "#f8f8f8";
         debugInfo.style.padding = "5px";
         debugInfo.style.marginTop = "10px";
@@ -530,7 +530,7 @@ function showDestinationModal() {
         // If debug element doesn't exist, create it
         const newDebugInfo = document.createElement('div');
         newDebugInfo.id = 'debugInfo';
-        newDebugInfo.textContent = `Car ID: ${window.carId || 'Not loaded'}, Car Type: ${window.carType || 'Not loaded'}`;
+        newDebugInfo.textContent = `Booking ID: ${bookingId || 'Not loaded'}, Car ID: ${window.carId || 'Not loaded'}, Car Type: ${window.carType || 'Not loaded'}`;
         newDebugInfo.style.backgroundColor = "#f8f8f8";
         newDebugInfo.style.padding = "5px";
         newDebugInfo.style.marginTop = "10px";
