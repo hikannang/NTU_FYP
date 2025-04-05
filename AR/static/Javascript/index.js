@@ -15,11 +15,15 @@ var positionHistoryEnabled = false;
 
 // Compass smoothing variables
 var headingBuffer = []; // For smoothing
-var HEADING_BUFFER_SIZE = 5; // Number of readings to average
-var HEADING_DEADZONE = 3; // Degrees - ignore changes smaller than this
+var HEADING_BUFFER_SIZE = 10; // Increased for more stability
+var HEADING_DEADZONE = 8; // Increased to ignore small changes
 var lastDirection = 0; // Last stable direction
 var compassStable = false; // Whether the compass has stabilized
 var lastDeviceOrientation = null; // Store last orientation reading
+var LOW_PASS_FACTOR = 0.1; // Lower = smoother but slower response
+var STABLE_THRESHOLD_COUNT = 5; // Number of stable readings required
+var stableReadingCounter = 0;
+var previousHeading = null;
 
 // Initialize target coordinates
 var target = {
@@ -295,9 +299,6 @@ function startOrientation() {
         // For Android, we'll try to detect if we have sensor access
         console.log("📱 Setting up Android orientation");
         
-        // On Android, we can't directly request permission for sensors like on iOS
-        // But we can try to access them and see if they work
-        
         // Show a helpful message to Android users
         if (isSamsung) {
             alert("Please make sure your Samsung device has location services enabled and motion sensors are allowed. This helps the app show which direction to walk.");
@@ -309,7 +310,6 @@ function startOrientation() {
         setupOrientationListeners();
         
         // On some Android devices, we might need to explicitly request permission
-        // This is a generic approach that encourages enabling sensors
         if (navigator.permissions && navigator.permissions.query) {
             try {
                 navigator.permissions.query({ name: 'accelerometer' })
@@ -334,7 +334,7 @@ function startOrientation() {
     });
 }
 
-// Modified handleOrientation function with smoothing and tilt compensation
+// Improved handleOrientation function with more stability
 function handleOrientation(event) {
     // Set the flag to true as soon as we get any orientation data
     if (!hasOrientationSupport) {
@@ -342,10 +342,11 @@ function handleOrientation(event) {
         hasOrientationSupport = true;
     }
     
-    // Get orientation data
+    // Get orientation data - focusing only on alpha for stability
     const alpha = event.alpha; // Z-axis rotation (compass direction)
-    const beta = event.beta;   // X-axis rotation (front-back tilt)
-    const gamma = event.gamma; // Y-axis rotation (left-right tilt)
+    
+    // Ignore beta and gamma for heading calculation - these cause most of the instability
+    // Only use them to check if the phone is being held correctly
     
     if (alpha !== null && alpha !== undefined) {
         let heading;
@@ -357,34 +358,8 @@ function handleOrientation(event) {
             // For Android: convert alpha (counter-clockwise from East) to heading (clockwise from North)
             heading = (360 - alpha) % 360;
             
-            // Apply tilt compensation for Android devices
-            // This helps when the phone is not held perfectly flat
-            if (beta !== null && gamma !== null) {
-                // Only apply tilt compensation when the tilt is significant
-                if (Math.abs(beta) > 10 || Math.abs(gamma) > 10) {
-                    // This is a simplified tilt compensation formula
-                    // It works better when the phone is held upright in front of you
-                    
-                    // Convert to radians
-                    const betaRad = beta * Math.PI / 180;
-                    const gammaRad = gamma * Math.PI / 180;
-                    
-                    // Calculate tilt-compensated heading
-                    // This is a simplified formula that works for moderate tilts
-                    if (Math.abs(beta) < 70) { // Don't apply when phone is nearly horizontal
-                        // Adjust heading based on tilt
-                        // This formula helps stabilize the heading when device is tilted
-                        const tiltCompensation = Math.atan2(
-                            Math.sin(gammaRad), 
-                            Math.cos(betaRad) * Math.cos(gammaRad)
-                        ) * 180 / Math.PI;
-                        
-                        heading = (heading - tiltCompensation + 360) % 360;
-                    }
-                }
-            }
-            
-            // Adjust for screen orientation
+            // Skip tilt compensation which can introduce noise
+            // Only adjust for screen orientation which is essential
             if (window.orientation !== undefined) {
                 if (window.orientation === 90) {
                     heading = (heading + 90) % 360;
@@ -396,25 +371,45 @@ function handleOrientation(event) {
             }
         }
         
+        // Skip headings that change dramatically (likely noise)
+        if (previousHeading !== null) {
+            const headingDifference = Math.abs((heading - previousHeading + 180) % 360 - 180);
+            if (headingDifference > 40 && headingDifference < 320) {
+                console.log("⚠️ Skipping erratic heading change:", headingDifference.toFixed(1) + "°");
+                return; // Skip this reading
+            }
+        }
+        
+        // Apply low-pass filter before adding to buffer (stronger smoothing)
+        if (previousHeading !== null) {
+            // Blend previous and current values
+            heading = previousHeading * (1 - LOW_PASS_FACTOR) + heading * LOW_PASS_FACTOR;
+        }
+        previousHeading = heading;
+        
         // Add to smoothing buffer
         headingBuffer.push(heading);
         if (headingBuffer.length > HEADING_BUFFER_SIZE) {
             headingBuffer.shift(); // Remove oldest reading
         }
         
-        // Calculate smoothed heading using a weighted average
-        // Give more weight to newer readings
-        let smoothedHeading = 0;
-        let totalWeight = 0;
+        // Wait until we have enough readings
+        if (headingBuffer.length < 3) return;
         
-        for (let i = 0; i < headingBuffer.length; i++) {
-            // Weight increases with index (newer readings)
-            const weight = i + 1;
-            smoothedHeading += headingBuffer[i] * weight;
-            totalWeight += weight;
+        // Calculate smoothed heading (weighted median-like approach)
+        // Sort values to eliminate outliers
+        const sortedHeadings = [...headingBuffer].sort((a, b) => a - b);
+        
+        // Use the median for more stability against outliers
+        let smoothedHeading;
+        if (sortedHeadings.length % 2 === 0) {
+            // Even number: average the middle two
+            const mid = sortedHeadings.length / 2;
+            smoothedHeading = (sortedHeadings[mid - 1] + sortedHeadings[mid]) / 2;
+        } else {
+            // Odd number: take the middle value
+            smoothedHeading = sortedHeadings[Math.floor(sortedHeadings.length / 2)];
         }
-        
-        smoothedHeading = smoothedHeading / totalWeight;
         
         // Calculate bearing (direction to target)
         bearing = calculateBearing();
@@ -422,16 +417,30 @@ function handleOrientation(event) {
         // Calculate direction to point arrow
         const newDirection = (bearing - smoothedHeading + 360) % 360;
         
-        // Apply a deadzone to reduce jitter
-        // Only update direction if it changed significantly
+        // Apply a stronger deadzone to reduce jitter
+        // Only update direction if it changed significantly or if we've been stable for a while
         if (!compassStable || Math.abs(newDirection - lastDirection) > HEADING_DEADZONE) {
-            direction = newDirection;
-            lastDirection = direction;
-            compassStable = true;
+            // Check if we've been stable
+            if (Math.abs(newDirection - lastDirection) <= HEADING_DEADZONE) {
+                stableReadingCounter++;
+                if (stableReadingCounter >= STABLE_THRESHOLD_COUNT) {
+                    // We've had several stable readings in a row, accept the new direction
+                    direction = newDirection;
+                    lastDirection = direction;
+                    compassStable = true;
+                    stableReadingCounter = 0;
+                }
+            } else {
+                // Big change, reset stability counter but only update if we're confident
+                stableReadingCounter = 0;
+                
+                // Only accept sudden large changes if compass isn't already stable
+                if (!compassStable) {
+                    direction = newDirection;
+                    lastDirection = direction;
+                }
+            }
         }
-        
-        // Update last alpha to avoid redundant processing
-        lastAlpha = alpha;
     }
     
     // Update distance display
