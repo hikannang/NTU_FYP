@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <title>Location-Based AR</title>
     <meta charset="UTF-8">
@@ -24,13 +23,94 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
 
     <link rel="stylesheet" type="text/css" href="./static/css/style.css" />
+
+    <!-- Simple Non-Module Script for Basic UI/Modal handling -->
+    <script>
+        // Global modal handling functions
+        function closeModalHandler(modalId) {
+            console.log("Closing modal:", modalId);
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = "none";
+                
+                // Special case for intro modal - start AR services
+                if (modalId === "modalL") {
+                    console.log("Intro closed, starting AR services");
+                    if (window.startARServices) {
+                        window.startARServices();
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded, setting up UI handlers");
+            
+            // Show introduction modal on startup
+            const introModal = document.getElementById("modalL");
+            if (introModal) {
+                introModal.style.display = "block";
+            }
+            
+            // Add handlers to all modals
+            const modals = document.querySelectorAll(".modal");
+            modals.forEach(modal => {
+                const modalId = modal.id;
+                const closeBtn = modal.querySelector(".common-close-btn");
+                
+                // Handle background clicks
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeModalHandler(modalId);
+                    }
+                });
+                
+                // Handle touch events for mobile
+                modal.addEventListener('touchend', function(e) {
+                    if (e.target === this) {
+                        e.preventDefault();
+                        closeModalHandler(modalId);
+                    }
+                });
+                
+                // Handle close button clicks
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function() {
+                        closeModalHandler(modalId);
+                    });
+                    
+                    closeBtn.addEventListener('touchend', function(e) {
+                        e.preventDefault();
+                        closeModalHandler(modalId);
+                    });
+                }
+            });
+            
+            // Handle map button
+            const mapBtn = document.querySelector('.maps');
+            if (mapBtn) {
+                mapBtn.addEventListener('click', function() {
+                    if (window.openGoogleMapsNav) {
+                        window.openGoogleMapsNav();
+                    }
+                });
+                
+                mapBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    if (window.openGoogleMapsNav) {
+                        window.openGoogleMapsNav();
+                    }
+                });
+            }
+        });
+    </script>
 </head>
 
 <body>
     <!-- modalL -->
     <div id="modalL" class="modal">
         <!-- Modal content -->
-        <div class ="common-modal-content black-modal-content" onclick="closeModalL()">
+        <div class="common-modal-content black-modal-content">
             <span class="closeL common-close-btn">
                 <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
             </span>
@@ -41,7 +121,7 @@
     <!-- modalI -->
     <div id="modalI" class="modal">
         <!-- Modal content -->
-        <div class ="common-modal-content black-modal-content" onclick="closeModalI()">
+        <div class="common-modal-content black-modal-content">
             <span class="closeI common-close-btn">
                 <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
             </span>
@@ -56,16 +136,17 @@
         </div>
         <p id="distanceFromTarget" class="uiDisplay"></p>
 
-        <div class="maps" onclick="toggleMModal()">
+        <div class="maps">
             <div class="mapDot" id="mapDot" style="background: url('./static/images/icons/map.png') center no-repeat; background-size: contain;">
             </div>
         </div>
     </div>
 
+    <!-- Other modals without onclick attributes -->
     <!-- modalMap -->
     <div id="modalMap" class="modal">
         <!-- Modal content -->
-        <div class ="common-modal-content black-modal-content">
+        <div class="common-modal-content black-modal-content">
             <span class="closeM common-close-btn">
                 <img src="./static/images/icons/redCross.png" alt="Close Button" class="common-close-img">
             </span>
@@ -76,7 +157,7 @@
     <!-- modalE -->
     <div id="modalE" class="modal">
         <!-- Modal content -->
-        <div class ="common-modal-content black-modal-content" onclick="closeModalE()">
+        <div class="common-modal-content black-modal-content">
             <span class="closeE common-close-btn">
                 <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
             </span>
@@ -87,7 +168,7 @@
     <!-- modalO -->
     <div id="modalO" class="modal">
         <!-- Modal content -->
-        <div class ="common-modal-content black-modal-content" onclick="closeModalO()">
+        <div class="common-modal-content black-modal-content">
             <span class="closeO common-close-btn">
                 <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
             </span>
@@ -98,7 +179,7 @@
     <!-- modalHT -->
     <div id="modalHT" class="modal">
         <!-- Modal content -->
-        <div class ="common-modal-content black-modal-content" onclick="closeModalHT()">
+        <div class="common-modal-content black-modal-content">
             <span class="closeHT common-close-btn">
                 <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
             </span>
@@ -106,34 +187,11 @@
         </div>
     </div>
 
-    <!-- Hide menu circles since we're not using color selection anymore -->
-    <div id="moreOptionsDiv" class="moreOptionsDiv" style="display: none;">
-        <div class="moreOptions" onclick="toggleCircles()">
-            <div class="threeLines" id="threeLines" style="background: url('./static/images/icons/menu.png') center no-repeat; background-size: contain;"></div>
-            <div id="additionalCircles" class="additionalCircles">
-                <div class="circle bicycleCrossing">
-                    <img src="./static/images/number _logos/1icon.png" alt="Bicycle Crossing" style="height: 100%; width: 100%;">
-                </div>
-                <div class="circle cyclingPath">
-                    <img src="./static/images/number _logos/2icon.png" alt="Cycling Path" style="height: 100%; width: 100%;">
-                </div>
-                <div class="circle yellowBoxSitting">
-                    <img src="./static/images/number _logos/3icon.png" alt="Yellow Box Sitting" style="height: 100%; width: 100%;">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="loadingScreen" class="loading-screen" style="display: none;">
-        <div class="spinner"></div>
-        <p>Loading...</p>
-    </div>
-
-    <!-- Destination Modal - For showing directions when user arrives -->
+    <!-- Destination Modal - Added for directions -->
     <div id="destinationModal" class="modal">
         <!-- Modal content -->
         <div class="common-modal-content">
-            <span id="destinationModalClose" class="close common-close-btn" onclick="closeDestinationModal()">
+            <span id="destinationModalClose" class="close common-close-btn">
                 <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
             </span>
             <h2 style="text-align: center; margin-top: 20px; color: #333;">You Have Arrived</h2>
@@ -141,6 +199,11 @@
                 You have reached your destination.
             </div>
         </div>
+    </div>
+
+    <div id="loadingScreen" class="loading-screen" style="display: none;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
     </div>
 
     <!-- A-Frame scene -->
@@ -152,24 +215,7 @@
         <a-camera gps-projected-camera far='100' rotation-reader></a-camera>
     </a-scene>
 
-    <!-- Modal Toggling Script -->
-    <script defer>
-        document.addEventListener('DOMContentLoaded', function() {
-            function toggleLModal() {
-                // Get the modal
-                var modalL = document.getElementById("modalL");
-                if (modalL) {
-                    modalL.style.zIndex = "6000";
-                    modalL.style.display = "block";
-                }
-            }
-
-            // Call your toggle functions here
-            toggleLModal();
-        });
-    </script>
-
-    <script type="module" src="static/JavaScript/index.js"></script>
+    <!-- Module script -->
+    <script type="module" src="./static/Javascript/index.js"></script>
 </body>
-
 </html>

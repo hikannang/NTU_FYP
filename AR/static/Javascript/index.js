@@ -169,8 +169,10 @@ function init() {
     // Parse URL parameters
     getUrlParameters();
     
-    // We'll start location services when user closes intro modal
-    // This is handled in startServices() function
+    // Start UI updates for compass
+    updateUI();
+    
+    // We'll start location services when user closes intro modal or explicitly calls startServices()
 }
 
 // Request permission for device orientation (required for iOS)
@@ -253,13 +255,15 @@ function runCalculation(event) {
         
         // Update distance display
         var distanceElement = document.getElementById("distanceFromTarget");
-        if (distance > 20000) {
-            distanceElement.innerHTML = 'Please Select Destination!';
-        } else if (distance <= 1) {
-            distanceElement.innerHTML = '';
-        } else {
-            // Display the actual distance
-            distanceElement.innerHTML = Math.floor(distance) + "m to destination";
+        if (distanceElement) {
+            if (distance > 20000) {
+                distanceElement.innerHTML = 'Please Select Destination!';
+            } else if (distance <= 1) {
+                distanceElement.innerHTML = '';
+            } else {
+                // Display the actual distance
+                distanceElement.innerHTML = Math.floor(distance) + "m to destination";
+            }
         }
         
         // Show destination modal when user is within 15m
@@ -294,6 +298,11 @@ function showDestinationModal() {
 // Create destination modal structure
 function createDestinationModal() {
     console.log("Creating destination modal");
+    
+    // Check if modal already exists in HTML
+    if (document.getElementById('destinationModal')) {
+        return; // Use existing modal
+    }
     
     // Create modal container
     const modal = document.createElement('div');
@@ -335,26 +344,6 @@ function createDestinationModal() {
     
     // Add to document
     document.body.appendChild(modal);
-    
-    // Add event listeners for both click and touch
-    closeBtn.addEventListener('click', closeDestinationModal);
-    closeBtn.addEventListener('touchend', function(e) {
-        e.preventDefault();
-        closeDestinationModal();
-    });
-    
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            closeDestinationModal();
-        }
-    });
-    
-    modal.addEventListener('touchend', function(e) {
-        if (e.target === modal) {
-            e.preventDefault();
-            closeDestinationModal();
-        }
-    });
 }
 
 // Close destination modal
@@ -425,8 +414,6 @@ function closeModalL() {
     var modalL = document.getElementById("modalL");
     if (modalL) {
         modalL.style.display = 'none';
-        // Start services after intro modal is closed
-        startServices();
     }
 }
 
@@ -463,9 +450,6 @@ function updateUI() {
 function startServices() {
     console.log("Starting location and compass services");
     
-    // Start UI updates for compass
-    updateUI();
-    
     // Explicitly start geolocation
     navigator.geolocation.getCurrentPosition(
         function(position) {
@@ -495,87 +479,26 @@ function startServices() {
 
 // Add mobile support for touch events
 function addMobileSupport() {
-    console.log("Adding mobile touch support");
+    console.log("Adding module-side mobile touch support");
     
-    // Get all modals
-    const modals = [
-        document.getElementById("modalL"),
-        document.getElementById("modalI"), 
-        document.getElementById("modalE"),
-        document.getElementById("modalMap"),
-        document.getElementById("destinationModal")
-    ];
-    
-    // Add touch event listeners to modal backgrounds
-    modals.forEach(modal => {
-        if (modal) {
-            // Add touchend event for mobile
-            modal.addEventListener('touchend', function(e) {
-                console.log("Touch end on modal:", modal.id);
-                if (e.target === this) {
-                    e.preventDefault();
-                    if (modal.id === "modalL") {
-                        closeModalL();
-                    } else if (modal.id === "modalI") {
-                        closeModalI();
-                    } else if (modal.id === "modalE") {
-                        closeModalE();
-                    } else if (modal.id === "modalMap") {
-                        closeModal();
-                    } else if (modal.id === "destinationModal") {
-                        closeDestinationModal();
-                    }
-                }
-            });
-        }
-    });
-    
-    // Add touch events to close buttons
-    document.querySelectorAll(".common-close-btn").forEach(btn => {
-        btn.addEventListener('touchend', function(e) {
-            console.log("Touch end on close button");
-            e.preventDefault();
-            e.stopPropagation();
-            
-            if (btn.classList.contains("closeL")) {
-                closeModalL();
-            } else if (btn.classList.contains("closeI")) {
-                closeModalI();
-            } else if (btn.classList.contains("closeE")) {
-                closeModalE();
-            } else if (btn.classList.contains("closeM")) {
-                closeModal();
-            } else if (btn.id === "destinationModalClose") {
-                closeDestinationModal();
-            }
-        });
-    });
-    
-    // Add touch event for map button
-    const mapBtn = document.querySelector('.maps');
-    if (mapBtn) {
-        mapBtn.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            toggleMModal();
-        });
-    }
+    // No need to add event listeners here since they're handled by the HTML script
+    // This function remains for compatibility
 }
 
 // Expose ALL functions needed by HTML to global scope
+window.startARServices = startServices;
+window.openGoogleMapsNav = toggleMModal;
 window.closeModalL = closeModalL;
 window.closeModalI = closeModalI;
 window.closeModalE = closeModalE;
 window.closeModal = closeModal;
-window.toggleMModal = toggleMModal;
-window.toggleIModal = toggleIModal;
-window.toggleLModal = toggleLModal;
-window.toggleEModal = toggleEModal;
 window.closeDestinationModal = closeDestinationModal;
 window.startCompass = startCompass; // Important for iOS
+window.toggleMModal = toggleMModal;
 
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM content loaded, initializing application");
+    console.log("Module DOM content loaded, initializing application");
     
     // Hide menu circles that were for color selection
     const moreOptionsDiv = document.getElementById('moreOptionsDiv');
@@ -586,12 +509,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize the application
     init();
     
-    // Add mobile support
-    addMobileSupport();
-    
-    // Show introduction modal
-    toggleLModal();
-    
     // For iOS devices, we need a user interaction to request compass permissions
     if (isIOS) {
         document.body.addEventListener('click', function() {
@@ -599,4 +516,6 @@ document.addEventListener('DOMContentLoaded', function() {
             startCompass();
         }, { once: true });
     }
+    
+    console.log("AR Wayfinding module initialization complete");
 });
