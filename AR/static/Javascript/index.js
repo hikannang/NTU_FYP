@@ -146,7 +146,7 @@ function createDestinationMarker(lat, lng) {
 // Updated fetchCarData function to get both car_type and directions
 async function fetchCarData(bookingId) {
     try {
-        console.log("Fetching car data for booking:", bookingId);
+        console.log("Fetching car data for booking ID:", bookingId);
         
         // Get booking document
         const bookingRef = doc(db, "bookings", bookingId);
@@ -154,40 +154,49 @@ async function fetchCarData(bookingId) {
         
         if (bookingSnapshot.exists()) {
             const bookingData = bookingSnapshot.data();
-            const carId = bookingData.car_id;
             
-            // Save car_type for the image path
+            // Extract car_id and car_type from the booking
+            const carId = bookingData.car_id;
             const carType = bookingData.car_type || "default";
+            
+            console.log("Found booking data:", { 
+                carId: carId, 
+                carType: carType 
+            });
+            
+            // Save car_type globally so showDestinationModal can use it
             window.carType = carType;
             
-            console.log("Found booking, fetching car data for car ID:", carId);
-            
-            // Get car document
-            const carRef = doc(db, "cars", carId.toString());
-            const carSnapshot = await getDoc(carRef);
-            
-            if (carSnapshot.exists()) {
-                const carData = carSnapshot.data();
+            // Now fetch the car document to get directions
+            if (carId) {
+                const carRef = doc(db, "cars", carId.toString());
+                const carSnapshot = await getDoc(carRef);
                 
-                // Save car directions for display in the destination modal
-                carDirections = carData.directions || "Follow the arrow to reach your car.";
-                
-                // Ensure directions is a global variable
-                window.carDirections = carDirections;
-                
-                console.log("Retrieved car data:");
-                console.log("- Type:", carType);
-                console.log("- Directions:", carDirections);
+                if (carSnapshot.exists()) {
+                    const carData = carSnapshot.data();
+                    
+                    // Save car directions for display in the destination modal
+                    carDirections = carData.directions || "Follow the arrow to reach your car.";
+                    window.carDirections = carDirections;
+                    
+                    console.log("Retrieved car data successfully:");
+                    console.log("- Car Type:", carType);
+                    console.log("- Directions:", carDirections);
+                } else {
+                    console.warn("Car document not found for ID:", carId);
+                    carDirections = "Follow the arrow to reach your car.";
+                }
             } else {
-                console.warn("Car document not found");
+                console.warn("No car_id found in booking");
                 carDirections = "Follow the arrow to reach your car.";
             }
         } else {
-            console.warn("Booking document not found");
+            console.warn("Booking document not found for ID:", bookingId);
             carDirections = "Follow the arrow to reach your car.";
         }
     } catch (error) {
         console.error("Error fetching car data:", error);
+        console.error("Error details:", error.message);
         carDirections = "Follow the arrow to reach your car.";
     }
 }
@@ -459,31 +468,49 @@ function showDestinationModal() {
     // Update car image - correct the image path
     const carImage = document.getElementById('carImage');
     if (carImage) {
-        // Use the correct path starting from the project root
-        carImage.src = '../static/images/car_images/default.png';
+        // FIXED: Use correct path with ./ instead of ../
+        carImage.src = './static/images/car_images/default.png';
         
         // Try to load car-specific image
         if (window.carType) {
+            console.log("Loading car image for type:", window.carType);
+            
             const actualImage = new Image();
             actualImage.onload = function() {
                 carImage.src = this.src;
+                console.log("Car image loaded successfully:", this.src);
             };
-            // Fix the path to use the correct relative path
-            actualImage.src = `../static/images/car_images/${window.carType}.png`;
+            actualImage.onerror = function() {
+                console.warn("Failed to load car image:", this.src);
+                carImage.src = './static/images/car_images/default.png';
+            };
+            
+            // FIXED: Correct path with ./ instead of ../
+            actualImage.src = `./static/images/car_images/${window.carType}.png`;
         }
+    } else {
+        console.error("Car image element not found");
     }
     
     // Update directions text
     const directionsText = document.getElementById('directionsText');
     if (directionsText) {
+        // Log to verify data
+        console.log("Setting directions:", carDirections);
         directionsText.textContent = carDirections || "Follow the arrow to reach your car.";
+    } else {
+        console.error("Directions text element not found");
     }
     
     // Show the modal
     const modal = document.getElementById('destinationModal');
     if (modal) {
-        // Use display: flex to utilize the flex styles already in your CSS
+        // Make sure modal is centered and takes the full screen
         modal.style.display = 'flex';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+    } else {
+        console.error("Modal element not found");
     }
 }
 
