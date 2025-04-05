@@ -448,51 +448,35 @@ function updateDistanceDisplay() {
     }
 }
 
-// Updated showDestinationModal function with correct paths and centering
 function showDestinationModal() {
     console.log("Showing destination modal");
     
-    // Update car image - with correct path from document root
+    // Update car image 
     const carImage = document.getElementById('carImage');
     if (carImage) {
-        // Use the correct path without "../../" prefix 
-        carImage.src = `./static/images/car_images/${window.carType || 'default'}.png`;
-        // Preload the image to prevent jerking
-        const img = new Image();
-        img.onload = function() {
-            carImage.src = this.src;
-        };
-        img.src = `./static/images/car_images/${window.carType || 'default'}.png`;
+        // Set default image first to prevent flashing
+        carImage.src = '../../static/images/car_images/default.png';
         
-        // Fallback if image fails to load
-        carImage.onerror = function() {
-            this.src = './static/images/car_images/default.png';
-        };
+        // Try to load car-specific image
+        if (window.carType) {
+            const actualImage = new Image();
+            actualImage.onload = function() {
+                carImage.src = this.src;
+            };
+            actualImage.src = `../../static/images/car_images/${window.carType}.png`;
+        }
     }
     
     // Update directions text
     const directionsText = document.getElementById('directionsText');
     if (directionsText) {
         directionsText.textContent = carDirections || "Follow the arrow to reach your car.";
-        // Center-align the text
-        directionsText.style.textAlign = 'center';
-    }
-    
-    // Update modal positioning for center of screen
-    const modalContent = document.querySelector('.modal-content');
-    if (modalContent) {
-        // Ensure modal is centered vertically
-        modalContent.style.margin = '50vh auto 0 auto';
-        modalContent.style.transform = 'translateY(-50%)';
     }
     
     // Show the modal
     const modal = document.getElementById('destinationModal');
     if (modal) {
         modal.style.display = 'block';
-        console.log("Destination modal displayed");
-    } else {
-        console.error("Destination modal element not found");
     }
 }
 

@@ -443,3 +443,53 @@ html{
     position: relative;
 }
 
+#destinationModal .modal-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    max-width: 90%;
+    width: 350px;
+    margin: 50vh auto 0 auto;
+    transform: translateY(-50%);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+#destinationModal .car-image {
+    max-width: 80%;
+    max-height: 150px;
+    margin-bottom: 15px;
+    object-fit: contain;
+}
+
+#destinationModal .modal-title {
+    font-size: 18px;
+    margin-bottom: 15px;
+    text-align: center;
+    width: 100%;
+}
+
+#destinationModal .directions-label {
+    font-weight: bold;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    width: 100%;
+    text-align: center;
+}
+
+#destinationModal #directionsText {
+    text-align: center;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+#destinationModal .dismiss-text {
+    font-style: italic;
+    color: #888;
+    margin-top: 15px;
+    width: 100%;
+    text-align: center;
+}
+

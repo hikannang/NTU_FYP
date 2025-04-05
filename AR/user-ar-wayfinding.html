@@ -1,123 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <title>Location-Based AR</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+    />
 
     <!-- A-Frame and AR.js Libraries -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-look-at-component@^0.8.0/dist/aframe-look-at-component.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.0/dist/aframe-extras.min.js"></script>
-    <script type='text/javascript' src='https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex-location-only.js'></script>
-    <script type='text/javascript' src='https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js'></script>
-    
+    <script
+      type="text/javascript"
+      src="https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar-threex-location-only.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"
+    ></script>
+
     <!-- Additional Libraries -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <script src="./aframe-gif-shader-master/dist/aframe-gif-shader.min.js"></script>
 
     <!-- Firebase Modules -->
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"></script>
+    <script
+      type="module"
+      src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js"
+    ></script>
+    <script
+      type="module"
+      src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js"
+    ></script>
 
     <!-- Styles -->
     <link rel="stylesheet" type="text/css" href="./static/css/style.css" />
-            
-</head>
+  </head>
 
-<body>
+  <body>
     <!-- Simple direct modal handling script -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("⚡ Modal handler initialized");
-            
-            // Add click handler to destination modal
-            const destinationModal = document.getElementById('destinationModal');
-            if (destinationModal) {
-                destinationModal.addEventListener('click', function() {
-                    destinationModal.style.display = 'none';
-                    console.log("Destination modal closed");
-                });
-                
-                destinationModal.addEventListener('touchend', function(e) {
-                    e.preventDefault();
-                    destinationModal.style.display = 'none';
-                    console.log("Destination modal closed on touch");
-                });
-            }
-        });
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("⚡ Modal handler initialized");
+
+        // Add click handler to destination modal
+        const destinationModal = document.getElementById("destinationModal");
+        if (destinationModal) {
+          destinationModal.addEventListener("click", function () {
+            destinationModal.style.display = "none";
+            console.log("Destination modal closed");
+          });
+
+          destinationModal.addEventListener("touchend", function (e) {
+            e.preventDefault();
+            destinationModal.style.display = "none";
+            console.log("Destination modal closed on touch");
+          });
+        }
+      });
     </script>
 
     <!-- Introduction Modal -->
     <div id="modalL" class="modal">
-        <div class="common-modal-content black-modal-content">
-            <span class="closeL common-close-btn">
-                <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
-            </span>
-            <img src="./static/images/instructionPage/introduction2.png" alt="LModal">
-        </div>
+      <div class="common-modal-content black-modal-content">
+        <span class="closeL common-close-btn">
+          <img
+            src="./static/images/icons/close-red-icon.png"
+            alt="Close Button"
+            class="common-close-img"
+          />
+        </span>
+        <img
+          src="./static/images/instructionPage/introduction2.png"
+          alt="LModal"
+        />
+      </div>
     </div>
-    
+
     <!-- Compass and Distance Display -->
     <div id="compassDiv">
-        <div class="compass">
-            <div class="arrow"></div>
-        </div>
-        <p id="distanceFromTarget" class="uiDisplay"></p>
-        <div class="maps">
-            <div class="mapDot" id="mapDot" style="background: url('./static/images/icons/map.png') center no-repeat; background-size: contain;"></div>
-        </div>
+      <div class="compass">
+        <div class="arrow"></div>
+      </div>
+      <p id="distanceFromTarget" class="uiDisplay"></p>
+      <div class="maps">
+        <div
+          class="mapDot"
+          id="mapDot"
+          style="
+            background: url('./static/images/icons/map.png') center no-repeat;
+            background-size: contain;
+          "
+        ></div>
+      </div>
     </div>
 
     <!-- Map Modal -->
     <div id="modalMap" class="modal">
-        <div class="common-modal-content black-modal-content">
-            <span class="closeM common-close-btn">
-                <img src="./static/images/icons/redCross.png" alt="Close Button" class="common-close-img">
-            </span>
-            <img src="./static/images/Minimap/map.png" alt="Big Image">
-        </div>
-    </div>
-    
-    <!-- Error Modal -->
-    <div id="modalE" class="modal">
-        <div class="common-modal-content black-modal-content">
-            <span class="closeE common-close-btn">
-                <img src="./static/images/icons/close-red-icon.png" alt="Close Button" class="common-close-img">
-            </span>
-            <img src="./static/images/warningPages/locationFrame.png" alt="EModal">
-        </div>
+      <div class="common-modal-content black-modal-content">
+        <span class="closeM common-close-btn">
+          <img
+            src="./static/images/icons/redCross.png"
+            alt="Close Button"
+            class="common-close-img"
+          />
+        </span>
+        <img src="./static/images/Minimap/map.png" alt="Big Image" />
+      </div>
     </div>
 
-    <!-- Pre-built Destination Modal -->
+    <!-- Error Modal -->
+    <div id="modalE" class="modal">
+      <div class="common-modal-content black-modal-content">
+        <span class="closeE common-close-btn">
+          <img
+            src="./static/images/icons/close-red-icon.png"
+            alt="Close Button"
+            class="common-close-img"
+          />
+        </span>
+        <img
+          src="./static/images/warningPages/locationFrame.png"
+          alt="EModal"
+        />
+      </div>
+    </div>
+
+    <!-- Destination Modal -->
     <div id="destinationModal" class="modal">
-        <div class="modal-content">
-            <img id="carImage" class="car-image" src="./static/images/car_images/default.png" alt="Car Image">
-            <h2 class="modal-title">You are arriving! Here's the directions to the car:</h2>
-            <h3 class="directions-label">Directions</h3>
-            <p id="directionsText" class="directions-text">Follow the arrow to reach your car.</p>
-            <p class="dismiss-text">Press Anywhere to Dismiss</p>
-        </div>
+      <div class="modal-content">
+        <img
+          id="carImage"
+          class="car-image"
+          src="../static/images/car_images/default.png"
+          alt="Car Image"
+        />
+        <h2 class="modal-title">
+          You are arriving! Here's the directions to the car:
+        </h2>
+        <h3 class="directions-label">Directions</h3>
+        <p id="directionsText">Follow the arrow to reach your car.</p>
+        <p class="dismiss-text">Press Anywhere to Dismiss</p>
+      </div>
     </div>
 
     <!-- Loading Screen -->
-    <div id="loadingScreen" class="loading-screen" style="display: none;">
-        <div class="spinner"></div>
-        <p style="color: white; margin-top: 20px;">Loading...</p>
+    <div id="loadingScreen" class="loading-screen" style="display: none">
+      <div class="spinner"></div>
+      <p style="color: white; margin-top: 20px">Loading...</p>
     </div>
 
     <!-- A-Frame AR Scene -->
-    <a-scene 
-        vr-mode-ui='enabled: false' 
-        arjs='sourceType: webcam; videoTexture: true; debugUIEnabled: false' 
-        renderer='antialias: true; alpha: true' 
-        device-orientation-permission-ui="enabled: false">
-        <a-camera gps-projected-camera far='100' rotation-reader></a-camera>
+    <a-scene
+      vr-mode-ui="enabled: false"
+      arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false"
+      renderer="antialias: true; alpha: true"
+      device-orientation-permission-ui="enabled: false"
+    >
+      <a-camera gps-projected-camera far="100" rotation-reader></a-camera>
     </a-scene>
 
     <!-- Main AR Module Script -->
     <script type="module" src="./static/Javascript/index.js"></script>
-</body>
+  </body>
 </html>
