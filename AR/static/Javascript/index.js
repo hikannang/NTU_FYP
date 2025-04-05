@@ -439,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Expose modal functions to global scope
+// Expose ALL functions needed by HTML to global scope
 window.closeModalL = closeModalL;
 window.closeModalI = closeModalI;
 window.closeModalE = closeModalE;
@@ -448,30 +448,152 @@ window.toggleMModal = toggleMModal;
 window.toggleIModal = toggleIModal;
 window.toggleLModal = toggleLModal;
 window.toggleEModal = toggleEModal;
+window.closeDestinationModal = closeDestinationModal;
+window.startCompass = startCompass; // Important for iOS
 
-// Add proper event listeners for modal interactions
+// Improve modal interactions with direct click handlers 
 document.addEventListener('DOMContentLoaded', function() {
-    // Introduction modal (L)
-    const modalLContent = document.querySelector("#modalL .common-modal-content");
-    if (modalLContent) {
-        modalLContent.addEventListener('click', function() {
-            closeModalL();
-        });
-    }
+    console.log("DOM content loaded, setting up modal handlers");
     
-    // Instruction modal (I)
-    const modalIContent = document.querySelector("#modalI .common-modal-content");
-    if (modalIContent) {
-        modalIContent.addEventListener('click', function() {
+    // Get modal elements
+    const modalL = document.getElementById("modalL");
+    const modalI = document.getElementById("modalI");
+    const modalE = document.getElementById("modalE");
+    const modalMap = document.getElementById("modalMap");
+    const destinationModal = document.getElementById("destinationModal");
+    
+    // Add click handlers directly to close buttons
+    document.querySelectorAll(".closeL").forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            closeModalL();
+            // Try to start location and compass services after intro is dismissed
+            startServices();
+        });
+    });
+    
+    document.querySelectorAll(".closeI").forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
             closeModalI();
         });
-    }
+    });
     
-    // Error modal (E)
-    const modalEContent = document.querySelector("#modalE .common-modal-content");
-    if (modalEContent) {
-        modalEContent.addEventListener('click', function() {
+    document.querySelectorAll(".closeE").forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
             closeModalE();
         });
+    });
+    
+    document.querySelectorAll(".closeM").forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            closeModal();
+        });
+    });
+    
+    // Add global click handlers to close when clicking anywhere on the modal backgrounds
+    if (modalL) {
+        modalL.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModalL();
+                // Try to start location and compass services after intro is dismissed
+                startServices();
+            }
+        });
     }
+    
+    if (modalI) {
+        modalI.addEventListener('click', function(e) {
+            if (e.target === this) closeModalI();
+        });
+    }
+    
+    if (modalE) {
+        modalE.addEventListener('click', function(e) {
+            if (e.target === this) closeModalE();
+        });
+    }
+    
+    if (modalMap) {
+        modalMap.addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    }
+    
+    if (destinationModal) {
+        destinationModal.addEventListener('click', function(e) {
+            if (e.target === this) closeDestinationModal();
+        });
+    }
+    
+    // Show introduction modal on page load
+    toggleLModal();
+    
+    // Ensure iOS compass gets permission
+    if (isIOS) {
+        document.body.addEventListener('click', function() {
+            console.log("Body clicked, requesting iOS compass permission");
+            startCompass();
+        }, { once: true });
+    }
+    
+    // Initialize service
+    init();
 });
+
+// Function to explicitly trigger location and compass services
+function startServices() {
+    console.log("Starting location and compass services");
+    
+    // Explicitly start geolocation
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            console.log("Initial position obtained");
+            setCurrentPosition(position);
+            
+            // Start continuous tracking
+            navigator.geolocation.watchPosition(
+                setCurrentPosition, 
+                function(error) { 
+                    console.error("Geolocation error:", error);
+                    alert("Location error: " + error.message);
+                },
+                { enableHighAccuracy: true }
+            );
+        },
+        function(error) {
+            console.error("Initial position error:", error);
+            alert("Cannot access your location. Please enable location services.");
+        },
+        { enableHighAccuracy: true }
+    );
+    
+    // Explicitly request device orientation
+    if (isIOS) {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission()
+                .then(function(response) {
+                    if (response === 'granted') {
+                        console.log("iOS orientation permission granted");
+                        window.addEventListener('deviceorientation', runCalculation);
+                    } else {
+                        console.error("iOS orientation permission denied");
+                        alert("Compass requires device orientation permission");
+                    }
+                })
+                .catch(function(error) {
+                    console.error("iOS orientation permission error:", error);
+                });
+        } else {
+            window.addEventListener('deviceorientation', runCalculation);
+        }
+    } else {
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientationabsolute', runCalculation);
+        } else {
+            window.addEventListener('deviceorientation', runCalculation);
+        }
+    }
+}
