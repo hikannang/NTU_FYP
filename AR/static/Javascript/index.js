@@ -443,7 +443,7 @@ function updateDistanceDisplay() {
     }
     
     // Check if arrived at destination
-    if (distance < 15 && !isViewed) {
+    if (distance < 40 && !isViewed) {
         console.log("Within 15m of destination, showing modal");
         showDestinationModal();
         isViewed = true;
