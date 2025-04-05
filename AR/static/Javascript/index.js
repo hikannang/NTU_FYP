@@ -12,6 +12,9 @@ var servicesStarted = false;
 var compassInitialized = false;
 var hasOrientationSupport = false;
 var positionHistoryEnabled = false;
+var isCalibrating = false;
+var calibrationReadings = [];
+var compassOffset = 0;
 
 // Compass smoothing variables
 var headingBuffer = []; // For smoothing
@@ -236,6 +239,108 @@ function calculateBearing() {
     return (brng + 360) % 360; // Normalize to 0-360
 }
 
+// Start compass calibration
+function startCompassCalibration() {
+    if (isCalibrating) return;
+    
+    isCalibrating = true;
+    calibrationReadings = [];
+    
+    // Show calibration UI
+    const distanceElement = document.getElementById("distanceFromTarget");
+    if (distanceElement) {
+        distanceElement.innerHTML = "Calibrating compass... Move your phone in a figure-8 pattern";
+        distanceElement.style.backgroundColor = "rgba(33, 150, 243, 0.8)"; // Blue background
+    }
+    
+    // Create progress indicator
+    const compass = document.querySelector(".compass");
+    if (compass) {
+        compass.style.borderColor = "#2196F3"; // Blue during calibration
+        
+        // Add progress indicator
+        let progressIndicator = document.getElementById("calibrationProgress");
+        if (!progressIndicator) {
+            progressIndicator = document.createElement("div");
+            progressIndicator.id = "calibrationProgress";
+            progressIndicator.style.position = "absolute";
+            progressIndicator.style.bottom = "5px";
+            progressIndicator.style.left = "50%";
+            progressIndicator.style.transform = "translateX(-50%)";
+            progressIndicator.style.width = "0%";
+            progressIndicator.style.height = "4px";
+            progressIndicator.style.backgroundColor = "#FFFFFF";
+            progressIndicator.style.borderRadius = "2px";
+            progressIndicator.style.transition = "width 0.2s";
+            compass.appendChild(progressIndicator);
+        } else {
+            progressIndicator.style.width = "0%";
+        }
+    }
+    
+    // Set timeout to end calibration after 10 seconds
+    setTimeout(finishCalibration, 10000);
+    
+    console.log("🧭 Compass calibration started");
+}
+
+// Collect readings during calibration
+function collectCalibrationReading(heading) {
+    if (!isCalibrating) return;
+    
+    calibrationReadings.push(heading);
+    
+    // Update progress indicator
+    const progress = Math.min(100, (calibrationReadings.length / 50) * 100);
+    const progressIndicator = document.getElementById("calibrationProgress");
+    if (progressIndicator) {
+        progressIndicator.style.width = progress + "%";
+    }
+    
+    // If we have enough readings, finish early
+    if (calibrationReadings.length >= 50) {
+        finishCalibration();
+    }
+}
+
+// Process calibration results
+function finishCalibration() {
+    if (!isCalibrating || calibrationReadings.length < 10) return;
+    
+    isCalibrating = false;
+    
+    // Calculate average heading
+    let sum = 0;
+    for (const heading of calibrationReadings) {
+        sum += heading;
+    }
+    const avgHeading = sum / calibrationReadings.length;
+    
+    // Calculate the offset from North (0 degrees)
+    compassOffset = avgHeading % 360;
+    
+    console.log("🧭 Calibration complete. Compass offset:", compassOffset);
+    
+    // Update UI
+    const distanceElement = document.getElementById("distanceFromTarget");
+    if (distanceElement) {
+        distanceElement.innerHTML = "Calibration complete!";
+        
+        // Reset to normal after a short delay
+        setTimeout(() => {
+            updateDistanceDisplay();
+            
+            // Remove progress indicator
+            const progressIndicator = document.getElementById("calibrationProgress");
+            if (progressIndicator) progressIndicator.remove();
+            
+            // Reset compass color
+            const compass = document.querySelector(".compass");
+            if (compass) compass.style.borderColor = "#4CAF50"; // Green for calibrated
+        }, 2000);
+    }
+}
+
 // Modified startOrientation function to explicitly handle permissions
 function startOrientation() {
     if (compassInitialized) {
@@ -334,7 +439,7 @@ function startOrientation() {
     });
 }
 
-// Improved handleOrientation function with more stability
+// Improved handleOrientation function
 function handleOrientation(event) {
     // Set the flag to true as soon as we get any orientation data
     if (!hasOrientationSupport) {
@@ -342,11 +447,10 @@ function handleOrientation(event) {
         hasOrientationSupport = true;
     }
     
-    // Get orientation data - focusing only on alpha for stability
+    // Get orientation data
     const alpha = event.alpha; // Z-axis rotation (compass direction)
-    
-    // Ignore beta and gamma for heading calculation - these cause most of the instability
-    // Only use them to check if the phone is being held correctly
+    const beta = event.beta;   // X-axis rotation (front-back tilt)
+    const gamma = event.gamma; // Y-axis rotation (left-right tilt)
     
     if (alpha !== null && alpha !== undefined) {
         let heading;
@@ -358,8 +462,22 @@ function handleOrientation(event) {
             // For Android: convert alpha (counter-clockwise from East) to heading (clockwise from North)
             heading = (360 - alpha) % 360;
             
-            // Skip tilt compensation which can introduce noise
-            // Only adjust for screen orientation which is essential
+            // Apply tilt compensation for upright position
+            // This helps when the phone is NOT flat
+            if (beta !== null && gamma !== null) {
+                // Only apply tilt compensation when in upright position
+                if (Math.abs(beta) < 45) {
+                    // This formula works better for upright orientation
+                    const tiltCompensation = Math.atan2(
+                        Math.sin(gamma * Math.PI / 180),
+                        Math.cos(beta * Math.PI / 180)
+                    ) * 180 / Math.PI;
+                    
+                    heading = (heading - tiltCompensation + 360) % 360;
+                }
+            }
+            
+            // Adjust for screen orientation
             if (window.orientation !== undefined) {
                 if (window.orientation === 90) {
                     heading = (heading + 90) % 360;
@@ -370,6 +488,15 @@ function handleOrientation(event) {
                 }
             }
         }
+        
+        // If we're calibrating, collect this reading
+        if (isCalibrating) {
+            collectCalibrationReading(heading);
+            return; // Skip the rest during calibration
+        }
+        
+        // Apply calibration offset
+        heading = (heading - compassOffset + 360) % 360;
         
         // Skip headings that change dramatically (likely noise)
         if (previousHeading !== null) {
@@ -615,6 +742,56 @@ function openGoogleMaps() {
     }
 }
 
+// Add a calibration button to the DOM
+function addCalibrationButton() {
+    const compassDiv = document.getElementById("compassDiv");
+    if (!compassDiv) return;
+    
+    const calibrateBtn = document.createElement("div");
+    calibrateBtn.className = "calibrate-btn";
+    calibrateBtn.innerHTML = "📱 Calibrate";
+    calibrateBtn.style.position = "absolute";
+    calibrateBtn.style.bottom = "10px";
+    calibrateBtn.style.right = "10px";
+    calibrateBtn.style.padding = "8px 12px";
+    calibrateBtn.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+    calibrateBtn.style.color = "white";
+    calibrateBtn.style.borderRadius = "5px";
+    calibrateBtn.style.fontSize = "14px";
+    calibrateBtn.style.zIndex = "999";
+    
+    calibrateBtn.addEventListener("click", startCompassCalibration);
+    calibrateBtn.addEventListener("touchend", function(e) {
+        e.preventDefault();
+        startCompassCalibration();
+    });
+    
+    compassDiv.appendChild(calibrateBtn);
+}
+
+// Add orientation guide to help users hold the phone correctly
+function addOrientationGuide() {
+    const compassDiv = document.getElementById("compassDiv");
+    if (!compassDiv) return;
+    
+    const guideDiv = document.createElement("div");
+    guideDiv.id = "orientationGuide";
+    guideDiv.style.position = "absolute";
+    guideDiv.style.top = "10px";
+    guideDiv.style.left = "50%";
+    guideDiv.style.transform = "translateX(-50%)";
+    guideDiv.style.padding = "8px 12px";
+    guideDiv.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+    guideDiv.style.color = "white";
+    guideDiv.style.borderRadius = "5px";
+    guideDiv.style.fontSize = "14px";
+    guideDiv.style.zIndex = "999";
+    guideDiv.style.display = "none"; // Hidden by default
+    guideDiv.innerHTML = "Hold phone upright like taking a photo";
+    
+    compassDiv.appendChild(guideDiv);
+}
+
 // Update UI elements (compass arrow)
 function updateUI() {
     const arrow = document.querySelector(".arrow");
@@ -622,7 +799,7 @@ function updateUI() {
     if (arrow) {
         // Apply smooth transition when rotating
         if (!arrow.style.transition) {
-            arrow.style.transition = "transform 0.3s ease-out";
+            arrow.style.transition = "transform 0.5s ease-out";
         }
         
         // Apply rotation to the arrow based on direction
@@ -643,16 +820,21 @@ function updateUI() {
         
         // Visual indicator for phone orientation
         const distanceElement = document.getElementById("distanceFromTarget");
-        if (distanceElement && lastDeviceOrientation) {
+        const orientationGuide = document.getElementById("orientationGuide");
+        
+        if (distanceElement && lastDeviceOrientation && orientationGuide) {
             const beta = Math.abs(lastDeviceOrientation.beta || 0);
             
-            // Provide feedback only when orientation is way off
-            if (beta > 60) {
-                // Phone is too horizontal
+            // For upright orientation, beta should be close to 0 degrees
+            // Show warning when phone is too flat
+            if (beta > 45) {
+                // Phone is too flat
                 distanceElement.style.backgroundColor = "rgba(255, 87, 34, 0.7)"; // Orange warning
+                orientationGuide.style.display = "block"; // Show guide
             } else {
-                // Phone is being held acceptably
+                // Phone is being held upright (good)
                 distanceElement.style.backgroundColor = "rgba(0, 0, 0, 0.6)"; // Normal
+                orientationGuide.style.display = "none"; // Hide guide
             }
         }
     }
@@ -732,6 +914,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up app functionality
     init();
     
+    // Add calibration button
+    addCalibrationButton();
+    
+    // Add orientation guide
+    addOrientationGuide();
+    
     // Add click handler for map button
     const mapBtn = document.querySelector('.maps');
     if (mapBtn) {
@@ -751,6 +939,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, { once: true });
     }
+    
+    // Start with an instruction about phone orientation
+    setTimeout(function() {
+        const orientationGuide = document.getElementById("orientationGuide");
+        if (orientationGuide) {
+            orientationGuide.style.display = "block";
+            // Hide after 5 seconds
+            setTimeout(function() {
+                orientationGuide.style.display = "none";
+            }, 5000);
+        }
+    }, 1000);
     
     console.log("✅ AR module initialization complete");
 });
