@@ -9,6 +9,7 @@ var loadingTimeout;
 var bookingId = null;
 var carDirections = "";
 var servicesStarted = false;
+var compassInitialized = false;
 
 // Initialize target coordinates
 var target = {
@@ -27,9 +28,11 @@ var lastAlpha = 0;
 var direction = 0;
 var bearing = 0;
 
-// Detect iOS device
+// Detect device type
 const isIOS = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && 
               navigator.userAgent.match(/AppleWebKit/);
+const isAndroid = /Android/i.test(navigator.userAgent);
+const isSamsung = /SM-|SAMSUNG|Samsung/i.test(navigator.userAgent);
 
 // Firebase configuration
 const firebaseConfig = {
@@ -210,9 +213,16 @@ function calculateBearing() {
 
 // Request permission for device orientation (required for iOS)
 function startCompass() {
-    console.log("🧭 Requesting compass permissions");
+    if (compassInitialized) {
+        return; // Don't initialize twice
+    }
+    
+    console.log("🧭 Starting compass for " + (isIOS ? "iOS" : (isAndroid ? "Android" : "unknown")) + " device");
+    
+    compassInitialized = true;
     
     if (isIOS) {
+        // iOS specific code
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
             DeviceOrientationEvent.requestPermission()
                 .then((response) => {
@@ -233,41 +243,162 @@ function startCompass() {
             window.addEventListener("deviceorientation", handleOrientation);
         }
     } else {
-        // Non-iOS devices - try different event types
-        if (window.DeviceOrientationAbsoluteEvent) {
-            window.addEventListener("deviceorientationabsolute", handleOrientation);
-        } else if (window.DeviceOrientation) {
-            window.addEventListener("deviceorientation", handleOrientation);
-        } else {
-            console.error("Device orientation not supported by this device");
-            alert("Your device doesn't support compass functionality.");
+        // Android devices - try multiple event types
+        console.log("📱 Setting up Android orientation listeners");
+        
+        // Try different orientation events (in order of preference)
+        const orientationEvents = [
+            "deviceorientationabsolute", 
+            "deviceorientation", 
+            "compassneedscalibration"
+        ];
+        
+        let eventAttached = false;
+        
+        orientationEvents.forEach(eventType => {
+            try {
+                window.addEventListener(eventType, function(e) {
+                    if (!eventAttached) {
+                        console.log(`✅ Successfully attached to ${eventType} event`);
+                        eventAttached = true;
+                    }
+                    handleOrientation(e);
+                });
+            } catch (error) {
+                console.warn(`⚠️ Could not attach ${eventType} event:`, error);
+            }
+        });
+        
+        // Use relative orientation with manual calculations as a fallback
+        if (isSamsung) {
+            console.log("📱 Samsung device detected, using sensor fallbacks");
+            window.addEventListener("deviceorientation", handleSamsungOrientation);
         }
+        
+        // Set a timer to check if we're getting orientation data
+        setTimeout(() => {
+            if (lastAlpha === 0) {
+                console.warn("⚠️ No orientation data received yet, using position-based direction");
+                // We'll rely on position changes to update direction
+                useFallbackDirectionMethod();
+            }
+        }, 2000);
     }
+}
+
+// Special handler for Samsung devices
+function handleSamsungOrientation(event) {
+    // Samsung devices often need different handling
+    if (event.alpha !== null) {
+        // Convert alpha (counterclockwise from east) to heading (clockwise from north)
+        let heading = 0;
+        
+        // Different calculation for Samsung
+        if (window.orientation === 0) {
+            heading = (360 - event.alpha) % 360;
+        } else if (window.orientation === 90) {
+            heading = (event.alpha + 90) % 360;
+        } else if (window.orientation === -90) {
+            heading = (event.alpha - 90) % 360;
+        } else {
+            heading = (event.alpha + 180) % 360;
+        }
+        
+        updateDirection(heading);
+    }
+}
+
+// Fallback to position-based direction when sensors fail
+function useFallbackDirectionMethod() {
+    console.log("🧭 Using position changes to estimate direction");
+    
+    let lastLat = current.latitude;
+    let lastLng = current.longitude;
+    let movementHeading = 0;
+    
+    // Watch for position changes to infer direction of movement
+    navigator.geolocation.watchPosition(
+        (position) => {
+            const newLat = position.coords.latitude;
+            const newLng = position.coords.longitude;
+            
+            // If we've moved enough to detect direction
+            if (Math.abs(newLat - lastLat) > 0.00001 || Math.abs(newLng - lastLng) > 0.00001) {
+                // Calculate direction of movement
+                const y = Math.sin(newLng - lastLng) * Math.cos(newLat);
+                const x = Math.cos(lastLat) * Math.sin(newLat) -
+                        Math.sin(lastLat) * Math.cos(newLat) * Math.cos(newLng - lastLng);
+                
+                movementHeading = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+                
+                console.log("📍 Detected movement direction:", movementHeading);
+                
+                // Use this as our heading
+                updateDirection(movementHeading);
+                
+                // Update last position
+                lastLat = newLat;
+                lastLng = newLng;
+            }
+            
+            // Always update current position
+            setCurrentPosition(position);
+        },
+        (error) => console.error("Error in movement tracking:", error),
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+    );
+}
+
+// Update direction based on heading
+function updateDirection(heading) {
+    // Calculate bearing to target
+    bearing = calculateBearing();
+    
+    // Direction = where to point arrow (bearing - heading)
+    direction = (bearing - heading + 360) % 360;
+    
+    // Update last alpha to prevent multiple processing
+    lastAlpha = heading;
+    
+    // Force update distance display
+    updateDistanceDisplay();
 }
 
 // Handle device orientation event
 function handleOrientation(event) {
     // Get heading (direction device is facing)
-    let heading = 0;
+    let heading = null;
     
     // iOS uses webkitCompassHeading (degrees clockwise from North)
-    if (event.webkitCompassHeading) {
+    if (event.webkitCompassHeading !== undefined) {
         heading = event.webkitCompassHeading;
+        console.log("📱 Using iOS webkitCompassHeading:", heading);
     } 
     // Android uses alpha (degrees counterclockwise from East)
-    else if (event.alpha !== null) {
-        heading = 360 - event.alpha; // Convert to clockwise from North
+    else if (event.alpha !== null && event.alpha !== undefined) {
+        heading = (360 - event.alpha) % 360; // Convert to clockwise from North
+        console.log("📱 Using Android alpha:", event.alpha, "converted to:", heading);
+        
+        // Samsung often needs adjustment based on screen orientation
+        if (isSamsung && window.orientation !== undefined) {
+            // Adjust for screen orientation
+            if (window.orientation === 90) {
+                heading = (heading + 90) % 360;
+            } else if (window.orientation === -90) {
+                heading = (heading - 90) % 360;
+            } else if (window.orientation === 180) {
+                heading = (heading + 180) % 360;
+            }
+            console.log("📱 Samsung adjustment for orientation", window.orientation, ":", heading);
+        }
     }
     
-    // Calculate direction to point (bearing minus heading)
-    bearing = calculateBearing();
-    direction = (bearing - heading + 360) % 360;
-    
-    // Log heading and direction
-    console.log(`Heading: ${heading.toFixed(1)}°, Bearing: ${bearing.toFixed(1)}°, Arrow: ${direction.toFixed(1)}°`);
-    
-    // Force update the distance
-    updateDistanceDisplay();
+    // If we got a valid heading, update direction
+    if (heading !== null) {
+        updateDirection(heading);
+    } else {
+        console.warn("⚠️ No valid heading data in event:", event);
+    }
 }
 
 // Update current position from geolocation API
@@ -413,6 +544,11 @@ function startServices() {
     
     // Start compass
     startCompass();
+    
+    // Listen for screen orientation changes
+    window.addEventListener('orientationchange', function() {
+        console.log("📱 Screen orientation changed to:", window.orientation);
+    });
 }
 
 // Expose functions to global scope for the HTML script to use
