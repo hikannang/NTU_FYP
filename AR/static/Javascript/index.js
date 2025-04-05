@@ -9,24 +9,8 @@ var loadingTimeout;
 var bookingId = null;
 var carDirections = "";
 var servicesStarted = false;
-var compassInitialized = false;
 var hasOrientationSupport = false;
 var positionHistoryEnabled = false;
-var isCalibrating = false;
-var calibrationReadings = [];
-var compassOffset = 0;
-
-// Compass smoothing variables
-var headingBuffer = []; // For smoothing
-var HEADING_BUFFER_SIZE = 10; // Increased for more stability
-var HEADING_DEADZONE = 8; // Increased to ignore small changes
-var lastDirection = 0; // Last stable direction
-var compassStable = false; // Whether the compass has stabilized
-var lastDeviceOrientation = null; // Store last orientation reading
-var LOW_PASS_FACTOR = 0.1; // Lower = smoother but slower response
-var STABLE_THRESHOLD_COUNT = 5; // Number of stable readings required
-var stableReadingCounter = 0;
-var previousHeading = null;
 
 // Initialize target coordinates
 var target = {
@@ -40,8 +24,7 @@ var current = {
     longitude: null 
 };
 
-// Variables for direction calculations
-var lastAlpha = 0;
+// Simple direction calculation
 var direction = 0;
 var bearing = 0;
 
@@ -53,7 +36,6 @@ var movementDirection = null;
 const isIOS = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && 
               navigator.userAgent.match(/AppleWebKit/);
 const isAndroid = /Android/i.test(navigator.userAgent);
-const isSamsung = /SM-|SAMSUNG|Samsung/i.test(navigator.userAgent);
 
 // Firebase configuration
 const firebaseConfig = {
@@ -99,29 +81,27 @@ function getUrlParameters() {
     const lng = parseFloat(urlParams.get('lng'));
     bookingId = urlParams.get('id');
     
-    console.log("🌎 URL parameters - lat:", lat, "lng:", lng, "bookingId:", bookingId);
+    console.log("URL parameters - lat:", lat, "lng:", lng, "bookingId:", bookingId);
     
     if (!isNaN(lat) && !isNaN(lng)) {
         target.latitude = lat;
         target.longitude = lng;
         
-        console.log("✅ Target coordinates set to:", target.latitude, target.longitude);
+        console.log("Target coordinates set to:", target.latitude, target.longitude);
         
         // Create AR marker at destination
         createDestinationMarker(lat, lng);
         
-        // Immediately start location services when we have valid coordinates
+        // Start location services
         startServices();
     } else {
-        console.error("❌ No valid coordinates in URL parameters");
+        console.error("No valid coordinates in URL parameters");
         alert("Missing or invalid location coordinates. Please check the URL.");
     }
     
     // Fetch car data if booking ID is provided
     if (bookingId) {
         fetchCarData(bookingId);
-    } else {
-        console.warn("⚠️ No booking ID provided in URL parameters");
     }
 }
 
@@ -131,13 +111,13 @@ function createDestinationMarker(lat, lng) {
         return; // Marker already exists
     }
     
-    console.log("🚩 Creating destination marker at:", lat, lng);
+    console.log("Creating destination marker at:", lat, lng);
     
     // Get AR scene
     const scene = document.querySelector('a-scene');
     
     if (!scene) {
-        console.error("❌ A-Frame scene not found");
+        console.error("A-Frame scene not found");
         return;
     }
     
@@ -147,7 +127,7 @@ function createDestinationMarker(lat, lng) {
     entity.setAttribute('gltf-model', './static/3dModels/GLB/location3.glb');
     entity.setAttribute('scale', '2 2 2');
     
-    // Try different attribute format for position - this is crucial for correct placement
+    // Set location for AR.js
     entity.setAttribute('gps-projected-entity-place', `latitude: ${lat}; longitude: ${lng}`);
     
     // Add animation
@@ -156,9 +136,6 @@ function createDestinationMarker(lat, lng) {
     // Add to scene
     scene.appendChild(entity);
     
-    // Log for debugging
-    console.log("🏠 AR marker added to scene with coordinates:", lat, lng);
-    
     // Show loading screen while AR content loads
     showLoadingScreen();
 }
@@ -166,7 +143,7 @@ function createDestinationMarker(lat, lng) {
 // Fetch car data from Firebase
 async function fetchCarData(bookingId) {
     try {
-        console.log("🔍 Fetching car data for booking:", bookingId);
+        console.log("Fetching car data for booking:", bookingId);
         
         // Get booking document
         const bookingRef = doc(db, "bookings", bookingId);
@@ -176,7 +153,7 @@ async function fetchCarData(bookingId) {
             const bookingData = bookingSnapshot.data();
             const carId = bookingData.car_id;
             
-            console.log("🚗 Found booking, fetching car data for car ID:", carId);
+            console.log("Found booking, fetching car data for car ID:", carId);
             
             // Get car document
             const carRef = doc(db, "cars", carId.toString());
@@ -187,36 +164,27 @@ async function fetchCarData(bookingId) {
                 
                 // Save car directions for display in the destination modal
                 carDirections = carData.directions || "You have reached your destination.";
-                console.log("📝 Retrieved car directions:", carDirections);
+                console.log("Retrieved car directions:", carDirections);
             } else {
-                console.warn("⚠️ Car document not found");
+                console.warn("Car document not found");
             }
         } else {
-            console.warn("⚠️ Booking document not found");
+            console.warn("Booking document not found");
         }
     } catch (error) {
-        console.error("❌ Error fetching car data:", error);
+        console.error("Error fetching car data:", error);
     }
 }
 
-// Initialize geolocation and device orientation
+// Initialize the application
 function init() {
-    console.log("🚀 Initializing AR wayfinding");
+    console.log("Initializing AR wayfinding");
     
     // Parse URL parameters
     getUrlParameters();
     
     // Start UI updates for compass
     updateUI();
-    
-    // Track device orientation for tilt detection
-    window.addEventListener("deviceorientation", function(event) {
-        lastDeviceOrientation = {
-            alpha: event.alpha,
-            beta: event.beta,
-            gamma: event.gamma
-        };
-    }, false);
 }
 
 // Calculate bearing (direction from current to target)
@@ -239,338 +207,83 @@ function calculateBearing() {
     return (brng + 360) % 360; // Normalize to 0-360
 }
 
-// Start compass calibration
-function startCompassCalibration() {
-    if (isCalibrating) return;
-    
-    isCalibrating = true;
-    calibrationReadings = [];
-    
-    // Show calibration UI
-    const distanceElement = document.getElementById("distanceFromTarget");
-    if (distanceElement) {
-        distanceElement.innerHTML = "Calibrating compass... Move your phone in a figure-8 pattern";
-        distanceElement.style.backgroundColor = "rgba(33, 150, 243, 0.8)"; // Blue background
-    }
-    
-    // Create progress indicator
-    const compass = document.querySelector(".compass");
-    if (compass) {
-        compass.style.borderColor = "#2196F3"; // Blue during calibration
-        
-        // Add progress indicator
-        let progressIndicator = document.getElementById("calibrationProgress");
-        if (!progressIndicator) {
-            progressIndicator = document.createElement("div");
-            progressIndicator.id = "calibrationProgress";
-            progressIndicator.style.position = "absolute";
-            progressIndicator.style.bottom = "5px";
-            progressIndicator.style.left = "50%";
-            progressIndicator.style.transform = "translateX(-50%)";
-            progressIndicator.style.width = "0%";
-            progressIndicator.style.height = "4px";
-            progressIndicator.style.backgroundColor = "#FFFFFF";
-            progressIndicator.style.borderRadius = "2px";
-            progressIndicator.style.transition = "width 0.2s";
-            compass.appendChild(progressIndicator);
-        } else {
-            progressIndicator.style.width = "0%";
-        }
-    }
-    
-    // Set timeout to end calibration after 10 seconds
-    setTimeout(finishCalibration, 10000);
-    
-    console.log("🧭 Compass calibration started");
-}
-
-// Collect readings during calibration
-function collectCalibrationReading(heading) {
-    if (!isCalibrating) return;
-    
-    calibrationReadings.push(heading);
-    
-    // Update progress indicator
-    const progress = Math.min(100, (calibrationReadings.length / 50) * 100);
-    const progressIndicator = document.getElementById("calibrationProgress");
-    if (progressIndicator) {
-        progressIndicator.style.width = progress + "%";
-    }
-    
-    // If we have enough readings, finish early
-    if (calibrationReadings.length >= 50) {
-        finishCalibration();
-    }
-}
-
-// Process calibration results
-function finishCalibration() {
-    if (!isCalibrating || calibrationReadings.length < 10) return;
-    
-    isCalibrating = false;
-    
-    // Calculate average heading
-    let sum = 0;
-    for (const heading of calibrationReadings) {
-        sum += heading;
-    }
-    const avgHeading = sum / calibrationReadings.length;
-    
-    // Calculate the offset from North (0 degrees)
-    compassOffset = avgHeading % 360;
-    
-    console.log("🧭 Calibration complete. Compass offset:", compassOffset);
-    
-    // Update UI
-    const distanceElement = document.getElementById("distanceFromTarget");
-    if (distanceElement) {
-        distanceElement.innerHTML = "Calibration complete!";
-        
-        // Reset to normal after a short delay
-        setTimeout(() => {
-            updateDistanceDisplay();
-            
-            // Remove progress indicator
-            const progressIndicator = document.getElementById("calibrationProgress");
-            if (progressIndicator) progressIndicator.remove();
-            
-            // Reset compass color
-            const compass = document.querySelector(".compass");
-            if (compass) compass.style.borderColor = "#4CAF50"; // Green for calibrated
-        }, 2000);
-    }
-}
-
-// Modified startOrientation function to explicitly handle permissions
+// Setup device orientation
 function startOrientation() {
-    if (compassInitialized) {
-        return; // Avoid initializing twice
-    }
+    console.log("Setting up orientation for " + (isIOS ? "iOS" : "Android") + " device");
     
-    compassInitialized = true;
-    console.log("🧭 Starting orientation for " + (isIOS ? "iOS" : (isAndroid ? "Android" : "unknown")) + " device");
-    
-    // Function to handle orientation once permissions are granted
-    function setupOrientationListeners() {
-        // Try standard orientation event first (works on most devices)
-        window.addEventListener("deviceorientation", handleOrientation);
-        
-        // Also try absolute orientation if available (more accurate on some devices)
-        if ('ondeviceorientationabsolute' in window) {
-            window.addEventListener("deviceorientationabsolute", handleOrientation);
-            console.log("✅ Added absolute orientation listener");
-        }
-        
-        // Check if we're getting orientation data after a short delay
-        setTimeout(() => {
-            if (!hasOrientationSupport) {
-                console.log("⚠️ No orientation data received yet, enabling position history fallback");
-                enablePositionHistory();
-                
-                // Show a message to the user
-                alert("Your device's orientation sensors aren't responding. The app will use your movement to determine direction instead.");
-            }
-        }, 2000);
-    }
-    
+    // For iOS
     if (isIOS) {
-        // iOS requires explicit permission request
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            // Show an alert explaining why we need orientation access
-            alert("This app needs access to your device's orientation to point you in the right direction. Please tap OK when prompted.");
-            
             DeviceOrientationEvent.requestPermission()
                 .then((response) => {
                     if (response === "granted") {
-                        console.log("✅ iOS orientation permission granted");
-                        setupOrientationListeners();
+                        console.log("iOS orientation permission granted");
+                        window.addEventListener("deviceorientation", handleOrientation);
                         hasOrientationSupport = true;
                     } else {
-                        console.error("❌ iOS orientation permission denied");
-                        alert("Without orientation permission, the arrow may not point correctly. Using location tracking as a fallback.");
-                        enablePositionHistory(); // Fallback to position tracking
+                        console.error("iOS orientation permission denied");
+                        enablePositionHistory(); // Fallback
                     }
                 })
                 .catch((error) => {
-                    console.error("❌ iOS orientation permission error:", error);
-                    alert("Error accessing orientation sensors. Using location tracking as a fallback.");
-                    enablePositionHistory();
+                    console.error("iOS orientation permission error:", error);
+                    enablePositionHistory(); // Fallback
                 });
         } else {
-            // Older iOS that doesn't need permissions
-            setupOrientationListeners();
+            // Older iOS
+            window.addEventListener("deviceorientation", handleOrientation);
         }
-    } else if (isAndroid) {
-        // For Android, we'll try to detect if we have sensor access
-        console.log("📱 Setting up Android orientation");
+    } else {
+        // For Android
+        window.addEventListener("deviceorientation", handleOrientation);
+        window.addEventListener("deviceorientationabsolute", handleOrientation);
         
-        // Show a helpful message to Android users
-        if (isSamsung) {
-            alert("Please make sure your Samsung device has location services enabled and motion sensors are allowed. This helps the app show which direction to walk.");
-        } else {
-            alert("Please enable location services and sensor access for the best experience. This helps the app show which direction to walk.");
-        }
+        // Check if orientation data is received
+        setTimeout(() => {
+            if (!hasOrientationSupport) {
+                console.log("No orientation data received, using position fallback");
+                enablePositionHistory();
+            }
+        }, 2000);
+    }
+}
+
+// Simple orientation handler
+function handleOrientation(event) {
+    // Set flag that we have orientation data
+    hasOrientationSupport = true;
+    
+    // Get heading
+    let heading;
+    
+    if (event.webkitCompassHeading !== undefined) {
+        // iOS - already calibrated
+        heading = event.webkitCompassHeading;
+    } else if (event.alpha !== null) {
+        // Android - convert alpha to heading
+        heading = (360 - event.alpha) % 360;
         
-        // Set up orientation listeners
-        setupOrientationListeners();
-        
-        // On some Android devices, we might need to explicitly request permission
-        if (navigator.permissions && navigator.permissions.query) {
-            try {
-                navigator.permissions.query({ name: 'accelerometer' })
-                    .then(result => {
-                        console.log("Accelerometer permission status:", result.state);
-                        if (result.state === 'denied') {
-                            alert("Please enable motion sensor access in your device settings for better direction guidance.");
-                        }
-                    });
-            } catch (error) {
-                console.log("Permissions API not fully supported:", error);
+        // Adjust for screen orientation
+        if (window.orientation !== undefined) {
+            if (window.orientation === 90) {
+                heading = (heading + 90) % 360;
+            } else if (window.orientation === -90) {
+                heading = (heading - 90) % 360;
+            } else if (window.orientation === 180) {
+                heading = (heading + 180) % 360;
             }
         }
     } else {
-        // Other devices
-        setupOrientationListeners();
+        return; // No valid data
     }
     
-    // Also handle screen orientation changes
-    window.addEventListener('orientationchange', function() {
-        console.log("📱 Screen orientation changed to:", window.orientation);
-    });
-}
-
-// Improved handleOrientation function
-function handleOrientation(event) {
-    // Set the flag to true as soon as we get any orientation data
-    if (!hasOrientationSupport) {
-        console.log(`✅ Received first orientation data`);
-        hasOrientationSupport = true;
-    }
+    // Calculate bearing to target
+    bearing = calculateBearing();
     
-    // Get orientation data
-    const alpha = event.alpha; // Z-axis rotation (compass direction)
-    const beta = event.beta;   // X-axis rotation (front-back tilt)
-    const gamma = event.gamma; // Y-axis rotation (left-right tilt)
+    // Simple direction calculation
+    direction = (bearing - heading + 360) % 360;
     
-    if (alpha !== null && alpha !== undefined) {
-        let heading;
-        
-        if (event.webkitCompassHeading !== undefined) {
-            // iOS provides this value already calibrated (clockwise from North)
-            heading = event.webkitCompassHeading;
-        } else {
-            // For Android: convert alpha (counter-clockwise from East) to heading (clockwise from North)
-            heading = (360 - alpha) % 360;
-            
-            // Apply tilt compensation for upright position
-            // This helps when the phone is NOT flat
-            if (beta !== null && gamma !== null) {
-                // Only apply tilt compensation when in upright position
-                if (Math.abs(beta) < 45) {
-                    // This formula works better for upright orientation
-                    const tiltCompensation = Math.atan2(
-                        Math.sin(gamma * Math.PI / 180),
-                        Math.cos(beta * Math.PI / 180)
-                    ) * 180 / Math.PI;
-                    
-                    heading = (heading - tiltCompensation + 360) % 360;
-                }
-            }
-            
-            // Adjust for screen orientation
-            if (window.orientation !== undefined) {
-                if (window.orientation === 90) {
-                    heading = (heading + 90) % 360;
-                } else if (window.orientation === -90) {
-                    heading = (heading - 90) % 360;
-                } else if (window.orientation === 180) {
-                    heading = (heading + 180) % 360;
-                }
-            }
-        }
-        
-        // If we're calibrating, collect this reading
-        if (isCalibrating) {
-            collectCalibrationReading(heading);
-            return; // Skip the rest during calibration
-        }
-        
-        // Apply calibration offset
-        heading = (heading - compassOffset + 360) % 360;
-        
-        // Skip headings that change dramatically (likely noise)
-        if (previousHeading !== null) {
-            const headingDifference = Math.abs((heading - previousHeading + 180) % 360 - 180);
-            if (headingDifference > 40 && headingDifference < 320) {
-                console.log("⚠️ Skipping erratic heading change:", headingDifference.toFixed(1) + "°");
-                return; // Skip this reading
-            }
-        }
-        
-        // Apply low-pass filter before adding to buffer (stronger smoothing)
-        if (previousHeading !== null) {
-            // Blend previous and current values
-            heading = previousHeading * (1 - LOW_PASS_FACTOR) + heading * LOW_PASS_FACTOR;
-        }
-        previousHeading = heading;
-        
-        // Add to smoothing buffer
-        headingBuffer.push(heading);
-        if (headingBuffer.length > HEADING_BUFFER_SIZE) {
-            headingBuffer.shift(); // Remove oldest reading
-        }
-        
-        // Wait until we have enough readings
-        if (headingBuffer.length < 3) return;
-        
-        // Calculate smoothed heading (weighted median-like approach)
-        // Sort values to eliminate outliers
-        const sortedHeadings = [...headingBuffer].sort((a, b) => a - b);
-        
-        // Use the median for more stability against outliers
-        let smoothedHeading;
-        if (sortedHeadings.length % 2 === 0) {
-            // Even number: average the middle two
-            const mid = sortedHeadings.length / 2;
-            smoothedHeading = (sortedHeadings[mid - 1] + sortedHeadings[mid]) / 2;
-        } else {
-            // Odd number: take the middle value
-            smoothedHeading = sortedHeadings[Math.floor(sortedHeadings.length / 2)];
-        }
-        
-        // Calculate bearing (direction to target)
-        bearing = calculateBearing();
-        
-        // Calculate direction to point arrow
-        const newDirection = (bearing - smoothedHeading + 360) % 360;
-        
-        // Apply a stronger deadzone to reduce jitter
-        // Only update direction if it changed significantly or if we've been stable for a while
-        if (!compassStable || Math.abs(newDirection - lastDirection) > HEADING_DEADZONE) {
-            // Check if we've been stable
-            if (Math.abs(newDirection - lastDirection) <= HEADING_DEADZONE) {
-                stableReadingCounter++;
-                if (stableReadingCounter >= STABLE_THRESHOLD_COUNT) {
-                    // We've had several stable readings in a row, accept the new direction
-                    direction = newDirection;
-                    lastDirection = direction;
-                    compassStable = true;
-                    stableReadingCounter = 0;
-                }
-            } else {
-                // Big change, reset stability counter but only update if we're confident
-                stableReadingCounter = 0;
-                
-                // Only accept sudden large changes if compass isn't already stable
-                if (!compassStable) {
-                    direction = newDirection;
-                    lastDirection = direction;
-                }
-            }
-        }
-    }
-    
-    // Update distance display
+    // Update distance
     updateDistanceDisplay();
 }
 
@@ -579,7 +292,7 @@ function enablePositionHistory() {
     if (positionHistoryEnabled) return;
     
     positionHistoryEnabled = true;
-    console.log("📍 Enabling position history tracking for direction estimation");
+    console.log("Enabling position history tracking for direction estimation");
     
     // Clear any existing interval
     if (window.positionHistoryInterval) clearInterval(window.positionHistoryInterval);
@@ -599,30 +312,28 @@ function enablePositionHistory() {
                 positionHistory.shift();
             }
             
-            // Need at least 2 positions to calculate direction
+            // Calculate direction if we have enough positions
             if (positionHistory.length >= 2) {
                 calculateMovementDirection();
             }
         }
-    }, 1000); // Check every second
+    }, 1000);
 }
 
 // Calculate direction of movement from position history
 function calculateMovementDirection() {
-    // Need at least 2 positions
     if (positionHistory.length < 2) return;
     
-    // Get the oldest and newest positions
+    // Get oldest and newest positions
     const oldest = positionHistory[0];
     const newest = positionHistory[positionHistory.length - 1];
     
-    // Make sure there's meaningful movement
+    // Check if movement is significant
     const latDiff = newest.latitude - oldest.latitude;
     const lngDiff = newest.longitude - oldest.longitude;
     
-    // Check if movement is significant enough
     if (Math.abs(latDiff) > 0.00001 || Math.abs(lngDiff) > 0.00001) {
-        // Calculate bearing between the two points
+        // Calculate bearing between points
         const lat1 = oldest.latitude * (Math.PI / 180);
         const lon1 = oldest.longitude * (Math.PI / 180);
         const lat2 = newest.latitude * (Math.PI / 180);
@@ -635,47 +346,38 @@ function calculateMovementDirection() {
         const movementBearing = Math.atan2(y, x) * (180 / Math.PI);
         movementDirection = (movementBearing + 360) % 360;
         
-        console.log("🚶 Movement direction:", movementDirection.toFixed(1) + "°");
-        
-        // Use movement direction as heading if orientation isn't available
+        // If orientation not available, use movement direction
         if (!hasOrientationSupport) {
-            // The bearing to the target
             bearing = calculateBearing();
-            
-            // Direction is the difference between where we want to go and where we're facing
             direction = (bearing - movementDirection + 360) % 360;
-            
-            console.log(`Using movement - Heading: ${movementDirection.toFixed(1)}°, Bearing: ${bearing.toFixed(1)}°, Arrow: ${direction.toFixed(1)}°`);
         }
     }
 }
 
-// Update current position from geolocation API
+// Update current position
 function setCurrentPosition(position) {
     current.latitude = position.coords.latitude;
     current.longitude = position.coords.longitude;
     
-    // Recalculate bearing when position changes
+    // Update bearing and distance
     bearing = calculateBearing();
-    
-    // Force update the distance display
     updateDistanceDisplay();
 }
 
-// Update the distance display independently
+// Update distance display
 function updateDistanceDisplay() {
     if (current.latitude === null || current.longitude === null || 
         target.latitude === 0 || target.longitude === 0) {
-        return; // Skip if coordinates aren't valid
+        return;
     }
     
-    // Calculate distance
+    // Calculate distance using Haversine formula
     var lat1 = current.latitude * (Math.PI / 180);
     var lon1 = current.longitude * (Math.PI / 180);
     var lat2 = target.latitude * (Math.PI / 180);
     var lon2 = target.longitude * (Math.PI / 180);
     
-    var R = 6371; // Radius of the earth in km
+    var R = 6371; // Earth radius in km
     var dLat = lat2 - lat1;
     var dLon = lon2 - lon1;
     var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -683,7 +385,7 @@ function updateDistanceDisplay() {
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     distance = R * c * 1000; // Distance in meters
     
-    // Update distance display
+    // Update UI
     var distanceElement = document.getElementById("distanceFromTarget");
     if (distanceElement) {
         if (distance > 20000) {
@@ -691,16 +393,13 @@ function updateDistanceDisplay() {
         } else if (distance <= 1) {
             distanceElement.innerHTML = 'You have reached your car!';
         } else {
-            // Display the distance with car-specific text
             distanceElement.innerHTML = Math.floor(distance) + "m to your booked car!";
         }
-    } else {
-        console.error("❌ Distance element not found");
     }
     
-    // Check for arrival
+    // Check if arrived at destination
     if (distance < 15 && !isViewed) {
-        console.log("🏁 Within 15m of destination, showing modal");
+        console.log("Within 15m of destination, showing modal");
         showDestinationModal();
         isViewed = true;
     }
@@ -708,9 +407,9 @@ function updateDistanceDisplay() {
 
 // Show destination modal with car directions
 function showDestinationModal() {
-    console.log("🏁 Showing destination modal");
+    console.log("Showing destination modal");
     
-    // Update modal content with car directions
+    // Update modal content
     var directionsContent = document.getElementById('directionsContent');
     if (directionsContent) {
         directionsContent.textContent = carDirections || "You have reached your destination.";
@@ -725,15 +424,13 @@ function showDestinationModal() {
 
 // Open Google Maps with walking directions
 function openGoogleMaps() {
-    console.log("🗺️ Opening Google Maps");
+    console.log("Opening Google Maps");
     
-    // Get coordinates for maps
     const lat = current.latitude;
     const lng = current.longitude;
     const destLat = target.latitude;
     const destLng = target.longitude;
     
-    // Open Google Maps with walking directions
     if (lat && lng && destLat && destLng) {
         const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${destLat},${destLng}&travelmode=walking`;
         window.open(mapsUrl, '_blank');
@@ -742,136 +439,49 @@ function openGoogleMaps() {
     }
 }
 
-// Add a calibration button to the DOM
-function addCalibrationButton() {
-    const compassDiv = document.getElementById("compassDiv");
-    if (!compassDiv) return;
-    
-    const calibrateBtn = document.createElement("div");
-    calibrateBtn.className = "calibrate-btn";
-    calibrateBtn.innerHTML = "📱 Calibrate";
-    calibrateBtn.style.position = "absolute";
-    calibrateBtn.style.bottom = "10px";
-    calibrateBtn.style.right = "10px";
-    calibrateBtn.style.padding = "8px 12px";
-    calibrateBtn.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-    calibrateBtn.style.color = "white";
-    calibrateBtn.style.borderRadius = "5px";
-    calibrateBtn.style.fontSize = "14px";
-    calibrateBtn.style.zIndex = "999";
-    
-    calibrateBtn.addEventListener("click", startCompassCalibration);
-    calibrateBtn.addEventListener("touchend", function(e) {
-        e.preventDefault();
-        startCompassCalibration();
-    });
-    
-    compassDiv.appendChild(calibrateBtn);
-}
-
-// Add orientation guide to help users hold the phone correctly
-function addOrientationGuide() {
-    const compassDiv = document.getElementById("compassDiv");
-    if (!compassDiv) return;
-    
-    const guideDiv = document.createElement("div");
-    guideDiv.id = "orientationGuide";
-    guideDiv.style.position = "absolute";
-    guideDiv.style.top = "10px";
-    guideDiv.style.left = "50%";
-    guideDiv.style.transform = "translateX(-50%)";
-    guideDiv.style.padding = "8px 12px";
-    guideDiv.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-    guideDiv.style.color = "white";
-    guideDiv.style.borderRadius = "5px";
-    guideDiv.style.fontSize = "14px";
-    guideDiv.style.zIndex = "999";
-    guideDiv.style.display = "none"; // Hidden by default
-    guideDiv.innerHTML = "Hold phone upright like taking a photo";
-    
-    compassDiv.appendChild(guideDiv);
-}
-
 // Update UI elements (compass arrow)
 function updateUI() {
     const arrow = document.querySelector(".arrow");
     
     if (arrow) {
-        // Apply smooth transition when rotating
+        // Apply smooth transition for rotation
         if (!arrow.style.transition) {
-            arrow.style.transition = "transform 0.5s ease-out";
+            arrow.style.transition = "transform 0.3s ease-out";
         }
         
-        // Apply rotation to the arrow based on direction
+        // Rotate the arrow
         arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
-        
-        // Visual indicator for compass status
-        const compass = document.querySelector(".compass");
-        if (compass) {
-            // Change color based on orientation support
-            if (hasOrientationSupport) {
-                compass.style.borderColor = "#4CAF50"; // Green for working orientation
-            } else if (positionHistoryEnabled && movementDirection !== null) {
-                compass.style.borderColor = "#FFC107"; // Yellow for movement-based direction
-            } else {
-                compass.style.borderColor = "#F44336"; // Red for no direction data
-            }
-        }
-        
-        // Visual indicator for phone orientation
-        const distanceElement = document.getElementById("distanceFromTarget");
-        const orientationGuide = document.getElementById("orientationGuide");
-        
-        if (distanceElement && lastDeviceOrientation && orientationGuide) {
-            const beta = Math.abs(lastDeviceOrientation.beta || 0);
-            
-            // For upright orientation, beta should be close to 0 degrees
-            // Show warning when phone is too flat
-            if (beta > 45) {
-                // Phone is too flat
-                distanceElement.style.backgroundColor = "rgba(255, 87, 34, 0.7)"; // Orange warning
-                orientationGuide.style.display = "block"; // Show guide
-            } else {
-                // Phone is being held upright (good)
-                distanceElement.style.backgroundColor = "rgba(0, 0, 0, 0.6)"; // Normal
-                orientationGuide.style.display = "none"; // Hide guide
-            }
-        }
     }
     
     // Continue updating
     requestAnimationFrame(updateUI);
 }
 
-// Function to explicitly trigger location and orientation services
+// Start location and orientation services
 function startServices() {
-    // Prevent multiple starts
-    if (servicesStarted) {
-        console.log("⏭️ Services already started, skipping...");
-        return;
-    }
+    if (servicesStarted) return;
     
     servicesStarted = true;
-    console.log("🚀 Starting location and orientation services");
+    console.log("Starting location and orientation services");
     
-    // Explicitly start geolocation
+    // Start geolocation
     navigator.geolocation.getCurrentPosition(
         function(position) {
-            console.log("📍 Initial position obtained:", position.coords.latitude, position.coords.longitude);
+            console.log("Initial position obtained");
             setCurrentPosition(position);
             
             // Start continuous tracking
             navigator.geolocation.watchPosition(
                 setCurrentPosition, 
                 function(error) { 
-                    console.error("❌ Geolocation error:", error);
+                    console.error("Geolocation error:", error);
                     alert("Location error: " + error.message);
                 },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
         },
         function(error) {
-            console.error("❌ Initial position error:", error);
+            console.error("Initial position error:", error);
             alert("Cannot access your location. Please enable location services.");
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
@@ -879,46 +489,18 @@ function startServices() {
     
     // Start orientation
     startOrientation();
-    
-    // Enable debug mode via URL parameter or tap gesture
-    const urlParams = new URLSearchParams(window.location.search);
-    window.DEBUG_MODE = urlParams.has('debug');
-    
-    // Add debug mode toggle with triple tap
-    let tapCount = 0;
-    let lastTap = 0;
-    document.addEventListener('click', function() {
-        const now = new Date().getTime();
-        if (now - lastTap < 500) {
-            tapCount++;
-            if (tapCount >= 3) {
-                window.DEBUG_MODE = !window.DEBUG_MODE;
-                alert("Debug mode " + (window.DEBUG_MODE ? "enabled" : "disabled"));
-                tapCount = 0;
-            }
-        } else {
-            tapCount = 1;
-        }
-        lastTap = now;
-    });
 }
 
-// Expose functions to global scope for the HTML script to use
+// Expose functions to global scope for HTML
 window.startARServices = startServices;
 window.openGoogleMapsNav = openGoogleMaps;
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("📄 DOM loaded, initializing AR application");
+    console.log("DOM loaded, initializing AR application");
     
-    // Set up app functionality
+    // Set up app
     init();
-    
-    // Add calibration button
-    addCalibrationButton();
-    
-    // Add orientation guide
-    addOrientationGuide();
     
     // Add click handler for map button
     const mapBtn = document.querySelector('.maps');
@@ -930,27 +512,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // For iOS devices, add click listener to body
+    // For iOS, add click listener to body
     if (isIOS) {
         document.body.addEventListener('click', function() {
-            console.log("👆 Body clicked, requesting iOS permissions");
+            console.log("Body clicked, requesting iOS permissions");
             if (!servicesStarted) {
                 startServices();
             }
         }, { once: true });
     }
     
-    // Start with an instruction about phone orientation
-    setTimeout(function() {
-        const orientationGuide = document.getElementById("orientationGuide");
-        if (orientationGuide) {
-            orientationGuide.style.display = "block";
-            // Hide after 5 seconds
-            setTimeout(function() {
-                orientationGuide.style.display = "none";
-            }, 5000);
-        }
-    }, 1000);
-    
-    console.log("✅ AR module initialization complete");
+    console.log("AR module initialization complete");
 });
