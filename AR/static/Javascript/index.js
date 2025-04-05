@@ -13,6 +13,14 @@ var compassInitialized = false;
 var hasOrientationSupport = false;
 var positionHistoryEnabled = false;
 
+// Compass smoothing variables
+var headingBuffer = []; // For smoothing
+var HEADING_BUFFER_SIZE = 5; // Number of readings to average
+var HEADING_DEADZONE = 3; // Degrees - ignore changes smaller than this
+var lastDirection = 0; // Last stable direction
+var compassStable = false; // Whether the compass has stabilized
+var lastDeviceOrientation = null; // Store last orientation reading
+
 // Initialize target coordinates
 var target = {
     latitude: 0,
@@ -193,6 +201,15 @@ function init() {
     
     // Start UI updates for compass
     updateUI();
+    
+    // Track device orientation for tilt detection
+    window.addEventListener("deviceorientation", function(event) {
+        lastDeviceOrientation = {
+            alpha: event.alpha,
+            beta: event.beta,
+            gamma: event.gamma
+        };
+    }, false);
 }
 
 // Calculate bearing (direction from current to target)
@@ -215,7 +232,7 @@ function calculateBearing() {
     return (brng + 360) % 360; // Normalize to 0-360
 }
 
-// Start tracking device orientation
+// Modified startOrientation function to explicitly handle permissions
 function startOrientation() {
     if (compassInitialized) {
         return; // Avoid initializing twice
@@ -317,14 +334,11 @@ function startOrientation() {
     });
 }
 
-// Handle device orientation event
+// Modified handleOrientation function with smoothing and tilt compensation
 function handleOrientation(event) {
-    // Get the event type for debugging
-    const eventType = event.type || "unknown";
-    
     // Set the flag to true as soon as we get any orientation data
     if (!hasOrientationSupport) {
-        console.log(`✅ Received first orientation data (${eventType} event)`);
+        console.log(`✅ Received first orientation data`);
         hasOrientationSupport = true;
     }
     
@@ -333,20 +347,7 @@ function handleOrientation(event) {
     const beta = event.beta;   // X-axis rotation (front-back tilt)
     const gamma = event.gamma; // Y-axis rotation (left-right tilt)
     
-    // Detailed logging to help with debugging
-    if (window.DEBUG_MODE) {
-        console.log(`Orientation data (${eventType}):`, { 
-            alpha, 
-            beta, 
-            gamma, 
-            webkitCompassHeading: event.webkitCompassHeading,
-            webkitCompassAccuracy: event.webkitCompassAccuracy
-        });
-    }
-    
     if (alpha !== null && alpha !== undefined) {
-        // Standard processing for most devices
-        // Alpha is measured counter-clockwise from East (90° from North)
         let heading;
         
         if (event.webkitCompassHeading !== undefined) {
@@ -355,6 +356,33 @@ function handleOrientation(event) {
         } else {
             // For Android: convert alpha (counter-clockwise from East) to heading (clockwise from North)
             heading = (360 - alpha) % 360;
+            
+            // Apply tilt compensation for Android devices
+            // This helps when the phone is not held perfectly flat
+            if (beta !== null && gamma !== null) {
+                // Only apply tilt compensation when the tilt is significant
+                if (Math.abs(beta) > 10 || Math.abs(gamma) > 10) {
+                    // This is a simplified tilt compensation formula
+                    // It works better when the phone is held upright in front of you
+                    
+                    // Convert to radians
+                    const betaRad = beta * Math.PI / 180;
+                    const gammaRad = gamma * Math.PI / 180;
+                    
+                    // Calculate tilt-compensated heading
+                    // This is a simplified formula that works for moderate tilts
+                    if (Math.abs(beta) < 70) { // Don't apply when phone is nearly horizontal
+                        // Adjust heading based on tilt
+                        // This formula helps stabilize the heading when device is tilted
+                        const tiltCompensation = Math.atan2(
+                            Math.sin(gammaRad), 
+                            Math.cos(betaRad) * Math.cos(gammaRad)
+                        ) * 180 / Math.PI;
+                        
+                        heading = (heading - tiltCompensation + 360) % 360;
+                    }
+                }
+            }
             
             // Adjust for screen orientation
             if (window.orientation !== undefined) {
@@ -368,21 +396,42 @@ function handleOrientation(event) {
             }
         }
         
+        // Add to smoothing buffer
+        headingBuffer.push(heading);
+        if (headingBuffer.length > HEADING_BUFFER_SIZE) {
+            headingBuffer.shift(); // Remove oldest reading
+        }
+        
+        // Calculate smoothed heading using a weighted average
+        // Give more weight to newer readings
+        let smoothedHeading = 0;
+        let totalWeight = 0;
+        
+        for (let i = 0; i < headingBuffer.length; i++) {
+            // Weight increases with index (newer readings)
+            const weight = i + 1;
+            smoothedHeading += headingBuffer[i] * weight;
+            totalWeight += weight;
+        }
+        
+        smoothedHeading = smoothedHeading / totalWeight;
+        
         // Calculate bearing (direction to target)
         bearing = calculateBearing();
         
-        // Calculate direction to point arrow (bearing - heading, normalized to 0-360)
-        direction = (bearing - heading + 360) % 360;
+        // Calculate direction to point arrow
+        const newDirection = (bearing - smoothedHeading + 360) % 360;
+        
+        // Apply a deadzone to reduce jitter
+        // Only update direction if it changed significantly
+        if (!compassStable || Math.abs(newDirection - lastDirection) > HEADING_DEADZONE) {
+            direction = newDirection;
+            lastDirection = direction;
+            compassStable = true;
+        }
         
         // Update last alpha to avoid redundant processing
         lastAlpha = alpha;
-        
-        // Log only occasionally to avoid flooding console
-        if (window.DEBUG_MODE || Math.random() < 0.05) {
-            console.log(`Heading: ${heading.toFixed(1)}°, Bearing: ${bearing.toFixed(1)}°, Arrow: ${direction.toFixed(1)}°`);
-        }
-    } else {
-        console.warn("⚠️ No alpha value in orientation event");
     }
     
     // Update distance display
@@ -562,8 +611,41 @@ function updateUI() {
     const arrow = document.querySelector(".arrow");
     
     if (arrow) {
+        // Apply smooth transition when rotating
+        if (!arrow.style.transition) {
+            arrow.style.transition = "transform 0.3s ease-out";
+        }
+        
         // Apply rotation to the arrow based on direction
         arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
+        
+        // Visual indicator for compass status
+        const compass = document.querySelector(".compass");
+        if (compass) {
+            // Change color based on orientation support
+            if (hasOrientationSupport) {
+                compass.style.borderColor = "#4CAF50"; // Green for working orientation
+            } else if (positionHistoryEnabled && movementDirection !== null) {
+                compass.style.borderColor = "#FFC107"; // Yellow for movement-based direction
+            } else {
+                compass.style.borderColor = "#F44336"; // Red for no direction data
+            }
+        }
+        
+        // Visual indicator for phone orientation
+        const distanceElement = document.getElementById("distanceFromTarget");
+        if (distanceElement && lastDeviceOrientation) {
+            const beta = Math.abs(lastDeviceOrientation.beta || 0);
+            
+            // Provide feedback only when orientation is way off
+            if (beta > 60) {
+                // Phone is too horizontal
+                distanceElement.style.backgroundColor = "rgba(255, 87, 34, 0.7)"; // Orange warning
+            } else {
+                // Phone is being held acceptably
+                distanceElement.style.backgroundColor = "rgba(0, 0, 0, 0.6)"; // Normal
+            }
+        }
     }
     
     // Continue updating
@@ -606,6 +688,28 @@ function startServices() {
     
     // Start orientation
     startOrientation();
+    
+    // Enable debug mode via URL parameter or tap gesture
+    const urlParams = new URLSearchParams(window.location.search);
+    window.DEBUG_MODE = urlParams.has('debug');
+    
+    // Add debug mode toggle with triple tap
+    let tapCount = 0;
+    let lastTap = 0;
+    document.addEventListener('click', function() {
+        const now = new Date().getTime();
+        if (now - lastTap < 500) {
+            tapCount++;
+            if (tapCount >= 3) {
+                window.DEBUG_MODE = !window.DEBUG_MODE;
+                alert("Debug mode " + (window.DEBUG_MODE ? "enabled" : "disabled"));
+                tapCount = 0;
+            }
+        } else {
+            tapCount = 1;
+        }
+        lastTap = now;
+    });
 }
 
 // Expose functions to global scope for the HTML script to use
