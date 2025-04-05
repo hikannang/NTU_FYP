@@ -224,47 +224,91 @@ function startOrientation() {
     compassInitialized = true;
     console.log("🧭 Starting orientation for " + (isIOS ? "iOS" : (isAndroid ? "Android" : "unknown")) + " device");
     
+    // Function to handle orientation once permissions are granted
+    function setupOrientationListeners() {
+        // Try standard orientation event first (works on most devices)
+        window.addEventListener("deviceorientation", handleOrientation);
+        
+        // Also try absolute orientation if available (more accurate on some devices)
+        if ('ondeviceorientationabsolute' in window) {
+            window.addEventListener("deviceorientationabsolute", handleOrientation);
+            console.log("✅ Added absolute orientation listener");
+        }
+        
+        // Check if we're getting orientation data after a short delay
+        setTimeout(() => {
+            if (!hasOrientationSupport) {
+                console.log("⚠️ No orientation data received yet, enabling position history fallback");
+                enablePositionHistory();
+                
+                // Show a message to the user
+                alert("Your device's orientation sensors aren't responding. The app will use your movement to determine direction instead.");
+            }
+        }, 2000);
+    }
+    
     if (isIOS) {
-        // iOS uses a permission request for DeviceOrientation
+        // iOS requires explicit permission request
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // Show an alert explaining why we need orientation access
+            alert("This app needs access to your device's orientation to point you in the right direction. Please tap OK when prompted.");
+            
             DeviceOrientationEvent.requestPermission()
                 .then((response) => {
                     if (response === "granted") {
                         console.log("✅ iOS orientation permission granted");
-                        window.addEventListener("deviceorientation", handleOrientation);
+                        setupOrientationListeners();
                         hasOrientationSupport = true;
                     } else {
                         console.error("❌ iOS orientation permission denied");
-                        alert("Permission is required for direction functionality");
+                        alert("Without orientation permission, the arrow may not point correctly. Using location tracking as a fallback.");
                         enablePositionHistory(); // Fallback to position tracking
                     }
                 })
                 .catch((error) => {
                     console.error("❌ iOS orientation permission error:", error);
-                    enablePositionHistory(); // Fallback to position tracking
+                    alert("Error accessing orientation sensors. Using location tracking as a fallback.");
+                    enablePositionHistory();
                 });
         } else {
             // Older iOS that doesn't need permissions
-            window.addEventListener("deviceorientation", handleOrientation);
-            hasOrientationSupport = true;
+            setupOrientationListeners();
+        }
+    } else if (isAndroid) {
+        // For Android, we'll try to detect if we have sensor access
+        console.log("📱 Setting up Android orientation");
+        
+        // On Android, we can't directly request permission for sensors like on iOS
+        // But we can try to access them and see if they work
+        
+        // Show a helpful message to Android users
+        if (isSamsung) {
+            alert("Please make sure your Samsung device has location services enabled and motion sensors are allowed. This helps the app show which direction to walk.");
+        } else {
+            alert("Please enable location services and sensor access for the best experience. This helps the app show which direction to walk.");
+        }
+        
+        // Set up orientation listeners
+        setupOrientationListeners();
+        
+        // On some Android devices, we might need to explicitly request permission
+        // This is a generic approach that encourages enabling sensors
+        if (navigator.permissions && navigator.permissions.query) {
+            try {
+                navigator.permissions.query({ name: 'accelerometer' })
+                    .then(result => {
+                        console.log("Accelerometer permission status:", result.state);
+                        if (result.state === 'denied') {
+                            alert("Please enable motion sensor access in your device settings for better direction guidance.");
+                        }
+                    });
+            } catch (error) {
+                console.log("Permissions API not fully supported:", error);
+            }
         }
     } else {
-        // Android devices - try the standard orientation event
-        try {
-            window.addEventListener("deviceorientation", handleOrientation);
-            console.log("✅ Added standard orientation event listener");
-            
-            // Check if we're getting orientation data after a short delay
-            setTimeout(() => {
-                if (!hasOrientationSupport) {
-                    console.log("⚠️ No orientation data received yet, enabling position history fallback");
-                    enablePositionHistory();
-                }
-            }, 1000);
-        } catch (error) {
-            console.error("❌ Orientation error:", error);
-            enablePositionHistory(); // Fallback to position tracking
-        }
+        // Other devices
+        setupOrientationListeners();
     }
     
     // Also handle screen orientation changes
@@ -275,13 +319,30 @@ function startOrientation() {
 
 // Handle device orientation event
 function handleOrientation(event) {
+    // Get the event type for debugging
+    const eventType = event.type || "unknown";
+    
     // Set the flag to true as soon as we get any orientation data
-    hasOrientationSupport = true;
+    if (!hasOrientationSupport) {
+        console.log(`✅ Received first orientation data (${eventType} event)`);
+        hasOrientationSupport = true;
+    }
     
     // Get orientation data
     const alpha = event.alpha; // Z-axis rotation (compass direction)
     const beta = event.beta;   // X-axis rotation (front-back tilt)
     const gamma = event.gamma; // Y-axis rotation (left-right tilt)
+    
+    // Detailed logging to help with debugging
+    if (window.DEBUG_MODE) {
+        console.log(`Orientation data (${eventType}):`, { 
+            alpha, 
+            beta, 
+            gamma, 
+            webkitCompassHeading: event.webkitCompassHeading,
+            webkitCompassAccuracy: event.webkitCompassAccuracy
+        });
+    }
     
     if (alpha !== null && alpha !== undefined) {
         // Standard processing for most devices
@@ -316,7 +377,10 @@ function handleOrientation(event) {
         // Update last alpha to avoid redundant processing
         lastAlpha = alpha;
         
-        console.log(`Heading: ${heading.toFixed(1)}°, Bearing: ${bearing.toFixed(1)}°, Arrow: ${direction.toFixed(1)}°`);
+        // Log only occasionally to avoid flooding console
+        if (window.DEBUG_MODE || Math.random() < 0.05) {
+            console.log(`Heading: ${heading.toFixed(1)}°, Bearing: ${bearing.toFixed(1)}°, Arrow: ${direction.toFixed(1)}°`);
+        }
     } else {
         console.warn("⚠️ No alpha value in orientation event");
     }
