@@ -1,0 +1,441 @@
+html{
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Compass */
+.compass {
+    position: relative;
+    width: 20vw;
+    height: 20vw;
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    /* margin: auto; */
+    z-index: 2;
+    position: relative;
+    top: 0.5vh;
+    background-color: rgba(142, 156, 148, 0.993);
+    border: 4px solid #000;
+}
+
+.arrow {
+    position: absolute;
+    width: 13.5vw; /* Adjust the width and height as needed */
+    height: 13.5vw;
+    top: 42.5%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: url("https://p9n2c8y2.rocketcdn.me/wp-content/uploads/2021/05/24.png.webp")
+        center no-repeat;
+    background-size: 115% 115%;
+    z-index: 2000;
+    position: relative;
+}
+
+#compassDiv{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 2vh;
+}
+
+/* Common Modal Content */
+.common-modal-content {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: transparent;
+    overflow: auto;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Common Modal Close Button Styles */
+.common-close-btn {
+    width: 30px;
+    height: 30px;
+    position: absolute;
+    top: 19%;
+    right: 2vh;
+    z-index: 5;
+    cursor: pointer;
+    opacity: 1;
+}
+
+/* Common Modal Close Image Styles */
+.common-close-img {
+    width: 100%;
+    height: 100%;
+}
+
+/* Common Modal Image Styles */
+.common-modal-content img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* Black Modal Content Styles */
+.black-modal-content {
+    background-color: black;
+}
+
+/* Near Modal Content Styles */
+.near-modal-content {
+    background-color: #66FF66;
+}
+
+.fill-object {
+    object-fit: fill;
+}
+
+/* <moreOptions> */
+.moreOptions {
+    /* Button */
+    position: fixed;
+    width: 13vw;
+    height: 13vw;
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    top: 3vh;
+    left: 2vh;
+    /* margin: auto; */
+    z-index: 2;
+    background-color: rgb(255, 255, 255);
+    border: 4px solid #000;
+}
+
+.threeLines {
+    /* Icon */
+    position: absolute;
+    width: 10vw; /* Adjust the width and height as needed */
+    height: 10vw;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: url("./static/images/icons/character.png")
+        center no-repeat;
+    background-size: contain;
+    z-index: 2;
+    position: relative;
+    cursor: pointer; /* Add cursor pointer for better UX */
+    
+}
+
+#moreOptionsDiv{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    margin-left: 10vw;
+    margin-top: 10vw;
+}
+/* </moreOptions> */
+
+/* <mapIcon> */
+.maps {
+    /* Button */
+    position: fixed;
+    width: 13vw;
+    height: 13vw;
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    top: 3vh;
+    right: 2vw;
+    /* margin: auto; */
+    z-index: 2;
+    /* position: relative; */
+    background-color: rgb(255, 255, 255);
+    border: 4px solid #000;
+}
+
+.mapDot {
+    /* Icon */
+    position: absolute;
+    width: 10vw; /* Adjust the width and height as needed */
+    height: 10vw;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: url("./static/images/icons/map.png")
+        center no-repeat;
+    background-size: contain;
+    z-index: 2;
+    cursor: pointer; /* Add cursor pointer for better UX */
+}
+
+#mapsDiv{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    margin-right: 10vw;
+    margin-top: 10vw;
+}
+/* </mapIcon> */
+
+/* <helpIcon> */
+.help {
+    /* Button */
+    position: fixed;
+    width: 16vw;
+    height: 16vw;
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    top: 16vh;
+    right: 2vw;
+    /* margin: auto; */
+    z-index: 2;
+    /* position: relative; */
+    background-color: white;
+    border: 4px solid #000;
+}
+
+.helpDot {
+    /* Icon */
+    position: absolute;
+    width: 12vw; /* Adjust the width and height as needed */
+    height: 12vw;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-size: contain;
+    z-index: 2;
+    cursor: pointer; /* Add cursor pointer for better UX */
+}
+
+#helpDiv{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    margin-right: 10vw;
+    margin-top: 10vw;
+}
+
+#modalI {
+    position: fixed;
+    /* Add other necessary styles for your modal */
+}
+
+.closeI {
+    position: absolute;
+    top: 10px; /* Adjust the top distance as needed */
+    right: 10px; /* Adjust the right distance as needed */
+    z-index: 5;
+}
+
+.closeI img {
+    width: 20px; /* Adjust the width as needed to scale it down */
+    height: 20px; /* Adjust the height as needed to scale it down */
+}
+/* </mapIcon> */
+
+/* <Map Modal> */
+.modal-content {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: black;
+    overflow: auto;
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content span.close {
+    /* Adjust the size of the span */
+    width: 10%; /* Set the desired width */
+    height: 10%; /* Set the desired height */
+    position: absolute;
+    margin-top: 10vh;
+    top: 15vh;
+    right: 10vw;
+    z-index: 1000;
+    cursor: pointer;
+    color: white;
+    opacity: 1;
+}
+
+.modal-content span.close img {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    margin-top: 10vh;
+    top: 15vh;
+    right: 10vw;
+    z-index: 3;
+    cursor: pointer;
+    color: red;
+    
+}
+
+.modal-content img {
+    max-width: 110%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+#modalMap {
+    position: fixed;
+    /* Add other necessary styles for your modal */
+}
+
+.closeMap {
+    position: absolute;
+    top: 10px; /* Adjust the top distance as needed */
+    right: 10px; /* Adjust the right distance as needed */
+    z-index: 5;
+}
+
+.closeMap img {
+    width: 20px; /* Adjust the width as needed to scale it down */
+    height: 20px; /* Adjust the height as needed to scale it down */
+}
+/* End of Map Modal */
+
+/* More Circles */
+.additionalCircles {
+    display: none; /* Initially hide the additional circles */
+    flex-direction: column; /* Align circles in a column */
+    justify-content: space-between; /* Add space between circles */
+    margin-top: 2.5vh; /*Adjust margin as needed*/
+    background-color: transparent;
+    /* box-shadow: 0 0 15px rgba(0, 0, 0, 0.2); */
+}
+
+
+.circle {
+    width: 13vw; /* Adjust the width of each circle as needed */
+    height: 13vw; /* Adjust the height of each circle as needed */
+    border-radius: 50%;
+    background-color: white;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    /* Add any additional styles for your circles */
+    margin-top: 1.25vh;
+    margin-bottom: 1.25vh;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Loading Screen */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.spinner {
+    border: 8px solid rgba(0, 0, 0, 0.1);
+    border-top: 8px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-screen p {
+    font-size: 20px;
+    margin-top: 20px;
+}
+
+/* Translucent Box */
+.translucent-box {
+    position: fixed;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    z-index: 1001;
+}
+
+.bottom-box {
+    top: auto;
+    bottom: 0;
+    max-height: auto; /* Adjust the maximum height as needed */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.text-container {
+    text-align: center;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.5); /* White with 50% transparency */
+}
+
+.black-text {
+    color: black;
+    font-size: 0.75em;
+    width: 100%;
+    z-index: 5;
+}
+
+.image-container {
+    display: flex;
+    justify-content: space-around; /* Distribute images evenly */
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.5); /* White with 50% transparency */
+}
+
+.image-container img {
+    max-width: 45%;
+    height: auto;
+    object-fit: contain; /* Maintain the original aspect ratio while fitting within the container */
+}
+
+
+/* Additional styles for the top image container */
+.top-image-container {
+    text-align: center;
+    width: 100%;
+    background-color: transparent;
+}
+
+.top-image-container img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    background-color: transparent;
+}
+
+.additional-text {
+    text-align: center; /* or any other desired alignment */
+    font-size: 10px;    /* adjust the font size as needed */
+    margin-top: 9.5vh;     /* adjust the top margin as needed */
+}
+
+#distanceFromTarget{
+    color:rgba(0, 255, 0, 0.512);
+    font-size: 1.5em;
+    margin-top: 2.25vh;
+    background-color: black;
+    /* border: 2px solid yellow;
+    padding: 10px;
+    display: inline-block; */
+}
+
+.uiDisplay{
+    z-index: 2;
+    position: relative;
+}
+
