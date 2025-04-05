@@ -76,23 +76,29 @@ function getUrlParameters() {
     const lng = parseFloat(urlParams.get('lng'));
     bookingId = urlParams.get('id');
     
-    console.log("URL parameters - lat:", lat, "lng:", lng, "bookingId:", bookingId);
+    console.log("🌎 URL parameters - lat:", lat, "lng:", lng, "bookingId:", bookingId);
     
-    if (lat && lng) {
+    if (!isNaN(lat) && !isNaN(lng)) {
         target.latitude = lat;
         target.longitude = lng;
         
+        console.log("✅ Target coordinates set to:", target.latitude, target.longitude);
+        
         // Create AR marker at destination
         createDestinationMarker(lat, lng);
+        
+        // Immediately start location services when we have valid coordinates
+        startServices();
     } else {
-        console.error("No valid coordinates in URL parameters");
+        console.error("❌ No valid coordinates in URL parameters");
+        alert("Missing or invalid location coordinates. Please check the URL.");
     }
     
     // Fetch car data if booking ID is provided
     if (bookingId) {
         fetchCarData(bookingId);
     } else {
-        console.warn("No booking ID provided in URL parameters");
+        console.warn("⚠️ No booking ID provided in URL parameters");
     }
 }
 
@@ -102,13 +108,13 @@ function createDestinationMarker(lat, lng) {
         return; // Marker already exists
     }
     
-    console.log("Creating destination marker at:", lat, lng);
+    console.log("🚩 Creating destination marker at:", lat, lng);
     
     // Get AR scene
     const scene = document.querySelector('a-scene');
     
     if (!scene) {
-        console.error("A-Frame scene not found");
+        console.error("❌ A-Frame scene not found");
         return;
     }
     
@@ -117,11 +123,18 @@ function createDestinationMarker(lat, lng) {
     entity.setAttribute('id', 'destinationMarker');
     entity.setAttribute('gltf-model', './static/3dModels/GLB/location3.glb');
     entity.setAttribute('scale', '2 2 2');
+    
+    // Try different attribute format for position - this is crucial for correct placement
     entity.setAttribute('gps-projected-entity-place', `latitude: ${lat}; longitude: ${lng}`);
+    
+    // Add animation
     entity.setAttribute('animation-mixer', '');
     
-    // Add entity to scene
+    // Add to scene
     scene.appendChild(entity);
+    
+    // Log for debugging
+    console.log("🏠 AR marker added to scene with coordinates:", lat, lng);
     
     // Show loading screen while AR content loads
     showLoadingScreen();
@@ -130,7 +143,7 @@ function createDestinationMarker(lat, lng) {
 // Fetch car data from Firebase
 async function fetchCarData(bookingId) {
     try {
-        console.log("Fetching car data for booking:", bookingId);
+        console.log("🔍 Fetching car data for booking:", bookingId);
         
         // Get booking document
         const bookingRef = doc(db, "bookings", bookingId);
@@ -140,7 +153,7 @@ async function fetchCarData(bookingId) {
             const bookingData = bookingSnapshot.data();
             const carId = bookingData.car_id;
             
-            console.log("Found booking, fetching car data for car ID:", carId);
+            console.log("🚗 Found booking, fetching car data for car ID:", carId);
             
             // Get car document
             const carRef = doc(db, "cars", carId.toString());
@@ -151,21 +164,21 @@ async function fetchCarData(bookingId) {
                 
                 // Save car directions for display in the destination modal
                 carDirections = carData.directions || "You have reached your destination.";
-                console.log("Retrieved car directions:", carDirections);
+                console.log("📝 Retrieved car directions:", carDirections);
             } else {
-                console.warn("Car document not found");
+                console.warn("⚠️ Car document not found");
             }
         } else {
-            console.warn("Booking document not found");
+            console.warn("⚠️ Booking document not found");
         }
     } catch (error) {
-        console.error("Error fetching car data:", error);
+        console.error("❌ Error fetching car data:", error);
     }
 }
 
 // Initialize geolocation and device orientation
 function init() {
-    console.log("Initializing AR wayfinding");
+    console.log("🚀 Initializing AR wayfinding");
     
     // Parse URL parameters
     getUrlParameters();
@@ -183,35 +196,42 @@ function fixArrowPosition() {
     const arrow = document.querySelector(".arrow");
     
     if (compass && arrow) {
-        // Ensure arrow is properly centered
+        // Set arrow as a background image of compass div for better centering
+        arrow.style.position = "absolute";
         arrow.style.top = "50%";
         arrow.style.left = "50%";
+        arrow.style.width = "70%"; // Make arrow visible
+        arrow.style.height = "70%"; // Make arrow visible
+        arrow.style.backgroundImage = "url('./static/images/icons/arrow.png')"; // Add arrow image
+        arrow.style.backgroundSize = "contain";
+        arrow.style.backgroundPosition = "center";
+        arrow.style.backgroundRepeat = "no-repeat";
         arrow.style.transform = "translate(-50%, -50%)";
         
-        console.log("Arrow position fixed");
+        console.log("🧭 Arrow position fixed");
     } else {
-        console.error("Compass or arrow elements not found");
+        console.error("❌ Compass or arrow elements not found");
     }
 }
 
 // Request permission for device orientation (required for iOS)
 function startCompass() {
-    console.log("Requesting compass permissions");
+    console.log("🧭 Requesting compass permissions");
     
     if (isIOS) {
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
             DeviceOrientationEvent.requestPermission()
                 .then((response) => {
                     if (response === "granted") {
-                        console.log("iOS orientation permission granted");
+                        console.log("✅ iOS orientation permission granted");
                         window.addEventListener("deviceorientation", runCalculation);
                     } else {
-                        console.error("iOS orientation permission denied");
+                        console.error("❌ iOS orientation permission denied");
                         alert("Permission is required for compass functionality");
                     }
                 })
                 .catch((error) => {
-                    console.error("iOS orientation permission error:", error);
+                    console.error("❌ iOS orientation permission error:", error);
                     alert("Device orientation not supported");
                 });
         } else {
@@ -223,7 +243,7 @@ function startCompass() {
         try {
             window.addEventListener("deviceorientationabsolute", runCalculation);
         } catch (e) {
-            console.warn("deviceorientationabsolute not supported, falling back to deviceorientation");
+            console.warn("⚠️ deviceorientationabsolute not supported, falling back to deviceorientation");
             window.addEventListener("deviceorientation", runCalculation);
         }
     }
@@ -233,7 +253,7 @@ function startCompass() {
 function setCurrentPosition(position) {
     current.latitude = position.coords.latitude;
     current.longitude = position.coords.longitude;
-    console.log("Current position updated:", current.latitude, current.longitude);
+    console.log("📍 Current position updated:", current.latitude, current.longitude);
     
     // Force update the distance display
     updateDistanceDisplay();
@@ -271,14 +291,14 @@ function updateDistanceDisplay() {
             // Display the actual distance
             distanceElement.innerHTML = Math.floor(distance) + "m to destination";
         }
-        console.log("Distance display updated:", distanceElement.innerHTML);
+        console.log("📏 Distance: " + Math.floor(distance) + "m");
     } else {
-        console.error("Distance element not found");
+        console.error("❌ Distance element not found");
     }
     
     // Check for arrival
     if (distance < 15 && !isViewed) {
-        console.log("Within 15m of destination, showing modal");
+        console.log("🏁 Within 15m of destination, showing modal");
         showDestinationModal();
         isViewed = true;
     }
@@ -286,15 +306,28 @@ function updateDistanceDisplay() {
 
 // Calculate compass direction and distance to target
 function runCalculation(event) {
-    var alpha = Math.abs(360 - event.webkitCompassHeading) || event.alpha;
+    // Extract compass heading - prioritize webkitCompassHeading for iOS
+    var alpha = event.webkitCompassHeading;
     
-    // Get a default value if both are null
-    if (alpha === null && event.alpha === null) {
-        alpha = 0;
+    // For non-iOS devices
+    if (alpha === undefined) {
+        // Try to get alpha from deviceorientationabsolute event
+        alpha = event.alpha;
+        
+        // If still undefined, try fallbacks
+        if (alpha === undefined) {
+            if (lastAlpha !== 0) {
+                // Use last known value if we had one
+                alpha = lastAlpha;
+            } else {
+                // Default to 0 if we have nothing
+                alpha = 0;
+            }
+        }
     }
     
     // Only update if there's a significant change to reduce computation
-    if (alpha == null || Math.abs(alpha - lastAlpha) > 1) {
+    if (Math.abs(alpha - lastAlpha) > 1) {
         // Make sure we have valid coordinates
         if (current.latitude === null || current.longitude === null || 
             target.latitude === 0 || target.longitude === 0) {
@@ -306,14 +339,26 @@ function runCalculation(event) {
         var lat2 = target.latitude * (Math.PI / 180);
         var lon2 = target.longitude * (Math.PI / 180);
         
-        // Calculate compass direction
+        // Calculate bearing (direction from current to target)
         var y = Math.sin(lon2 - lon1) * Math.cos(lat2);
         var x = Math.cos(lat1) * Math.sin(lat2) -
                 Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
         var bearing = Math.atan2(y, x) * (180 / Math.PI);
-        direction = (alpha + bearing + 360) % 360;
-        direction = direction.toFixed(0);
+        
+        // Different calculation based on device type
+        if (event.webkitCompassHeading !== undefined) {
+            // iOS devices use webkitCompassHeading (clockwise from north)
+            direction = (bearing + 360) % 360;
+        } else {
+            // Android devices use alpha (counterclockwise from east)
+            direction = (360 - alpha + bearing + 360) % 360;
+        }
+        
+        // Round to whole number
+        direction = Math.round(direction);
         lastAlpha = alpha;
+        
+        console.log("🧭 Direction: " + direction + "° (Heading: " + alpha + "°, Bearing: " + bearing + "°)");
         
         // Force update distance display
         updateDistanceDisplay();
@@ -322,7 +367,7 @@ function runCalculation(event) {
 
 // Show destination modal with car directions
 function showDestinationModal() {
-    console.log("Showing destination modal");
+    console.log("🏁 Showing destination modal");
     
     // Update modal content with car directions
     var directionsContent = document.getElementById('directionsContent');
@@ -339,7 +384,7 @@ function showDestinationModal() {
 
 // Open Google Maps with walking directions
 function openGoogleMaps() {
-    console.log("Opening Google Maps");
+    console.log("🗺️ Opening Google Maps");
     
     // Get coordinates for maps
     const lat = current.latitude;
@@ -362,15 +407,7 @@ function updateUI() {
     
     if (arrow) {
         // Set rotation based on direction
-        const rotation = `rotate(${direction}deg)`;
-        arrow.style.transform = `translate(-50%, -50%) ${rotation}`;
-        
-        // Debug display
-        if (window.DEBUG_MODE) {
-            console.log("Arrow direction:", direction);
-        }
-    } else {
-        console.error("Arrow element not found");
+        arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
     }
     
     // Continue updating
@@ -381,34 +418,31 @@ function updateUI() {
 function startServices() {
     // Prevent multiple starts
     if (servicesStarted) {
-        console.log("Services already started, skipping...");
+        console.log("⏭️ Services already started, skipping...");
         return;
     }
     
     servicesStarted = true;
-    console.log("Starting location and compass services");
-    
-    // Fix arrow position
-    fixArrowPosition();
+    console.log("🚀 Starting location and compass services");
     
     // Explicitly start geolocation
     navigator.geolocation.getCurrentPosition(
         function(position) {
-            console.log("Initial position obtained:", position.coords.latitude, position.coords.longitude);
+            console.log("📍 Initial position obtained:", position.coords.latitude, position.coords.longitude);
             setCurrentPosition(position);
             
             // Start continuous tracking
             navigator.geolocation.watchPosition(
                 setCurrentPosition, 
                 function(error) { 
-                    console.error("Geolocation error:", error);
+                    console.error("❌ Geolocation error:", error);
                     alert("Location error: " + error.message);
                 },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
         },
         function(error) {
-            console.error("Initial position error:", error);
+            console.error("❌ Initial position error:", error);
             alert("Cannot access your location. Please enable location services.");
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
@@ -418,17 +452,13 @@ function startServices() {
     startCompass();
 }
 
-// Enable debug mode with console parameter
-const urlParams = new URLSearchParams(window.location.search);
-window.DEBUG_MODE = urlParams.has('debug');
-
 // Expose functions to global scope for the HTML script to use
 window.startARServices = startServices;
 window.openGoogleMapsNav = openGoogleMaps;
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Module DOM loaded, initializing AR application");
+    console.log("📄 DOM loaded, initializing AR application");
     
     // Set up app functionality
     init();
@@ -446,12 +476,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // For iOS devices, add click listener to body
     if (isIOS) {
         document.body.addEventListener('click', function() {
-            console.log("Body clicked, requesting iOS compass permission");
+            console.log("👆 Body clicked, requesting iOS compass permission");
             if (!servicesStarted) {
                 startServices();
             }
         }, { once: true });
     }
     
-    console.log("AR module initialization complete");
+    console.log("✅ AR module initialization complete");
 });
