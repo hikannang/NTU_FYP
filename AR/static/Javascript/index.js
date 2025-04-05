@@ -8,6 +8,7 @@ var isViewed = false;
 var loadingTimeout;
 var bookingId = null;
 var carDirections = "";
+var servicesStarted = false;
 
 // Initialize target coordinates
 var target = {
@@ -169,8 +170,28 @@ function init() {
     // Parse URL parameters
     getUrlParameters();
     
+    // Position the arrow properly
+    fixArrowPosition();
+    
     // Start UI updates for compass
     updateUI();
+}
+
+// Make sure the arrow is correctly positioned in the compass
+function fixArrowPosition() {
+    const compass = document.querySelector(".compass");
+    const arrow = document.querySelector(".arrow");
+    
+    if (compass && arrow) {
+        // Ensure arrow is properly centered
+        arrow.style.top = "50%";
+        arrow.style.left = "50%";
+        arrow.style.transform = "translate(-50%, -50%)";
+        
+        console.log("Arrow position fixed");
+    } else {
+        console.error("Compass or arrow elements not found");
+    }
 }
 
 // Request permission for device orientation (required for iOS)
@@ -213,11 +234,64 @@ function setCurrentPosition(position) {
     current.latitude = position.coords.latitude;
     current.longitude = position.coords.longitude;
     console.log("Current position updated:", current.latitude, current.longitude);
+    
+    // Force update the distance display
+    updateDistanceDisplay();
+}
+
+// Update the distance display independently
+function updateDistanceDisplay() {
+    if (current.latitude === null || current.longitude === null || 
+        target.latitude === 0 || target.longitude === 0) {
+        return; // Skip if coordinates aren't valid
+    }
+    
+    // Calculate distance
+    var lat1 = current.latitude * (Math.PI / 180);
+    var lon1 = current.longitude * (Math.PI / 180);
+    var lat2 = target.latitude * (Math.PI / 180);
+    var lon2 = target.longitude * (Math.PI / 180);
+    
+    var R = 6371; // Radius of the earth in km
+    var dLat = lat2 - lat1;
+    var dLon = lon2 - lon1;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    distance = R * c * 1000; // Distance in meters
+    
+    // Update distance display
+    var distanceElement = document.getElementById("distanceFromTarget");
+    if (distanceElement) {
+        if (distance > 20000) {
+            distanceElement.innerHTML = 'Please Select Destination!';
+        } else if (distance <= 1) {
+            distanceElement.innerHTML = '';
+        } else {
+            // Display the actual distance
+            distanceElement.innerHTML = Math.floor(distance) + "m to destination";
+        }
+        console.log("Distance display updated:", distanceElement.innerHTML);
+    } else {
+        console.error("Distance element not found");
+    }
+    
+    // Check for arrival
+    if (distance < 15 && !isViewed) {
+        console.log("Within 15m of destination, showing modal");
+        showDestinationModal();
+        isViewed = true;
+    }
 }
 
 // Calculate compass direction and distance to target
 function runCalculation(event) {
     var alpha = Math.abs(360 - event.webkitCompassHeading) || event.alpha;
+    
+    // Get a default value if both are null
+    if (alpha === null && event.alpha === null) {
+        alpha = 0;
+    }
     
     // Only update if there's a significant change to reduce computation
     if (alpha == null || Math.abs(alpha - lastAlpha) > 1) {
@@ -241,35 +315,8 @@ function runCalculation(event) {
         direction = direction.toFixed(0);
         lastAlpha = alpha;
         
-        // Calculate distance
-        var R = 6371; // Radius of the earth in km
-        var dLat = lat2 - lat1;
-        var dLon = lon2 - lon1;
-        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        distance = R * c; // Distance in km
-        distance = distance * 1000; // Convert to meters
-        
-        // Update distance display
-        var distanceElement = document.getElementById("distanceFromTarget");
-        if (distanceElement) {
-            if (distance > 20000) {
-                distanceElement.innerHTML = 'Please Select Destination!';
-            } else if (distance <= 1) {
-                distanceElement.innerHTML = '';
-            } else {
-                // Display the actual distance
-                distanceElement.innerHTML = Math.floor(distance) + "m to destination";
-            }
-        }
-        
-        // Show destination modal when user is within 15m
-        if (distance < 15 && !isViewed) {
-            console.log("Within 15m of destination, showing modal");
-            showDestinationModal();
-            isViewed = true;
-        }
+        // Force update distance display
+        updateDistanceDisplay();
     }
 }
 
@@ -314,7 +361,16 @@ function updateUI() {
     const arrow = document.querySelector(".arrow");
     
     if (arrow) {
-        arrow.style.transform = `rotate(${direction}deg)`;
+        // Set rotation based on direction
+        const rotation = `rotate(${direction}deg)`;
+        arrow.style.transform = `translate(-50%, -50%) ${rotation}`;
+        
+        // Debug display
+        if (window.DEBUG_MODE) {
+            console.log("Arrow direction:", direction);
+        }
+    } else {
+        console.error("Arrow element not found");
     }
     
     // Continue updating
@@ -323,12 +379,22 @@ function updateUI() {
 
 // Function to explicitly trigger location and compass services
 function startServices() {
+    // Prevent multiple starts
+    if (servicesStarted) {
+        console.log("Services already started, skipping...");
+        return;
+    }
+    
+    servicesStarted = true;
     console.log("Starting location and compass services");
+    
+    // Fix arrow position
+    fixArrowPosition();
     
     // Explicitly start geolocation
     navigator.geolocation.getCurrentPosition(
         function(position) {
-            console.log("Initial position obtained");
+            console.log("Initial position obtained:", position.coords.latitude, position.coords.longitude);
             setCurrentPosition(position);
             
             // Start continuous tracking
@@ -338,19 +404,23 @@ function startServices() {
                     console.error("Geolocation error:", error);
                     alert("Location error: " + error.message);
                 },
-                { enableHighAccuracy: true }
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
         },
         function(error) {
             console.error("Initial position error:", error);
             alert("Cannot access your location. Please enable location services.");
         },
-        { enableHighAccuracy: true }
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
     
     // Start compass
     startCompass();
 }
+
+// Enable debug mode with console parameter
+const urlParams = new URLSearchParams(window.location.search);
+window.DEBUG_MODE = urlParams.has('debug');
 
 // Expose functions to global scope for the HTML script to use
 window.startARServices = startServices;
@@ -373,11 +443,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // For iOS devices, we need a user interaction to request compass permissions
+    // For iOS devices, add click listener to body
     if (isIOS) {
         document.body.addEventListener('click', function() {
             console.log("Body clicked, requesting iOS compass permission");
-            startCompass();
+            if (!servicesStarted) {
+                startServices();
+            }
         }, { once: true });
     }
     
