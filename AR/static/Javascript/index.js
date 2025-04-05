@@ -11,6 +11,7 @@ var carDirections = "";
 var servicesStarted = false;
 var hasOrientationSupport = false;
 var positionHistoryEnabled = false;
+var smoothedHeading = null; // For simple smoothing
 
 // Initialize target coordinates
 var target = {
@@ -250,38 +251,48 @@ function startOrientation() {
 
 // Simple orientation handler
 function handleOrientation(event) {
-    // Set flag that we have orientation data
-    hasOrientationSupport = true;
-    
-    // Get heading
-    let heading;
+    // Get heading (we only care about this single value)
+    let rawHeading;
     
     if (event.webkitCompassHeading !== undefined) {
-        // iOS - already calibrated
-        heading = event.webkitCompassHeading;
+        // iOS provides this value already calibrated
+        rawHeading = event.webkitCompassHeading;
     } else if (event.alpha !== null) {
-        // Android - convert alpha to heading
-        heading = (360 - event.alpha) % 360;
+        // Android - simple conversion from alpha
+        rawHeading = (360 - event.alpha) % 360;
         
         // Adjust for screen orientation
         if (window.orientation !== undefined) {
             if (window.orientation === 90) {
-                heading = (heading + 90) % 360;
+                rawHeading = (rawHeading + 90) % 360;
             } else if (window.orientation === -90) {
-                heading = (heading - 90) % 360;
+                rawHeading = (rawHeading - 90) % 360;
             } else if (window.orientation === 180) {
-                heading = (heading + 180) % 360;
+                rawHeading = (rawHeading + 180) % 360;
             }
         }
     } else {
         return; // No valid data
     }
     
+    // Simple smoothing - ignore very small changes and apply heavy smoothing for others
+    if (smoothedHeading === null) {
+        // First reading - just use it directly
+        smoothedHeading = rawHeading;
+    } else {
+        // Apply very strong smoothing (0.05 = 5% new, 95% old)
+        // This means the compass will move slowly but be very stable
+        smoothedHeading = smoothedHeading * 0.95 + rawHeading * 0.05;
+    }
+    
     // Calculate bearing to target
     bearing = calculateBearing();
     
-    // Simple direction calculation
-    direction = (bearing - heading + 360) % 360;
+    // Calculate arrow direction (simple formula)
+    direction = (bearing - smoothedHeading + 360) % 360;
+    
+    // Mark that orientation is working
+    hasOrientationSupport = true;
     
     // Update distance
     updateDistanceDisplay();
@@ -444,10 +455,8 @@ function updateUI() {
     const arrow = document.querySelector(".arrow");
     
     if (arrow) {
-        // Apply smooth transition for rotation
-        if (!arrow.style.transition) {
-            arrow.style.transition = "transform 0.3s ease-out";
-        }
+        // Apply a longer, slower transition for more stability
+        arrow.style.transition = "transform 0.8s ease-out";
         
         // Rotate the arrow
         arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
