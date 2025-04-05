@@ -143,10 +143,16 @@ function createDestinationMarker(lat, lng) {
     showLoadingScreen();
 }
 
-// Updated fetchCarData function to get both car_type and directions
+// Updated fetchCarData function with comprehensive error handling and debugging
 async function fetchCarData(bookingId) {
     try {
         console.log("Fetching car data for booking ID:", bookingId);
+        
+        if (!bookingId) {
+            console.error("Invalid booking ID:", bookingId);
+            carDirections = "Follow the arrow to reach your car.";
+            return;
+        }
         
         // Get booking document
         const bookingRef = doc(db, "bookings", bookingId);
@@ -167,6 +173,9 @@ async function fetchCarData(bookingId) {
             // Save car_type globally so showDestinationModal can use it
             window.carType = carType;
             
+            // Save carId for debugging
+            window.carId = carId;
+            
             // Now fetch the car document to get directions
             if (carId) {
                 const carRef = doc(db, "cars", carId.toString());
@@ -180,24 +189,35 @@ async function fetchCarData(bookingId) {
                     window.carDirections = carDirections;
                     
                     console.log("Retrieved car data successfully:");
+                    console.log("- Car ID:", carId);
                     console.log("- Car Type:", carType);
                     console.log("- Directions:", carDirections);
                 } else {
                     console.warn("Car document not found for ID:", carId);
                     carDirections = "Follow the arrow to reach your car.";
+                    window.carDirections = carDirections;
                 }
             } else {
                 console.warn("No car_id found in booking");
                 carDirections = "Follow the arrow to reach your car.";
+                window.carDirections = carDirections;
             }
         } else {
             console.warn("Booking document not found for ID:", bookingId);
             carDirections = "Follow the arrow to reach your car.";
+            window.carDirections = carDirections;
         }
     } catch (error) {
         console.error("Error fetching car data:", error);
         console.error("Error details:", error.message);
+        console.error("Error stack:", error.stack);
         carDirections = "Follow the arrow to reach your car.";
+        window.carDirections = carDirections;
+        
+        // Additional debugging for Firebase errors
+        if (error.code) {
+            console.error("Firebase error code:", error.code);
+        }
     }
 }
 
@@ -469,7 +489,7 @@ function showDestinationModal() {
     const carImage = document.getElementById('carImage');
     if (carImage) {
         // FIXED: Use correct path with ./ instead of ../
-        carImage.src = '../../static/images/car_images/default.png';
+        carImage.src = './static/images/car_images/default.png';
         
         // Try to load car-specific image
         if (window.carType) {
@@ -482,11 +502,11 @@ function showDestinationModal() {
             };
             actualImage.onerror = function() {
                 console.warn("Failed to load car image:", this.src);
-                carImage.src = '../../static/images/car_images/default.png';
+                carImage.src = './static/images/car_images/default.png';
             };
             
             // FIXED: Correct path with ./ instead of ../
-            actualImage.src = `../../static/images/car_images/${window.carType}.png`;
+            actualImage.src = `./static/images/car_images/${window.carType}.png`;
         }
     } else {
         console.error("Car image element not found");
@@ -500,6 +520,37 @@ function showDestinationModal() {
         directionsText.textContent = carDirections || "Follow the arrow to reach your car.";
     } else {
         console.error("Directions text element not found");
+    }
+    
+    // Add debug information about car ID
+    const debugInfo = document.getElementById('debugInfo');
+    if (debugInfo) {
+        debugInfo.textContent = `Car ID: ${window.carId || 'Not loaded'}, Car Type: ${window.carType || 'Not loaded'}`;
+        debugInfo.style.backgroundColor = "#f8f8f8";
+        debugInfo.style.padding = "5px";
+        debugInfo.style.marginTop = "10px";
+        debugInfo.style.borderRadius = "5px";
+        debugInfo.style.fontSize = "12px";
+        debugInfo.style.fontFamily = "monospace";
+    } else {
+        // If debug element doesn't exist, create it
+        const newDebugInfo = document.createElement('div');
+        newDebugInfo.id = 'debugInfo';
+        newDebugInfo.textContent = `Car ID: ${window.carId || 'Not loaded'}, Car Type: ${window.carType || 'Not loaded'}`;
+        newDebugInfo.style.backgroundColor = "#f8f8f8";
+        newDebugInfo.style.padding = "5px";
+        newDebugInfo.style.marginTop = "10px";
+        newDebugInfo.style.borderRadius = "5px";
+        newDebugInfo.style.fontSize = "12px";
+        newDebugInfo.style.fontFamily = "monospace";
+        newDebugInfo.style.width = "100%";
+        newDebugInfo.style.textAlign = "center";
+        
+        // Add the debug info to the modal
+        const modalContent = document.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.appendChild(newDebugInfo);
+        }
     }
     
     // Show the modal
