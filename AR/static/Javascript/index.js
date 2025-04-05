@@ -171,8 +171,6 @@ function init() {
     
     // Start UI updates for compass
     updateUI();
-    
-    // We'll start location services when user closes intro modal or explicitly calls startServices()
 }
 
 // Request permission for device orientation (required for iOS)
@@ -277,10 +275,7 @@ function runCalculation(event) {
 
 // Show destination modal with car directions
 function showDestinationModal() {
-    // Create the destination modal if it doesn't exist
-    if (!document.getElementById('destinationModal')) {
-        createDestinationModal();
-    }
+    console.log("Showing destination modal");
     
     // Update modal content with car directions
     var directionsContent = document.getElementById('directionsContent');
@@ -295,68 +290,8 @@ function showDestinationModal() {
     }
 }
 
-// Create destination modal structure
-function createDestinationModal() {
-    console.log("Creating destination modal");
-    
-    // Check if modal already exists in HTML
-    if (document.getElementById('destinationModal')) {
-        return; // Use existing modal
-    }
-    
-    // Create modal container
-    const modal = document.createElement('div');
-    modal.id = 'destinationModal';
-    modal.className = 'modal';
-    
-    // Create modal content
-    const modalContent = document.createElement('div');
-    modalContent.className = 'common-modal-content';
-    
-    // Create close button
-    const closeBtn = document.createElement('span');
-    closeBtn.id = 'destinationModalClose';
-    closeBtn.className = 'close common-close-btn';
-    
-    const closeImg = document.createElement('img');
-    closeImg.src = './static/images/icons/close-red-icon.png';
-    closeImg.alt = 'Close Button';
-    closeImg.className = 'common-close-img';
-    
-    closeBtn.appendChild(closeImg);
-    
-    // Create heading
-    const heading = document.createElement('h2');
-    heading.textContent = 'You Have Arrived';
-    heading.style.cssText = 'text-align: center; margin-top: 20px; color: #333;';
-    
-    // Create directions content
-    const directionsDiv = document.createElement('div');
-    directionsDiv.id = 'directionsContent';
-    directionsDiv.style.cssText = 'padding: 20px; font-size: 18px; text-align: center;';
-    directionsDiv.textContent = carDirections || "You have reached your destination.";
-    
-    // Assemble the modal
-    modalContent.appendChild(closeBtn);
-    modalContent.appendChild(heading);
-    modalContent.appendChild(directionsDiv);
-    modal.appendChild(modalContent);
-    
-    // Add to document
-    document.body.appendChild(modal);
-}
-
-// Close destination modal
-function closeDestinationModal() {
-    console.log("Closing destination modal");
-    var modal = document.getElementById('destinationModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-// Map modal functions
-function toggleMModal() {
+// Open Google Maps with walking directions
+function openGoogleMaps() {
     console.log("Opening Google Maps");
     
     // Get coordinates for maps
@@ -371,66 +306,6 @@ function toggleMModal() {
         window.open(mapsUrl, '_blank');
     } else {
         alert('Unable to open maps. Location data is not available.');
-    }
-}
-
-// Function to close map modal
-function closeModal() {
-    console.log("Closing map modal");
-    var modalMap = document.getElementById("modalMap");
-    if (modalMap) {
-        modalMap.style.display = 'none';
-    }
-}
-
-// Instruction modal functions
-function toggleIModal() {
-    console.log("Opening instruction modal");
-    var modalI = document.getElementById("modalI");
-    if (modalI) {
-        modalI.style.display = "block";
-    }
-}
-
-function closeModalI() {
-    console.log("Closing instruction modal");
-    var modalI = document.getElementById("modalI");
-    if (modalI) {
-        modalI.style.display = 'none';
-    }
-}
-
-// Introduction modal functions
-function toggleLModal() {
-    console.log("Opening introduction modal");
-    var modalL = document.getElementById("modalL");
-    if (modalL) {
-        modalL.style.display = "block";
-    }
-}
-
-function closeModalL() {
-    console.log("Closing introduction modal");
-    var modalL = document.getElementById("modalL");
-    if (modalL) {
-        modalL.style.display = 'none';
-    }
-}
-
-// Error modal functions
-function toggleEModal() {
-    console.log("Opening error modal");
-    var modalE = document.getElementById("modalE");
-    if (modalE) {
-        modalE.style.display = "block";
-    }
-}
-
-function closeModalE() {
-    console.log("Closing error modal");
-    var modalE = document.getElementById("modalE");
-    if (modalE) {
-        modalE.style.display = 'none';
     }
 }
 
@@ -477,37 +352,26 @@ function startServices() {
     startCompass();
 }
 
-// Add mobile support for touch events
-function addMobileSupport() {
-    console.log("Adding module-side mobile touch support");
-    
-    // No need to add event listeners here since they're handled by the HTML script
-    // This function remains for compatibility
-}
-
-// Expose ALL functions needed by HTML to global scope
+// Expose functions to global scope for the HTML script to use
 window.startARServices = startServices;
-window.openGoogleMapsNav = toggleMModal;
-window.closeModalL = closeModalL;
-window.closeModalI = closeModalI;
-window.closeModalE = closeModalE;
-window.closeModal = closeModal;
-window.closeDestinationModal = closeDestinationModal;
-window.startCompass = startCompass; // Important for iOS
-window.toggleMModal = toggleMModal;
+window.openGoogleMapsNav = openGoogleMaps;
 
-// Initialize the application when DOM is ready
+// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Module DOM content loaded, initializing application");
+    console.log("Module DOM loaded, initializing AR application");
     
-    // Hide menu circles that were for color selection
-    const moreOptionsDiv = document.getElementById('moreOptionsDiv');
-    if (moreOptionsDiv) {
-        moreOptionsDiv.style.display = 'none';
-    }
-    
-    // Initialize the application
+    // Set up app functionality
     init();
+    
+    // Add click handler for map button
+    const mapBtn = document.querySelector('.maps');
+    if (mapBtn) {
+        mapBtn.addEventListener('click', openGoogleMaps);
+        mapBtn.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            openGoogleMaps();
+        });
+    }
     
     // For iOS devices, we need a user interaction to request compass permissions
     if (isIOS) {
@@ -517,5 +381,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }, { once: true });
     }
     
-    console.log("AR Wayfinding module initialization complete");
+    console.log("AR module initialization complete");
 });
