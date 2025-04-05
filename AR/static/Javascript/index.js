@@ -294,7 +294,6 @@ function handleOrientation(event) {
     if (event.webkitCompassHeading !== undefined) {
         // iOS - already calibrated
         rawHeading = event.webkitCompassHeading;
-        console.log("📱 iOS compass heading:", rawHeading.toFixed(1));
     } else if (event.alpha !== null) {
         // Android - convert alpha to heading
         rawHeading = (360 - event.alpha) % 360;
@@ -309,10 +308,7 @@ function handleOrientation(event) {
                 rawHeading = (rawHeading + 180) % 360;
             }
         }
-        
-        console.log("📱 Android compass heading:", rawHeading.toFixed(1));
     } else {
-        console.log("❌ No valid heading data");
         return; // No valid data
     }
     
@@ -328,8 +324,6 @@ function handleOrientation(event) {
     
     // Calculate arrow direction
     direction = (bearing - smoothedHeading + 360) % 360;
-    
-    console.log("🧭 Compass: Heading:", smoothedHeading.toFixed(1), "Bearing:", bearing.toFixed(1), "Arrow:", direction.toFixed(1));
 }
 
 // Enable position history tracking for direction estimation
@@ -415,7 +409,6 @@ function setCurrentPosition(position) {
 function updateDistanceDisplay() {
     if (current.latitude === null || current.longitude === null || 
         target.latitude === 0 || target.longitude === 0) {
-        console.log("⚠️ Missing coordinates, can't update distance");
         return;
     }
     
@@ -433,7 +426,7 @@ function updateDistanceDisplay() {
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     distance = R * c * 1000; // Distance in meters
     
-    console.log("📏 Current distance to target:", Math.floor(distance), "meters");
+    console.log("Current distance to target:", Math.floor(distance), "meters");
     
     // Update UI
     var distanceElement = document.getElementById("distanceFromTarget");
@@ -448,101 +441,39 @@ function updateDistanceDisplay() {
     }
     
     // Force show modal when close to destination (more generous threshold)
-    // We're using a much larger threshold (150m) to ensure it triggers
     if (distance < 150 && !isViewed) {
-        console.log("🚨 Within range of destination, showing modal NOW");
+        console.log("Within range of destination, showing modal");
         showDestinationModal();
         isViewed = true;
     }
 }
 
-// Simplified showDestinationModal function that's guaranteed to work
+// Updated showDestinationModal function for the pre-built HTML modal
 function showDestinationModal() {
-    console.log("🚨 Creating destination modal...");
+    console.log("Showing destination modal");
     
-    try {
-        // Create modal container
-        const modal = document.createElement('div');
-        modal.id = 'destinationModal';
-        modal.style.position = 'fixed';
-        modal.style.left = '0';
-        modal.style.top = '0';
-        modal.style.width = '100%';
-        modal.style.height = '100%';
-        modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
-        modal.style.zIndex = '99999'; // Ultra high z-index
-        
-        // Create modal content
-        const content = document.createElement('div');
-        content.style.position = 'relative';
-        content.style.backgroundColor = 'white';
-        content.style.margin = '10% auto 0 auto';
-        content.style.padding = '20px';
-        content.style.width = '90%';
-        content.style.maxWidth = '500px';
-        content.style.borderRadius = '10px';
-        content.style.textAlign = 'center';
-        
-        // Car image
-        const img = document.createElement('img');
-        img.src = `./static/images/car_images/${window.carType || 'default'}.png`;
-        img.style.maxWidth = '80%';
-        img.style.margin = '0 auto 15px auto';
-        img.style.display = 'block';
-        
-        // Handle image error
-        img.onerror = function() {
+    // Update car image
+    const carImage = document.getElementById('carImage');
+    if (carImage) {
+        carImage.src = `./static/images/car_images/${window.carType || 'default'}.png`;
+        carImage.onerror = function() {
             this.src = './static/images/car_images/default.png';
         };
-        
-        // Heading
-        const heading = document.createElement('h2');
-        heading.textContent = 'You are arriving! Here\'s the directions to the car:';
-        heading.style.fontSize = '18px';
-        heading.style.marginBottom = '15px';
-        
-        // Directions label
-        const dirLabel = document.createElement('h3');
-        dirLabel.textContent = 'Directions';
-        dirLabel.style.fontSize = '16px';
-        dirLabel.style.fontWeight = 'bold';
-        dirLabel.style.marginBottom = '10px';
-        
-        // Directions text
-        const directions = document.createElement('p');
-        directions.textContent = carDirections || "Follow the arrow to reach your car.";
-        directions.style.textAlign = 'left';
-        directions.style.padding = '0 10px';
-        directions.style.marginBottom = '20px';
-        
-        // Dismiss text
-        const dismiss = document.createElement('p');
-        dismiss.textContent = 'Press Anywhere to Dismiss';
-        dismiss.style.fontStyle = 'italic';
-        dismiss.style.color = '#888';
-        dismiss.style.marginTop = '20px';
-        
-        // Assemble
-        content.appendChild(img);
-        content.appendChild(heading);
-        content.appendChild(dirLabel);
-        content.appendChild(directions);
-        content.appendChild(dismiss);
-        modal.appendChild(content);
-        
-        // Add to body
-        document.body.appendChild(modal);
-        
-        console.log("✅ Modal created and added to DOM");
-        
-        // Add click handler to close
-        modal.onclick = function() {
-            document.body.removeChild(modal);
-            console.log("Modal closed");
-        };
-        
-    } catch (error) {
-        console.error("❌ Error creating modal:", error);
+    }
+    
+    // Update directions text
+    const directionsText = document.getElementById('directionsText');
+    if (directionsText) {
+        directionsText.textContent = carDirections || "Follow the arrow to reach your car.";
+    }
+    
+    // Show the modal
+    const modal = document.getElementById('destinationModal');
+    if (modal) {
+        modal.style.display = 'block';
+        console.log("Destination modal displayed");
+    } else {
+        console.error("Destination modal element not found");
     }
 }
 
@@ -573,8 +504,6 @@ function updateUI() {
         
         // Rotate the arrow with a translate to ensure it's centered
         arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
-    } else {
-        console.warn("❌ Arrow element not found");
     }
     
     // Continue updating
