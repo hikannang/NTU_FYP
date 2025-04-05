@@ -473,18 +473,27 @@ function showDestinationModal() {
     modal.id = 'destinationModal';
     modal.className = 'modal';
     modal.style.display = 'block';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.7)';
+    modal.style.zIndex = '1000';
     
     // Create the content container
     const modalContent = document.createElement('div');
     modalContent.className = 'common-modal-content';
     modalContent.style.padding = '20px';
     modalContent.style.textAlign = 'center';
-    modalContent.style.maxWidth = '90%';
+    modalContent.style.width = '90%';
     modalContent.style.maxHeight = '80%';
     modalContent.style.overflowY = 'auto';
     modalContent.style.backgroundColor = 'white';
     modalContent.style.borderRadius = '10px';
     modalContent.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
+    modalContent.style.position = 'relative';
+    modalContent.style.margin = '10% auto 0 auto'; // Centers horizontally and starts from top
     
     // Create car image
     const carImage = document.createElement('img');
@@ -497,9 +506,18 @@ function showDestinationModal() {
     
     // Create heading
     const heading = document.createElement('h2');
-    heading.textContent = 'You Have Arrived';
+    heading.textContent = 'You are arriving! Here\'s the directions to the car:';
     heading.style.marginBottom = '15px';
     heading.style.color = '#333';
+    heading.style.fontSize = '18px';
+    
+    // Create directions label
+    const directionsLabel = document.createElement('h3');
+    directionsLabel.textContent = 'Directions';
+    directionsLabel.style.marginBottom = '10px';
+    directionsLabel.style.color = '#555';
+    directionsLabel.style.fontSize = '16px';
+    directionsLabel.style.fontWeight = 'bold';
     
     // Create directions content
     const directionsDiv = document.createElement('div');
@@ -507,11 +525,13 @@ function showDestinationModal() {
     directionsDiv.style.lineHeight = '1.5';
     directionsDiv.style.marginBottom = '20px';
     directionsDiv.style.color = '#555';
-    directionsDiv.textContent = carDirections || "You have reached your destination.";
+    directionsDiv.style.textAlign = 'left';
+    directionsDiv.style.padding = '0 10px';
+    directionsDiv.textContent = carDirections || "Follow the arrow to reach your car.";
     
     // Create dismiss text
     const dismissText = document.createElement('p');
-    dismissText.textContent = 'Tap anywhere to dismiss';
+    dismissText.textContent = 'Press Anywhere to Dismiss';
     dismissText.style.fontStyle = 'italic';
     dismissText.style.color = '#888';
     dismissText.style.marginTop = '20px';
@@ -519,6 +539,7 @@ function showDestinationModal() {
     // Assemble the modal
     modalContent.appendChild(carImage);
     modalContent.appendChild(heading);
+    modalContent.appendChild(directionsLabel);
     modalContent.appendChild(directionsDiv);
     modalContent.appendChild(dismissText);
     modal.appendChild(modalContent);
