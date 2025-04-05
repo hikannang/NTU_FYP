@@ -9,9 +9,15 @@ var loadingTimeout;
 var bookingId = null;
 var carDirections = "";
 var servicesStarted = false;
+var compassInitialized = false;
 var hasOrientationSupport = false;
 var positionHistoryEnabled = false;
-var smoothedHeading = null; // For simple smoothing
+
+// Simple compass variables (Google Maps style)
+var smoothedHeading = null;
+var direction = 0;
+var bearing = 0;
+var lastDeviceOrientation = null;
 
 // Initialize target coordinates
 var target = {
@@ -24,10 +30,6 @@ var current = {
     latitude: null, 
     longitude: null 
 };
-
-// Simple direction calculation
-var direction = 0;
-var bearing = 0;
 
 // Position history for movement direction
 var positionHistory = [];
@@ -128,7 +130,7 @@ function createDestinationMarker(lat, lng) {
     entity.setAttribute('gltf-model', './static/3dModels/GLB/location3.glb');
     entity.setAttribute('scale', '2 2 2');
     
-    // Set location for AR.js
+    // Use original AR.js attribute format
     entity.setAttribute('gps-projected-entity-place', `latitude: ${lat}; longitude: ${lng}`);
     
     // Add animation
@@ -186,6 +188,15 @@ function init() {
     
     // Start UI updates for compass
     updateUI();
+    
+    // Track device orientation for reference
+    window.addEventListener("deviceorientation", function(event) {
+        lastDeviceOrientation = {
+            alpha: event.alpha,
+            beta: event.beta,
+            gamma: event.gamma
+        };
+    }, false);
 }
 
 // Calculate bearing (direction from current to target)
@@ -210,6 +221,9 @@ function calculateBearing() {
 
 // Setup device orientation
 function startOrientation() {
+    if (compassInitialized) return;
+    
+    compassInitialized = true;
     console.log("Setting up orientation for " + (isIOS ? "iOS" : "Android") + " device");
     
     // For iOS
@@ -235,9 +249,14 @@ function startOrientation() {
             window.addEventListener("deviceorientation", handleOrientation);
         }
     } else {
-        // For Android
+        // For Android (Google Maps style approach)
         window.addEventListener("deviceorientation", handleOrientation);
-        window.addEventListener("deviceorientationabsolute", handleOrientation);
+        
+        // Also try absolute orientation if available
+        if ('ondeviceorientationabsolute' in window) {
+            window.addEventListener("deviceorientationabsolute", handleOrientation);
+            console.log("Added absolute orientation listener");
+        }
         
         // Check if orientation data is received
         setTimeout(() => {
@@ -247,18 +266,28 @@ function startOrientation() {
             }
         }, 2000);
     }
+    
+    // Handle screen orientation changes
+    window.addEventListener('orientationchange', function() {
+        console.log("Screen orientation changed");
+        // Reset smoothed heading when orientation changes
+        smoothedHeading = null;
+    });
 }
 
-// Simple orientation handler
+// Google Maps style orientation handler
 function handleOrientation(event) {
-    // Get heading (we only care about this single value)
+    // Set flag that we have orientation data
+    hasOrientationSupport = true;
+    
+    // Get raw heading
     let rawHeading;
     
     if (event.webkitCompassHeading !== undefined) {
-        // iOS provides this value already calibrated
+        // iOS - already calibrated
         rawHeading = event.webkitCompassHeading;
     } else if (event.alpha !== null) {
-        // Android - simple conversion from alpha
+        // Android - convert alpha to heading
         rawHeading = (360 - event.alpha) % 360;
         
         // Adjust for screen orientation
@@ -275,27 +304,30 @@ function handleOrientation(event) {
         return; // No valid data
     }
     
-    // Simple smoothing - ignore very small changes and apply heavy smoothing for others
+    // Google Maps style heading smoothing
     if (smoothedHeading === null) {
         // First reading - just use it directly
         smoothedHeading = rawHeading;
     } else {
-        // Apply very strong smoothing (0.05 = 5% new, 95% old)
-        // This means the compass will move slowly but be very stable
-        smoothedHeading = smoothedHeading * 0.95 + rawHeading * 0.05;
+        // Difference between readings
+        let diff = rawHeading - smoothedHeading;
+        
+        // Handle wrap-around (e.g., going from 359° to 0°)
+        if (diff > 180) diff -= 360;
+        if (diff < -180) diff += 360;
+        
+        // Apply stronger smoothing for small changes (Google Maps approach)
+        let factor = Math.min(Math.abs(diff) / 45, 1) * 0.1 + 0.02;
+        
+        // Update smoothed heading
+        smoothedHeading = (smoothedHeading + diff * factor + 360) % 360;
     }
     
     // Calculate bearing to target
     bearing = calculateBearing();
     
-    // Calculate arrow direction (simple formula)
+    // Calculate arrow direction
     direction = (bearing - smoothedHeading + 360) % 360;
-    
-    // Mark that orientation is working
-    hasOrientationSupport = true;
-    
-    // Update distance
-    updateDistanceDisplay();
 }
 
 // Enable position history tracking for direction estimation
@@ -370,8 +402,10 @@ function setCurrentPosition(position) {
     current.latitude = position.coords.latitude;
     current.longitude = position.coords.longitude;
     
-    // Update bearing and distance
+    // Update bearing
     bearing = calculateBearing();
+    
+    // Update display
     updateDistanceDisplay();
 }
 
@@ -450,13 +484,13 @@ function openGoogleMaps() {
     }
 }
 
-// Update UI elements (compass arrow)
+// Update UI elements (compass arrow) - Google Maps style
 function updateUI() {
     const arrow = document.querySelector(".arrow");
     
     if (arrow) {
-        // Apply a longer, slower transition for more stability
-        arrow.style.transition = "transform 0.8s ease-out";
+        // Google Maps uses a slower transition for stability
+        arrow.style.transition = "transform 0.5s ease";
         
         // Rotate the arrow
         arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
