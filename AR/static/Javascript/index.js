@@ -460,7 +460,7 @@ function showDestinationModal() {
     const carImage = document.getElementById('carImage');
     if (carImage) {
         // Use the correct path starting from the project root
-        carImage.src = './static/images/car_images/default.png';
+        carImage.src = '../static/images/car_images/default.png';
         
         // Try to load car-specific image
         if (window.carType) {
@@ -469,7 +469,7 @@ function showDestinationModal() {
                 carImage.src = this.src;
             };
             // Fix the path to use the correct relative path
-            actualImage.src = `./static/images/car_images/${window.carType}.png`;
+            actualImage.src = `../static/images/car_images/${window.carType}.png`;
         }
     }
     
