@@ -25,6 +25,7 @@ var current = {
 // Variables for compass calculations
 var lastAlpha = 0;
 var direction = 0;
+var bearing = 0;
 
 // Detect iOS device
 const isIOS = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && 
@@ -183,35 +184,28 @@ function init() {
     // Parse URL parameters
     getUrlParameters();
     
-    // Position the arrow properly
-    fixArrowPosition();
-    
     // Start UI updates for compass
     updateUI();
 }
 
-// Make sure the arrow is correctly positioned in the compass
-function fixArrowPosition() {
-    const compass = document.querySelector(".compass");
-    const arrow = document.querySelector(".arrow");
-    
-    if (compass && arrow) {
-        // Set arrow as a background image of compass div for better centering
-        arrow.style.position = "absolute";
-        arrow.style.top = "50%";
-        arrow.style.left = "50%";
-        arrow.style.width = "70%"; // Make arrow visible
-        arrow.style.height = "70%"; // Make arrow visible
-        arrow.style.backgroundImage = "url('./static/images/icons/arrow.png')"; // Add arrow image
-        arrow.style.backgroundSize = "contain";
-        arrow.style.backgroundPosition = "center";
-        arrow.style.backgroundRepeat = "no-repeat";
-        arrow.style.transform = "translate(-50%, -50%)";
-        
-        console.log("🧭 Arrow position fixed");
-    } else {
-        console.error("❌ Compass or arrow elements not found");
+// Calculate bearing (direction from current to target)
+function calculateBearing() {
+    if (current.latitude === null || current.longitude === null || 
+        target.latitude === 0 || target.longitude === 0) {
+        return 0; // Default bearing if no valid coordinates
     }
+    
+    var lat1 = current.latitude * (Math.PI / 180);
+    var lon1 = current.longitude * (Math.PI / 180);
+    var lat2 = target.latitude * (Math.PI / 180);
+    var lon2 = target.longitude * (Math.PI / 180);
+    
+    var y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+    var x = Math.cos(lat1) * Math.sin(lat2) -
+            Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+    
+    var brng = Math.atan2(y, x) * (180 / Math.PI);
+    return (brng + 360) % 360; // Normalize to 0-360
 }
 
 // Request permission for device orientation (required for iOS)
@@ -224,7 +218,7 @@ function startCompass() {
                 .then((response) => {
                     if (response === "granted") {
                         console.log("✅ iOS orientation permission granted");
-                        window.addEventListener("deviceorientation", runCalculation);
+                        window.addEventListener("deviceorientation", handleOrientation);
                     } else {
                         console.error("❌ iOS orientation permission denied");
                         alert("Permission is required for compass functionality");
@@ -236,17 +230,44 @@ function startCompass() {
                 });
         } else {
             // Older iOS that doesn't need permissions
-            window.addEventListener("deviceorientation", runCalculation);
+            window.addEventListener("deviceorientation", handleOrientation);
         }
     } else {
-        // Non-iOS devices
-        try {
-            window.addEventListener("deviceorientationabsolute", runCalculation);
-        } catch (e) {
-            console.warn("⚠️ deviceorientationabsolute not supported, falling back to deviceorientation");
-            window.addEventListener("deviceorientation", runCalculation);
+        // Non-iOS devices - try different event types
+        if (window.DeviceOrientationAbsoluteEvent) {
+            window.addEventListener("deviceorientationabsolute", handleOrientation);
+        } else if (window.DeviceOrientation) {
+            window.addEventListener("deviceorientation", handleOrientation);
+        } else {
+            console.error("Device orientation not supported by this device");
+            alert("Your device doesn't support compass functionality.");
         }
     }
+}
+
+// Handle device orientation event
+function handleOrientation(event) {
+    // Get heading (direction device is facing)
+    let heading = 0;
+    
+    // iOS uses webkitCompassHeading (degrees clockwise from North)
+    if (event.webkitCompassHeading) {
+        heading = event.webkitCompassHeading;
+    } 
+    // Android uses alpha (degrees counterclockwise from East)
+    else if (event.alpha !== null) {
+        heading = 360 - event.alpha; // Convert to clockwise from North
+    }
+    
+    // Calculate direction to point (bearing minus heading)
+    bearing = calculateBearing();
+    direction = (bearing - heading + 360) % 360;
+    
+    // Log heading and direction
+    console.log(`Heading: ${heading.toFixed(1)}°, Bearing: ${bearing.toFixed(1)}°, Arrow: ${direction.toFixed(1)}°`);
+    
+    // Force update the distance
+    updateDistanceDisplay();
 }
 
 // Update current position from geolocation API
@@ -254,6 +275,9 @@ function setCurrentPosition(position) {
     current.latitude = position.coords.latitude;
     current.longitude = position.coords.longitude;
     console.log("📍 Current position updated:", current.latitude, current.longitude);
+    
+    // Recalculate bearing when position changes
+    bearing = calculateBearing();
     
     // Force update the distance display
     updateDistanceDisplay();
@@ -286,10 +310,10 @@ function updateDistanceDisplay() {
         if (distance > 20000) {
             distanceElement.innerHTML = 'Please Select Destination!';
         } else if (distance <= 1) {
-            distanceElement.innerHTML = '';
+            distanceElement.innerHTML = 'You have reached your car!';
         } else {
-            // Display the actual distance
-            distanceElement.innerHTML = Math.floor(distance) + "m to destination";
+            // Display the distance with car-specific text
+            distanceElement.innerHTML = Math.floor(distance) + "m to your booked car!";
         }
         console.log("📏 Distance: " + Math.floor(distance) + "m");
     } else {
@@ -301,67 +325,6 @@ function updateDistanceDisplay() {
         console.log("🏁 Within 15m of destination, showing modal");
         showDestinationModal();
         isViewed = true;
-    }
-}
-
-// Calculate compass direction and distance to target
-function runCalculation(event) {
-    // Extract compass heading - prioritize webkitCompassHeading for iOS
-    var alpha = event.webkitCompassHeading;
-    
-    // For non-iOS devices
-    if (alpha === undefined) {
-        // Try to get alpha from deviceorientationabsolute event
-        alpha = event.alpha;
-        
-        // If still undefined, try fallbacks
-        if (alpha === undefined) {
-            if (lastAlpha !== 0) {
-                // Use last known value if we had one
-                alpha = lastAlpha;
-            } else {
-                // Default to 0 if we have nothing
-                alpha = 0;
-            }
-        }
-    }
-    
-    // Only update if there's a significant change to reduce computation
-    if (Math.abs(alpha - lastAlpha) > 1) {
-        // Make sure we have valid coordinates
-        if (current.latitude === null || current.longitude === null || 
-            target.latitude === 0 || target.longitude === 0) {
-            return; // Skip calculation if coordinates aren't valid
-        }
-        
-        var lat1 = current.latitude * (Math.PI / 180);
-        var lon1 = current.longitude * (Math.PI / 180);
-        var lat2 = target.latitude * (Math.PI / 180);
-        var lon2 = target.longitude * (Math.PI / 180);
-        
-        // Calculate bearing (direction from current to target)
-        var y = Math.sin(lon2 - lon1) * Math.cos(lat2);
-        var x = Math.cos(lat1) * Math.sin(lat2) -
-                Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
-        var bearing = Math.atan2(y, x) * (180 / Math.PI);
-        
-        // Different calculation based on device type
-        if (event.webkitCompassHeading !== undefined) {
-            // iOS devices use webkitCompassHeading (clockwise from north)
-            direction = (bearing + 360) % 360;
-        } else {
-            // Android devices use alpha (counterclockwise from east)
-            direction = (360 - alpha + bearing + 360) % 360;
-        }
-        
-        // Round to whole number
-        direction = Math.round(direction);
-        lastAlpha = alpha;
-        
-        console.log("🧭 Direction: " + direction + "° (Heading: " + alpha + "°, Bearing: " + bearing + "°)");
-        
-        // Force update distance display
-        updateDistanceDisplay();
     }
 }
 
@@ -406,7 +369,7 @@ function updateUI() {
     const arrow = document.querySelector(".arrow");
     
     if (arrow) {
-        // Set rotation based on direction
+        // Apply rotation to the arrow based on direction
         arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
     }
     

@@ -424,14 +424,18 @@ html{
     margin-top: 9.5vh;     /* adjust the top margin as needed */
 }
 
-#distanceFromTarget{
-    color:rgba(0, 255, 0, 0.512);
-    font-size: 1.5em;
-    margin-top: 2.25vh;
-    background-color: black;
-    /* border: 2px solid yellow;
-    padding: 10px;
-    display: inline-block; */
+#distanceFromTarget {
+    display: block;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 10px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.6);
+    padding: 5px 10px;
+    border-radius: 10px;
+    z-index: 999;
+    position: relative;
 }
 
 .uiDisplay{
