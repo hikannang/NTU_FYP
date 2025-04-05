@@ -169,7 +169,7 @@ async function fetchCarData(bookingId) {
                 const carData = carSnapshot.data();
                 
                 // Save car directions for display in the destination modal
-                carDirections = carData.directions || "You have reached your destination.";
+                carDirections = carData.directions || "Follow the arrow to reach your car.";
                 
                 // Save car_type and carId for later use
                 window.carType = carType;
@@ -283,259 +283,6 @@ function startOrientation() {
     });
 }
 
-// Google Maps style orientation handler
-function handleOrientation(event) {
-    // Set flag that we have orientation data
-    hasOrientationSupport = true;
-    
-    // Get raw heading
-    let rawHeading;
-    
-    if (event.webkitCompassHeading !== undefined) {
-        // iOS - already calibrated
-        rawHeading = event.webkitCompassHeading;
-    } else if (event.alpha !== null) {
-        // Android - convert alpha to heading
-        rawHeading = (360 - event.alpha) % 360;
-        
-        // Adjust for screen orientation
-        if (window.orientation !== undefined) {
-            if (window.orientation === 90) {
-                rawHeading = (rawHeading + 90) % 360;
-            } else if (window.orientation === -90) {
-                rawHeading = (rawHeading - 90) % 360;
-            } else if (window.orientation === 180) {
-                rawHeading = (rawHeading + 180) % 360;
-            }
-        }
-    } else {
-        return; // No valid data
-    }
-    
-    // Google Maps style heading smoothing
-    if (smoothedHeading === null) {
-        // First reading - just use it directly
-        smoothedHeading = rawHeading;
-    } else {
-        // Difference between readings
-        let diff = rawHeading - smoothedHeading;
-        
-        // Handle wrap-around (e.g., going from 359° to 0°)
-        if (diff > 180) diff -= 360;
-        if (diff < -180) diff += 360;
-        
-        // Apply stronger smoothing for small changes (Google Maps approach)
-        let factor = Math.min(Math.abs(diff) / 45, 1) * 0.1 + 0.02;
-        
-        // Update smoothed heading
-        smoothedHeading = (smoothedHeading + diff * factor + 360) % 360;
-    }
-    
-    // Calculate bearing to target
-    bearing = calculateBearing();
-    
-    // Calculate arrow direction
-    direction = (bearing - smoothedHeading + 360) % 360;
-}
-
-// Enable position history tracking for direction estimation
-function enablePositionHistory() {
-    if (positionHistoryEnabled) return;
-    
-    positionHistoryEnabled = true;
-    console.log("Enabling position history tracking for direction estimation");
-    
-    // Clear any existing interval
-    if (window.positionHistoryInterval) clearInterval(window.positionHistoryInterval);
-    
-    // Update position history and calculate movement direction
-    window.positionHistoryInterval = setInterval(() => {
-        if (current.latitude && current.longitude) {
-            // Add current position to history
-            positionHistory.push({
-                latitude: current.latitude,
-                longitude: current.longitude,
-                timestamp: Date.now()
-            });
-            
-            // Keep only the last 5 positions
-            if (positionHistory.length > 5) {
-                positionHistory.shift();
-            }
-            
-            // Calculate direction if we have enough positions
-            if (positionHistory.length >= 2) {
-                calculateMovementDirection();
-            }
-        }
-    }, 1000);
-}
-
-// Add this function to help debug
-function forceShowModal() {
-    console.log("🚨 Force showing modal for testing");
-    showDestinationModal();
-}
-
-// Updated updateDistanceDisplay function with better logging
-function updateDistanceDisplay() {
-    if (current.latitude === null || current.longitude === null || 
-        target.latitude === 0 || target.longitude === 0) {
-        console.log("⚠️ Missing coordinates, can't update distance");
-        return;
-    }
-    
-    // Calculate distance using Haversine formula
-    var lat1 = current.latitude * (Math.PI / 180);
-    var lon1 = current.longitude * (Math.PI / 180);
-    var lat2 = target.latitude * (Math.PI / 180);
-    var lon2 = target.longitude * (Math.PI / 180);
-    
-    var R = 6371; // Earth radius in km
-    var dLat = lat2 - lat1;
-    var dLon = lon2 - lon1;
-    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    distance = R * c * 1000; // Distance in meters
-    
-    console.log("📏 Distance to target:", Math.floor(distance), "meters");
-    
-    // Update UI
-    var distanceElement = document.getElementById("distanceFromTarget");
-    if (distanceElement) {
-        if (distance > 20000) {
-            distanceElement.innerHTML = 'Please Select Destination!';
-        } else if (distance <= 1) {
-            distanceElement.innerHTML = 'You have reached your car!';
-        } else {
-            distanceElement.innerHTML = Math.floor(distance) + "m to your booked car!";
-        }
-    } else {
-        console.error("❌ Distance element not found");
-    }
-    
-    // Check if arrived at destination - use a higher threshold for testing
-    if (distance < 100 && !isViewed) {
-        console.log("🏁 Within 100m of destination, showing modal");
-        showDestinationModal();
-        isViewed = true;
-    }
-}
-
-// Fixed showDestinationModal function with improved styling and visibility
-function showDestinationModal() {
-    console.log("🚨 SHOWING DESTINATION MODAL");
-    
-    // Remove any existing destination modal first to avoid duplicates
-    const existingModal = document.getElementById('destinationModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Create a new modal from scratch
-    const modal = document.createElement('div');
-    modal.id = 'destinationModal';
-    modal.className = 'modal';
-    modal.style.display = 'block';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.width = '100%';
-    modal.style.height = '100%';
-    modal.style.backgroundColor = 'rgba(0,0,0,0.7)';
-    modal.style.zIndex = '9999'; // Very high z-index to ensure visibility
-    
-    // Create the content container
-    const modalContent = document.createElement('div');
-    modalContent.className = 'common-modal-content';
-    modalContent.style.padding = '20px';
-    modalContent.style.textAlign = 'center';
-    modalContent.style.width = '90%';
-    modalContent.style.maxHeight = '80%';
-    modalContent.style.overflowY = 'auto';
-    modalContent.style.backgroundColor = 'white';
-    modalContent.style.borderRadius = '10px';
-    modalContent.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
-    modalContent.style.position = 'relative';
-    modalContent.style.margin = '10% auto 0 auto'; // Centers horizontally and starts from top
-    
-    // Create car image
-    const carImage = document.createElement('img');
-    const carType = window.carType || 'default';
-    carImage.src = `./static/images/car_images/${carType}.png`;
-    carImage.alt = `${carType} Car`;
-    carImage.style.maxWidth = '80%';
-    carImage.style.height = 'auto';
-    carImage.style.marginBottom = '15px';
-    carImage.style.display = 'block';
-    carImage.style.margin = '0 auto 15px auto';
-    
-    // Create heading
-    const heading = document.createElement('h2');
-    heading.textContent = 'You are arriving! Here\'s the directions to the car:';
-    heading.style.marginBottom = '15px';
-    heading.style.color = '#333';
-    heading.style.fontSize = '18px';
-    
-    // Create directions label
-    const directionsLabel = document.createElement('h3');
-    directionsLabel.textContent = 'Directions';
-    directionsLabel.style.marginBottom = '10px';
-    directionsLabel.style.color = '#555';
-    directionsLabel.style.fontSize = '16px';
-    directionsLabel.style.fontWeight = 'bold';
-    
-    // Create directions content
-    const directionsDiv = document.createElement('div');
-    directionsDiv.style.fontSize = '16px';
-    directionsDiv.style.lineHeight = '1.5';
-    directionsDiv.style.marginBottom = '20px';
-    directionsDiv.style.color = '#555';
-    directionsDiv.style.textAlign = 'left';
-    directionsDiv.style.padding = '0 10px';
-    directionsDiv.textContent = carDirections || "Follow the arrow to reach your car.";
-    
-    // Create dismiss text
-    const dismissText = document.createElement('p');
-    dismissText.textContent = 'Press Anywhere to Dismiss';
-    dismissText.style.fontStyle = 'italic';
-    dismissText.style.color = '#888';
-    dismissText.style.marginTop = '20px';
-    
-    // Assemble the modal
-    modalContent.appendChild(carImage);
-    modalContent.appendChild(heading);
-    modalContent.appendChild(directionsLabel);
-    modalContent.appendChild(directionsDiv);
-    modalContent.appendChild(dismissText);
-    modal.appendChild(modalContent);
-    
-    // Add to document
-    document.body.appendChild(modal);
-    
-    console.log("🚨 MODAL CREATED AND APPENDED");
-    
-    // Add click/touch event to close when clicking anywhere
-    modal.addEventListener('click', function() {
-        modal.style.display = 'none';
-        console.log("Modal closed on click");
-    });
-    
-    modal.addEventListener('touchend', function(e) {
-        e.preventDefault();
-        modal.style.display = 'none';
-        console.log("Modal closed on touch");
-    });
-    
-    // Also handle error for the car image
-    carImage.onerror = function() {
-        // If image fails to load, use a default image
-        console.log("Car image failed to load, using default");
-        carImage.src = './static/images/car_images/default.png';
-    };
-}
-
 // Fix compass calculation - simplify to make it more reliable
 function handleOrientation(event) {
     // Set flag that we have orientation data
@@ -585,26 +332,219 @@ function handleOrientation(event) {
     console.log("🧭 Compass: Heading:", smoothedHeading.toFixed(1), "Bearing:", bearing.toFixed(1), "Arrow:", direction.toFixed(1));
 }
 
-// Simplified and fixed updateUI function
-function updateUI() {
-    const arrow = document.querySelector(".arrow");
+// Enable position history tracking for direction estimation
+function enablePositionHistory() {
+    if (positionHistoryEnabled) return;
     
-    if (arrow) {
-        // Google Maps uses a slower transition for stability
-        arrow.style.transition = "transform 0.5s ease";
-        
-        // Rotate the arrow with a translate to ensure it's centered
-        arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
-    } else {
-        console.warn("❌ Arrow element not found");
-    }
+    positionHistoryEnabled = true;
+    console.log("Enabling position history tracking for direction estimation");
     
-    // Continue updating
-    requestAnimationFrame(updateUI);
+    // Clear any existing interval
+    if (window.positionHistoryInterval) clearInterval(window.positionHistoryInterval);
+    
+    // Update position history and calculate movement direction
+    window.positionHistoryInterval = setInterval(() => {
+        if (current.latitude && current.longitude) {
+            // Add current position to history
+            positionHistory.push({
+                latitude: current.latitude,
+                longitude: current.longitude,
+                timestamp: Date.now()
+            });
+            
+            // Keep only the last 5 positions
+            if (positionHistory.length > 5) {
+                positionHistory.shift();
+            }
+            
+            // Calculate direction if we have enough positions
+            if (positionHistory.length >= 2) {
+                calculateMovementDirection();
+            }
+        }
+    }, 1000);
 }
 
-// Expose function to manually show modal for testing
-window.forceShowModal = forceShowModal;
+// Calculate direction of movement from position history
+function calculateMovementDirection() {
+    if (positionHistory.length < 2) return;
+    
+    // Get oldest and newest positions
+    const oldest = positionHistory[0];
+    const newest = positionHistory[positionHistory.length - 1];
+    
+    // Check if movement is significant
+    const latDiff = newest.latitude - oldest.latitude;
+    const lngDiff = newest.longitude - oldest.longitude;
+    
+    if (Math.abs(latDiff) > 0.00001 || Math.abs(lngDiff) > 0.00001) {
+        // Calculate bearing between points
+        const lat1 = oldest.latitude * (Math.PI / 180);
+        const lon1 = oldest.longitude * (Math.PI / 180);
+        const lat2 = newest.latitude * (Math.PI / 180);
+        const lon2 = newest.longitude * (Math.PI / 180);
+        
+        const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) -
+                Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+        
+        const movementBearing = Math.atan2(y, x) * (180 / Math.PI);
+        movementDirection = (movementBearing + 360) % 360;
+        
+        // If orientation not available, use movement direction
+        if (!hasOrientationSupport) {
+            bearing = calculateBearing();
+            direction = (bearing - movementDirection + 360) % 360;
+        }
+    }
+}
+
+// Update current position
+function setCurrentPosition(position) {
+    current.latitude = position.coords.latitude;
+    current.longitude = position.coords.longitude;
+    
+    // Update bearing
+    bearing = calculateBearing();
+    
+    // Update display
+    updateDistanceDisplay();
+}
+
+// Update distance display with more reliable modal trigger
+function updateDistanceDisplay() {
+    if (current.latitude === null || current.longitude === null || 
+        target.latitude === 0 || target.longitude === 0) {
+        console.log("⚠️ Missing coordinates, can't update distance");
+        return;
+    }
+    
+    // Calculate distance using Haversine formula
+    var lat1 = current.latitude * (Math.PI / 180);
+    var lon1 = current.longitude * (Math.PI / 180);
+    var lat2 = target.latitude * (Math.PI / 180);
+    var lon2 = target.longitude * (Math.PI / 180);
+    
+    var R = 6371; // Earth radius in km
+    var dLat = lat2 - lat1;
+    var dLon = lon2 - lon1;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    distance = R * c * 1000; // Distance in meters
+    
+    console.log("📏 Current distance to target:", Math.floor(distance), "meters");
+    
+    // Update UI
+    var distanceElement = document.getElementById("distanceFromTarget");
+    if (distanceElement) {
+        if (distance > 20000) {
+            distanceElement.innerHTML = 'Please Select Destination!';
+        } else if (distance <= 1) {
+            distanceElement.innerHTML = 'You have reached your car!';
+        } else {
+            distanceElement.innerHTML = Math.floor(distance) + "m to your booked car!";
+        }
+    }
+    
+    // Force show modal when close to destination (more generous threshold)
+    // We're using a much larger threshold (150m) to ensure it triggers
+    if (distance < 150 && !isViewed) {
+        console.log("🚨 Within range of destination, showing modal NOW");
+        showDestinationModal();
+        isViewed = true;
+    }
+}
+
+// Simplified showDestinationModal function that's guaranteed to work
+function showDestinationModal() {
+    console.log("🚨 Creating destination modal...");
+    
+    try {
+        // Create modal container
+        const modal = document.createElement('div');
+        modal.id = 'destinationModal';
+        modal.style.position = 'fixed';
+        modal.style.left = '0';
+        modal.style.top = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        modal.style.zIndex = '99999'; // Ultra high z-index
+        
+        // Create modal content
+        const content = document.createElement('div');
+        content.style.position = 'relative';
+        content.style.backgroundColor = 'white';
+        content.style.margin = '10% auto 0 auto';
+        content.style.padding = '20px';
+        content.style.width = '90%';
+        content.style.maxWidth = '500px';
+        content.style.borderRadius = '10px';
+        content.style.textAlign = 'center';
+        
+        // Car image
+        const img = document.createElement('img');
+        img.src = `./static/images/car_images/${window.carType || 'default'}.png`;
+        img.style.maxWidth = '80%';
+        img.style.margin = '0 auto 15px auto';
+        img.style.display = 'block';
+        
+        // Handle image error
+        img.onerror = function() {
+            this.src = './static/images/car_images/default.png';
+        };
+        
+        // Heading
+        const heading = document.createElement('h2');
+        heading.textContent = 'You are arriving! Here\'s the directions to the car:';
+        heading.style.fontSize = '18px';
+        heading.style.marginBottom = '15px';
+        
+        // Directions label
+        const dirLabel = document.createElement('h3');
+        dirLabel.textContent = 'Directions';
+        dirLabel.style.fontSize = '16px';
+        dirLabel.style.fontWeight = 'bold';
+        dirLabel.style.marginBottom = '10px';
+        
+        // Directions text
+        const directions = document.createElement('p');
+        directions.textContent = carDirections || "Follow the arrow to reach your car.";
+        directions.style.textAlign = 'left';
+        directions.style.padding = '0 10px';
+        directions.style.marginBottom = '20px';
+        
+        // Dismiss text
+        const dismiss = document.createElement('p');
+        dismiss.textContent = 'Press Anywhere to Dismiss';
+        dismiss.style.fontStyle = 'italic';
+        dismiss.style.color = '#888';
+        dismiss.style.marginTop = '20px';
+        
+        // Assemble
+        content.appendChild(img);
+        content.appendChild(heading);
+        content.appendChild(dirLabel);
+        content.appendChild(directions);
+        content.appendChild(dismiss);
+        modal.appendChild(content);
+        
+        // Add to body
+        document.body.appendChild(modal);
+        
+        console.log("✅ Modal created and added to DOM");
+        
+        // Add click handler to close
+        modal.onclick = function() {
+            document.body.removeChild(modal);
+            console.log("Modal closed");
+        };
+        
+    } catch (error) {
+        console.error("❌ Error creating modal:", error);
+    }
+}
 
 // Open Google Maps with walking directions
 function openGoogleMaps() {
@@ -621,6 +561,24 @@ function openGoogleMaps() {
     } else {
         alert('Unable to open maps. Location data is not available.');
     }
+}
+
+// Simplified and fixed updateUI function
+function updateUI() {
+    const arrow = document.querySelector(".arrow");
+    
+    if (arrow) {
+        // Google Maps uses a slower transition for stability
+        arrow.style.transition = "transform 0.5s ease";
+        
+        // Rotate the arrow with a translate to ensure it's centered
+        arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
+    } else {
+        console.warn("❌ Arrow element not found");
+    }
+    
+    // Continue updating
+    requestAnimationFrame(updateUI);
 }
 
 // Start location and orientation services
@@ -660,6 +618,7 @@ function startServices() {
 // Expose functions to global scope for HTML
 window.startARServices = startServices;
 window.openGoogleMapsNav = openGoogleMaps;
+window.showDestinationModal = showDestinationModal;
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
