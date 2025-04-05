@@ -1,5 +1,5 @@
 // Import Firebase services from firebase-config.js instead of initializing directly
-import { db } from "../static/js/firebase-config.js";
+import { db } from "../../static/js/firebase-config.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
 // Global variables
