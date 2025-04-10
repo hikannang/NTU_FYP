@@ -341,24 +341,31 @@ function init() {
     }, false);
 }
 
-// Calculate bearing (direction from current to target)
+// Raw bearing calculation - direction from current position to target
 function calculateBearing() {
-    if (current.latitude === null || current.longitude === null || 
-        target.latitude === 0 || target.longitude === 0) {
-        return 0; // Default bearing if no valid coordinates
+    // Safety check
+    if (!current.latitude || !current.longitude || !target.latitude || !target.longitude) {
+        return 0;
     }
     
-    var lat1 = current.latitude * (Math.PI / 180);
-    var lon1 = current.longitude * (Math.PI / 180);
-    var lat2 = target.latitude * (Math.PI / 180);
-    var lon2 = target.longitude * (Math.PI / 180);
+    // Convert coordinates from degrees to radians
+    const lat1 = current.latitude * (Math.PI / 180);
+    const lon1 = current.longitude * (Math.PI / 180);
+    const lat2 = target.latitude * (Math.PI / 180);
+    const lon2 = target.longitude * (Math.PI / 180);
     
-    var y = Math.sin(lon2 - lon1) * Math.cos(lat2);
-    var x = Math.cos(lat1) * Math.sin(lat2) -
-            Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+    // Calculate bearing using great circle formula
+    const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) -
+              Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
     
-    var brng = Math.atan2(y, x) * (180 / Math.PI);
-    return (brng + 360) % 360; // Normalize to 0-360
+    // Convert back to degrees
+    let brng = Math.atan2(y, x) * (180 / Math.PI);
+    
+    // Normalize to 0-360
+    brng = (brng + 360) % 360;
+    
+    return brng;
 }
 
 // Setup device orientation
@@ -417,46 +424,43 @@ function startOrientation() {
     });
 }
 
-// Fix compass calculation - original version
+// Raw compass calculation without any smoothing
 function handleOrientation(event) {
     // Set flag that we have orientation data
     hasOrientationSupport = true;
     
-    // Get raw heading
-    let rawHeading;
+    // Get raw device heading (direction device is pointing)
+    let deviceHeading;
     
+    // iOS devices
     if (event.webkitCompassHeading !== undefined) {
-        // iOS - already calibrated
-        rawHeading = event.webkitCompassHeading;
-    } else if (event.alpha !== null) {
-        // Android - convert alpha to heading
-        rawHeading = 360 - event.alpha;
-        
-        // Apply device orientation correction
-        const screenOrientation = window.orientation || 0;
-        rawHeading = (rawHeading + screenOrientation) % 360;
-    } else {
-        return; // No valid data
+        deviceHeading = event.webkitCompassHeading;
+    }
+    // Android devices
+    else if (event.alpha !== null) {
+        deviceHeading = 360 - event.alpha;
+    }
+    // No orientation data available
+    else {
+        return;
     }
     
-    // Apply simple smoothing
-    if (smoothedHeading === null) {
-        smoothedHeading = rawHeading;
-    } else {
-        // Less aggressive smoothing (0.3 weight for new value instead of 0.2)
-        smoothedHeading = (smoothedHeading * 0.7) + (rawHeading * 0.3);
-    }
+    // Use raw heading directly
+    smoothedHeading = deviceHeading;
     
-    // Calculate absolute bearing to target
+    // Get bearing to target
     bearing = calculateBearing();
     
-    // Calculate relative direction
+    // Calculate arrow direction - simple subtraction
     direction = bearing - smoothedHeading;
     
-    // Normalize to 0-360
+    // Keep direction in 0-360 range
     if (direction < 0) {
         direction += 360;
     }
+    
+    // Debug output
+    console.log(`Heading: ${smoothedHeading.toFixed(1)}°, Bearing: ${bearing.toFixed(1)}°, Arrow: ${direction.toFixed(1)}°`);
 }
 
 // Enable position history tracking for direction estimation

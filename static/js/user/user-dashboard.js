@@ -1035,7 +1035,7 @@ async function loadNearbyCars() {
           );
 
           // Extract car information from car_type (e.g., "modely_white" -> "Model Y", "White")
-          const carTypeInfo = parseCarType(carData.car_type || "");
+          const carTypeInfo = await getCarModelInfo(carData.car_type || "");
 
           // Calculate distance if user position is available
           let distance = null;
@@ -1052,12 +1052,10 @@ async function loadNearbyCars() {
           nearbyCarsList.push({
             id: carDoc.id,
             ...carData,
-            // Use extracted info from car_type instead of separate model collection
             make: carTypeInfo.make,
             modelName: carTypeInfo.model,
-            image: `../static/images/car_images/${
-              carData.car_type || "car"
-            }.png`,
+            displayName: carTypeInfo.displayName, // Now you have the actual name from the database
+            image: `../static/images/car_images/${carData.car_type || "car"}.png`,
             distance: distance,
           });
         } else {
@@ -1155,46 +1153,78 @@ async function debugMapAndCars() {
 // Call this at the beginning of your loadNearbyCars function
 await debugMapAndCars();
 
-// Helper function to parse car_type into make and model
-function parseCarType(carType) {
-  // Default values
-  let make = "Unknown";
-  let model = "Car";
-  let color = "";
-
-  // Parse car_type (e.g., "modely_white" -> "Tesla", "Model Y", "White")
-  if (carType) {
-    // Handle known car types
-    if (carType.toLowerCase().includes("model")) {
-      make = "Tesla";
-
-      if (carType.toLowerCase().includes("modely")) {
-        model = "Model Y";
-      } else if (carType.toLowerCase().includes("model3")) {
-        model = "Model 3";
-      } else if (carType.toLowerCase().includes("models")) {
-        model = "Model S";
-      } else if (carType.toLowerCase().includes("modelx")) {
-        model = "Model X";
-      }
-    } else if (carType.toLowerCase().includes("vezel")) {
-      make = "Honda";
-      model = "Vezel";
+// Enhanced function to get car display name from database
+async function getCarModelInfo(carType) {
+  try {
+    // If no car type provided, return default
+    if (!carType) {
+      return { make: "Unknown", model: "Vehicle", displayName: "Unknown Vehicle" };
     }
-
-    // Extract color if present
-    if (carType.toLowerCase().includes("white")) {
-      color = "White";
-    } else if (carType.toLowerCase().includes("black")) {
-      color = "Black";
-    } else if (carType.toLowerCase().includes("red")) {
-      color = "Red";
-    } else if (carType.toLowerCase().includes("blue")) {
-      color = "Blue";
+    
+    // Extract model ID from car_type (e.g., "cx-5_red" -> "cx-5")
+    const modelId = carType.split('_')[0];
+    
+    // Fetch model data from car_models collection
+    const modelRef = doc(db, "car_models", modelId);
+    const modelDoc = await getDoc(modelRef);
+    
+    if (modelDoc.exists()) {
+      const modelData = modelDoc.data();
+      
+      // Extract color from car_type if available
+      const colorPart = carType.split('_')[1];
+      const color = colorPart ? colorPart.charAt(0).toUpperCase() + colorPart.slice(1) : "";
+      
+      return {
+        make: modelData.make || "Unknown Make",
+        model: modelData.name || modelId,
+        color: color,
+        displayName: `${modelData.name || modelId}${color ? ` (${color})` : ""}`
+      };
+    } else {
+      console.log(`Model document not found for ID: ${modelId}`);
+      // Fallback to original parsing
+      return parseCarType(carType);
     }
+  } catch (error) {
+    console.error("Error fetching car model data:", error);
+    // Fallback to original parsing if database query fails
+    return parseCarType(carType);
   }
+}
 
-  return { make, model, color };
+// Helper function to parse car_type
+function parseCarType(carType) {
+  if (!carType) return { make: "Unknown", model: "Vehicle" };
+  
+  // Parse car_type to extract make/model and color
+  const [modelPart, colorPart] = carType.split('_');
+  
+  // Special cases for specific models
+  let make = "Tesla";
+  let model = "";
+  
+  // Handle specific model cases
+  switch (modelPart.toLowerCase()) {
+    case "modely":
+      model = "Model Y";
+      break;
+    default:
+      // Format the model part to be more readable for other models
+      model = modelPart
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+  }
+  
+  // Format color part if it exists
+  const color = colorPart ? colorPart.charAt(0).toUpperCase() + colorPart.slice(1) : "";
+  
+  return {
+    make: make,
+    model: model,
+    color: color
+  };
 }
 
 // Complete createCarElement function
