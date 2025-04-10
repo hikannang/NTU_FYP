@@ -417,7 +417,7 @@ function startOrientation() {
     });
 }
 
-// Fix compass calculation - simplify to make it more reliable
+// Fix compass calculation - original version
 function handleOrientation(event) {
     // Set flag that we have orientation data
     hasOrientationSupport = true;
@@ -430,34 +430,33 @@ function handleOrientation(event) {
         rawHeading = event.webkitCompassHeading;
     } else if (event.alpha !== null) {
         // Android - convert alpha to heading
-        rawHeading = (360 - event.alpha) % 360;
+        rawHeading = 360 - event.alpha;
         
-        // Adjust for screen orientation
-        if (window.orientation !== undefined) {
-            if (window.orientation === 90) {
-                rawHeading = (rawHeading + 90) % 360;
-            } else if (window.orientation === -90) {
-                rawHeading = (rawHeading - 90) % 360;
-            } else if (window.orientation === 180) {
-                rawHeading = (rawHeading + 180) % 360;
-            }
-        }
+        // Apply device orientation correction
+        const screenOrientation = window.orientation || 0;
+        rawHeading = (rawHeading + screenOrientation) % 360;
     } else {
         return; // No valid data
     }
     
-    // Very simple heading smoothing
+    // Apply simple smoothing
     if (smoothedHeading === null) {
         smoothedHeading = rawHeading;
     } else {
-        smoothedHeading = smoothedHeading * 0.8 + rawHeading * 0.2;
+        // Less aggressive smoothing (0.3 weight for new value instead of 0.2)
+        smoothedHeading = (smoothedHeading * 0.7) + (rawHeading * 0.3);
     }
     
-    // Calculate bearing to target
+    // Calculate absolute bearing to target
     bearing = calculateBearing();
     
-    // Calculate arrow direction
-    direction = (bearing - smoothedHeading + 360) % 360;
+    // Calculate relative direction
+    direction = bearing - smoothedHeading;
+    
+    // Normalize to 0-360
+    if (direction < 0) {
+        direction += 360;
+    }
 }
 
 // Enable position history tracking for direction estimation
