@@ -1,0 +1,234 @@
+/* Terms and Conditions CSS */
+:root {
+    --primary-color: #1e88e5;
+    --primary-dark: #1565c0;
+    --primary-light: #bbdefb;
+    --secondary-color: #6c757d;
+    --text-dark: #212529;
+    --text-medium: #495057;
+    --text-light: #6c757d;
+    --bg-light: #f8f9fa;
+    --border-color: #dee2e6;
+    --sidebar-width: 250px;
+    --header-height: 70px;
+    --section-spacing: 40px;
+}
+
+/* Main layout */
+.terms-container {
+    display: flex;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    gap: 30px;
+}
+
+/* Sidebar */
+.terms-sidebar {
+    width: var(--sidebar-width);
+    position: sticky;
+    top: calc(var(--header-height) + 20px);
+    height: calc(100vh - var(--header-height) - 40px);
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    overflow-y: auto;
+}
+
+.terms-sidebar h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: var(--text-dark);
+    font-size: 1.2rem;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.terms-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.terms-nav li {
+    margin-bottom: 8px;
+}
+
+.terms-nav a {
+    display: block;
+    padding: 8px 10px;
+    color: var(--text-medium);
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.terms-nav a:hover {
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
+}
+
+.terms-nav a.active {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 500;
+}
+
+/* Main content */
+.terms-content {
+    flex: 1;
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.terms-content h1 {
+    margin-top: 0;
+    color: var(--text-dark);
+    font-size: 2rem;
+}
+
+.last-updated {
+    color: var(--text-light);
+    font-style: italic;
+    margin-bottom: 30px;
+}
+
+/* Sections */
+.terms-content section {
+    margin-bottom: var(--section-spacing);
+    scroll-margin-top: calc(var(--header-height) + 20px);
+}
+
+.terms-content h2 {
+    color: var(--primary-dark);
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.terms-content p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    color: var(--text-medium);
+}
+
+.terms-content ul {
+    padding-left: 20px;
+    margin-bottom: 20px;
+}
+
+.terms-content li {
+    margin-bottom: 10px;
+    line-height: 1.5;
+    color: var(--text-medium);
+}
+
+.terms-content a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.terms-content a:hover {
+    text-decoration: underline;
+}
+
+/* Contact info */
+.contact-info {
+    list-style: none;
+    padding-left: 0;
+}
+
+.contact-info li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.contact-info i {
+    margin-right: 10px;
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+/* Footer */
+.terms-footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .terms-container {
+        flex-direction: column;
+    }
+    
+    .terms-sidebar {
+        width: 100%;
+        position: relative;
+        top: 0;
+        height: auto;
+        margin-bottom: 20px;
+    }
+    
+    .terms-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .terms-nav li {
+        margin-bottom: 0;
+    }
+    
+    .terms-content {
+        padding: 20px;
+    }
+    
+    .terms-content section {
+        scroll-margin-top: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .terms-nav a {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .terms-content h1 {
+        font-size: 1.5rem;
+    }
+    
+    .terms-content h2 {
+        font-size: 1.3rem;
+    }
+    
+    .terms-content {
+        padding: 15px;
+    }
+}
+
+/* Print styles */
+@media print {
+    .terms-sidebar {
+        display: none;
+    }
+    
+    .terms-content {
+        box-shadow: none;
+        padding: 0;
+    }
+    
+    .terms-container {
+        padding: 0;
+    }
+}

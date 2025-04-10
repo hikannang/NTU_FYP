@@ -90,6 +90,53 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.location.href = "../index.html";
     }
   });
+  // Get references to elements
+  const filterToggle = document.getElementById("filter-toggle");
+  const filtersPanel = document.querySelector(".filters-panel");
+  const applyFilterBtn = document.getElementById("apply-filter");
+  
+  if (filterToggle && filtersPanel) {
+    // Toggle filters panel when the button is clicked
+    filterToggle.addEventListener("click", function() {
+      filtersPanel.classList.toggle("show-filters");
+      
+      // Also toggle visibility of apply button
+      if (applyFilterBtn) {
+        if (filtersPanel.classList.contains("show-filters")) {
+          applyFilterBtn.style.display = "block"; // Show apply button when filters are visible
+        } else {
+          applyFilterBtn.style.display = "none"; // Hide apply button when filters are hidden
+        }
+      }
+      
+      // Change icon based on state
+      const icon = filterToggle.querySelector("i");
+      if (icon) {
+        if (filtersPanel.classList.contains("show-filters")) {
+          icon.className = "bi bi-x-lg"; // Change to X icon when filters are shown
+        } else {
+          icon.className = "bi bi-sliders"; // Change back to sliders icon when closed
+        }
+      }
+    });
+    
+    // Close filters and hide apply button when "Apply" is clicked
+    if (applyFilterBtn) {
+      applyFilterBtn.addEventListener("click", function() {
+        filtersPanel.classList.remove("show-filters");
+        applyFilterBtn.style.display = "none"; // Hide apply button
+        
+        // Change icon back
+        const icon = filterToggle.querySelector("i");
+        if (icon) {
+          icon.className = "bi bi-sliders";
+        }
+        
+        // Apply filters
+        filterResults();
+      });
+    }
+  }
 });
 
 // Setup logout button
