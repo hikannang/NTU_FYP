@@ -1221,13 +1221,13 @@ section {
   z-index: 2;
 }
 
-.status-badge.upcoming {
-  background-color: var(--primary-color); /* Blue color for upcoming */
-  color: white;
+.status-badge.active {
+  background-color: #4caf50; /* Light green background */
+  color: white; /* Success text color */
 }
 
 .status-badge.active {
-  background-color: var (--success-color);
+  background-color: var (--success-color) !important;
   color: white;
 }
 
