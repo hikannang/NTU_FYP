@@ -47,7 +47,6 @@ main {
   main {
     margin-left: var(--sidebar-width);
     transition: margin-left var(--transition-speed);
-    width: calc(100% - var(--sidebar-width) - 40px);
   }
 }
 
@@ -182,7 +181,6 @@ section {
 
 /* Input Group Styling */
 .input-group {
-  margin-bottom: 20px;
   position: relative;
 }
 
@@ -212,6 +210,10 @@ section {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.input-group input[type="text"]#location {
+  padding-right: 45px; /* Make room for the icon button */
 }
 
 /* Icon Button Styling */
@@ -842,8 +844,7 @@ section {
 @media (max-width: 992px) {
   main {
     margin-left: 0;
-    width: calc(100% - 40px);
-    padding-bottom: calc(var(--footer-mobile-height) + 20px);
+    padding-bottom: calc(var(--footer-mobile-height));
   }
   
   .duration-select-container {
@@ -1226,7 +1227,7 @@ section {
 }
 
 .status-badge.active {
-  background-color: var(--success-color);
+  background-color: var (--success-color);
   color: white;
 }
 
@@ -1302,5 +1303,164 @@ section {
   
   .booking-details {
     padding: 12px 14px;
+  }
+}
+
+/* Put location icon inside the location field */
+.search-form .input-group {
+  position: relative; /* Ensure relative positioning for absolute child */
+  margin-bottom: 15px; /* Add consistent bottom margin to all input groups */
+  display: flex; 
+  flex-direction: column;
+}
+
+#location {
+  padding-right: 40px; /* Make space for the icon */
+}
+
+#location-btn {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--primary-color);
+  width: 35px;
+  height: 35px;
+  z-index: 10;
+}
+
+#location-btn:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+/* Fix for focus state to ensure it appears in front of the button */
+#location:focus {
+  position: relative;
+  z-index: 9;
+}
+
+/* Update CSS to match your HTML IDs */
+.search-form .input-group {
+  position: relative; /* Ensure relative positioning for absolute child */
+  margin-bottom: 15px; /* Add consistent bottom margin to all input groups */
+  display: flex; 
+  flex-direction: column;
+}
+
+#location-input {
+  padding-right: 40px; /* Make space for the icon */
+}
+
+#current-location-btn {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--primary-color);
+  width: 35px;
+  height: 35px;
+  z-index: 10;
+}
+
+#current-location-btn:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+/* Fix for focus state to ensure it appears in front of the button */
+#location-input:focus {
+  position: relative;
+  z-index: 9;
+}
+
+/* Fix alignment of date/time/duration fields */
+.search-form .input-group label {
+  margin-bottom: 8px; /* Consistent spacing between label and input */
+}
+
+/* Ensure all inputs have the same height */
+.search-form .input-group input,
+.search-form .input-group select {
+  height: 40px; /* Standardize height */
+  box-sizing: border-box;
+  padding: 8px 12px;
+}
+
+/* Fix specifically for date/time picker alignment */
+.date-time-pickers {
+  display: flex;
+  gap: 10px;
+}
+
+.date-time-pickers .input-group {
+  flex: 1;
+}
+
+/* Duration selector group alignment */
+.duration-selectors {
+  display: flex;
+  gap: 10px;
+}
+
+.duration-selectors .input-group {
+  flex: 1;
+}
+
+/* Reset filters button styling */
+.reset-filters-btn {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+}
+
+.reset-filters-btn i {
+  font-size: 0.9rem;
+}
+
+/* Reset button styling to match filter selects */
+.reset-btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  background-color: white;
+  color: var(--text-dark);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-family);
+  transition: all 0.2s;
+}
+
+.reset-btn:hover {
+  background-color: #e9ecef;
+  border-color: var(--primary-color);
+}
+
+.reset-btn i {
+  font-size: 0.9rem;
+  color: var(--primary-color);
+}
+
+/* Responsive styling */
+@media (max-width: 768px) {
+  .map-filters {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .filter-select, .reset-btn {
+    flex: 1;
+    min-width: 0;
   }
 }
