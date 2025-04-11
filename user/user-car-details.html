@@ -36,33 +36,38 @@
             
             <!-- Car Details Content Container -->
             <div id="car-details-content" class="content-container" style="display:none;">
-                <!-- Car Overview Section -->
-                <section class="car-overview-section">
-                    <div class="car-plate" id="car-plate">ABC1234D</div>
-                    
-                    <div class="car-location">
-                        <i class="bi bi-geo-alt-fill"></i>
-                        <span id="car-address">Loading address...</span>
-                    </div>
-                    
-                    <div class="car-pricing">
-                        <h3>$<span id="car-price">8.50</span>/hour</h3>
-                    </div>
-                    
-                    <div class="car-actions">
-                        <button id="book-now-btn" class="primary-btn">
-                            <i class="bi bi-calendar-plus"></i> Book Now
-                        </button>
-                        <button id="directions-btn" class="secondary-btn">
-                            <i class="bi bi-map"></i> Get Directions
-                        </button>
-                    </div>
-                </section>
 
-                <!-- Car Image Section -->
-                <section class="car-images-section">
-                    <div class="car-main-image">
-                        <img id="car-main-image" src="../static/assets/images/car-placeholder.jpg" alt="Car Image">
+                <!-- Image + Overview Section -->
+                <section class="car-combined-section">
+                    <div class="car-media">
+                        <img id="car-image" src="../static/images/car-placeholder.jpg" alt="Car" class="car-main-image">
+                    </div>
+                    <div class="car-details">
+                        <h1 id="car-name">Loading car details...</h1>
+                        <div class="car-plate" id="car-plate">SGX0000A</div>
+                        
+                        <div class="car-tags">
+                            <span class="car-tag" id="car-type">Sedan</span>
+                            <span class="car-tag" id="car-transmission">Automatic</span>
+                        </div>
+                        
+                        <div class="car-location">
+                            <i class="bi bi-geo-alt-fill"></i>
+                            <span id="car-location">Loading location...</span>
+                        </div>
+                        
+                        <div class="car-pricing">
+                            <h3>$<span id="car-price">0</span>/hour</h3>
+                        </div>
+                        
+                        <div class="car-actions">
+                            <button id="book-btn" class="primary-btn">
+                                <i class="bi bi-calendar-plus"></i> Book Now
+                            </button>
+                            <button id="directions-btn" class="secondary-btn">
+                                <i class="bi bi-map"></i> Get Directions
+                            </button>
+                        </div>
                     </div>
                 </section>
 

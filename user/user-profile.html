@@ -1,212 +1,321 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile | CarShare</title>
-    <link rel="stylesheet" href="../static/css/users/user.css">
-    <link rel="stylesheet" href="../static/css/users/user-profile.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Profile | BaoCarLiao</title>
+    <link rel="stylesheet" href="../static/css/users/user.css" />
+    <link rel="stylesheet" href="../static/css/users/user-profile.css" />
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+    />
 </head>
 <body>
     <div id="header"></div>
-    
+
     <main>
-        <div class="container">
-            <!-- Page Header -->
-            <div class="page-header">
-                <h1>My Profile</h1>
-                <a href="user-dashboard.html" class="back-link">
-                    <i class="bi bi-arrow-left"></i> Back to Dashboard
-                </a>
+        <!-- Page Header -->
+        <section id="profile-header">
+            <div class="section-header">
+                <h1><i class="bi bi-person-circle"></i> My Profile</h1>
+                <button id="logout-button" class="secondary-btn">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
             </div>
-            
-            <!-- Loading State -->
-            <div id="loading-indicator" class="loading-indicator">
-                <div class="spinner"></div>
-                <p>Loading your profile...</p>
-            </div>
-            
-            <!-- Error Message -->
-            <div id="error-message" class="error-message" style="display: none;">
-                <i class="bi bi-exclamation-triangle"></i>
-                <p>Sorry, we couldn't load your profile. Please try again later.</p>
-                <button onclick="location.reload()" class="secondary-btn">Retry</button>
-            </div>
-            
-            <!-- Profile Content -->
-            <div id="profile-content" style="display: none;">
-                <!-- Profile Summary -->
-                <div class="profile-summary">
-                    <div class="profile-avatar">
-                        <div class="avatar-circle">
-                            <span id="avatar-initials">JD</span>
-                        </div>
-                    </div>
-                    <div class="profile-name">
-                        <h2 id="user-full-name">John Doe</h2>
-                        <p id="user-email">johndoe@example.com</p>
-                        <span class="account-status">Account Active</span>
+        </section>
+        
+        <!-- Profile Content -->
+        <div class="profile-container">
+            <!-- Profile Summary -->
+            <section class="profile-summary-card">
+                <div class="profile-photo-container">
+                    <img id="profile-pic-preview" src="../static/images/assets/default-profile.png" alt="Profile Photo" />
+                    <div class="profile-photo-overlay">
+                        <label for="profile-pic-input">
+                            <i class="bi bi-camera"></i>
+                        </label>
+                        <input type="file" id="profile-pic-input" accept="image/*" hidden />
                     </div>
                 </div>
-                
-                <!-- Sections Navigation -->
-                <div class="sections-nav">
-                    <button class="section-btn active" data-section="personal-info">Personal Information</button>
-                    <button class="section-btn" data-section="license-info">Driver's License</button>
-                    <button class="section-btn" data-section="security">Security</button>
+                <div class="profile-summary-info">
+                    <h2 id="profile-name">Loading...</h2>
+                    <p class="member-since">Member since <span id="account-since">...</span></p>
                 </div>
-                
-                <!-- Personal Information Section -->
-                <section id="personal-info" class="profile-section">
-                    <h3>Personal Information</h3>
-                    <p class="section-desc">Update your personal details</p>
-                    
-                    <form id="personal-info-form" class="profile-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="first-name">First Name</label>
-                                <input type="text" id="first-name" name="firstName" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="last-name">Last Name</label>
-                                <input type="text" id="last-name" name="lastName" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="email">Email Address</label>
-                            <input type="email" id="email" name="email" disabled>
-                            <span class="field-note">Email cannot be changed</span>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" name="phone" placeholder="8-digit phone number" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="address">Address</label>
-                            <textarea id="address" name="address" rows="3" required></textarea>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="primary-btn">Save Changes</button>
-                        </div>
-                    </form>
-                </section>
-                
-                <!-- Driver's License Section -->
-                <section id="license-info" class="profile-section" style="display: none;">
-                    <h3>Driver's License Information</h3>
-                    <p class="section-desc">Your driving license information helps us verify your identity</p>
-                    
-                    <form id="license-info-form" class="profile-form">
-                        <div class="form-group">
-                            <label for="license-number">License Number</label>
-                            <input type="text" id="license-number" name="licenseNumber" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="license-issue-date">Issue Date</label>
-                            <input type="date" id="license-issue-date" name="licenseIssueDate" required>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="primary-btn">Save Changes</button>
-                        </div>
-                    </form>
-                </section>
-                
-                <!-- Security Section -->
-                <section id="security" class="profile-section" style="display: none;">
-                    <h3>Security Settings</h3>
-                    <p class="section-desc">Update your password and security settings</p>
-                    
-                    <form id="security-form" class="profile-form">
-                        <div class="form-group">
-                            <label for="current-password">Current Password</label>
-                            <div class="password-field">
-                                <input type="password" id="current-password" name="currentPassword" required>
-                                <button type="button" class="toggle-password" aria-label="Toggle password visibility">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="new-password">New Password</label>
-                            <div class="password-field">
-                                <input type="password" id="new-password" name="newPassword" required>
-                                <button type="button" class="toggle-password" aria-label="Toggle password visibility">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </div>
-                            <div class="password-strength-meter">
-                                <div class="strength-bar" data-strength="0"></div>
-                            </div>
-                            <ul class="password-requirements">
-                                <li data-requirement="length">At least 8 characters</li>
-                                <li data-requirement="uppercase">At least 1 uppercase letter</li>
-                                <li data-requirement="number">At least 1 number</li>
-                                <li data-requirement="special">At least 1 special character</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="confirm-password">Confirm New Password</label>
-                            <div class="password-field">
-                                <input type="password" id="confirm-password" name="confirmPassword" required>
-                                <button type="button" class="toggle-password" aria-label="Toggle password visibility">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="primary-btn">Update Password</button>
-                        </div>
-                    </form>
-                    
-                    <div class="danger-zone">
-                        <h4>Danger Zone</h4>
-                        <p>Actions in this section can't be undone</p>
-                        <button type="button" id="delete-account-btn" class="danger-btn">Delete My Account</button>
+            </section>
+
+            <!-- Profile Tabs Navigation -->
+            <div class="profile-tabs">
+                <button class="tab-btn active" data-tab="personal-info">
+                    <i class="bi bi-person"></i> Personal Info
+                </button>
+                <button class="tab-btn" data-tab="email-password">
+                    <i class="bi bi-shield-lock"></i> Email & Password
+                </button>
+                <button class="tab-btn" data-tab="payment-info">
+                    <i class="bi bi-credit-card"></i> Payment Info
+                </button>
+                <button class="tab-btn" data-tab="account">
+                    <i class="bi bi-gear"></i> Account
+                </button>
+            </div>
+
+            <!-- Tab Content: Personal Info -->
+            <div class="tab-content active" id="personal-info">
+                <div class="profile-card">
+                    <div class="card-header">
+                        <h3>Personal Information</h3>
+                        <p>Update your basic personal information</p>
                     </div>
-                </section>
+                    <div class="card-body">
+                        <form id="profile-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="first-name">First Name</label>
+                                    <input type="text" id="first-name" name="firstName" required />
+                                </div>
+                                <div class="form-group">
+                                    <label for="last-name">Last Name</label>
+                                    <input type="text" id="last-name" name="lastName" required />
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="phone">Phone Number</label>
+                                    <input type="tel" id="phone" name="phone" placeholder="8-digit phone number" maxlength="8" required />
+                                </div>
+                                <div class="form-group">
+                                    <label for="address">Address</label>
+                                    <input type="text" id="address" name="address" />
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="license-number">Driver's License Number</label>
+                                    <input type="text" id="license-number" name="licenseNumber" required />
+                                </div>
+                                <div class="form-group">
+                                    <label for="license-issue-date">License Issue Date</label>
+                                    <input type="date" id="license-issue-date" name="licenseIssueDate" required />
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="primary-btn">
+                                    <i class="bi bi-check-lg"></i> Update Profile
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Email & Password -->
+            <div class="tab-content" id="email-password">
+                <div class="profile-card">
+                    <div class="card-header">
+                        <h3>Email Address</h3>
+                        <p>Update your email address</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="current-info">
+                            <label>Current Email</label>
+                            <p id="current-email">loading@example.com</p>
+                        </div>
+
+                        <form id="email-form">
+                            <div class="form-group">
+                                <label for="new-email">New Email Address</label>
+                                <input type="email" id="new-email" name="newEmail" required />
+                            </div>
+
+                            <div class="form-group password-group">
+                                <label for="current-password-email">Current Password</label>
+                                <div class="password-input-container">
+                                    <input type="password" id="current-password-email" name="currentPassword" required />
+                                    <button type="button" class="toggle-password-btn">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="primary-btn">
+                                    <i class="bi bi-check-lg"></i> Update Email
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="profile-card">
+                    <div class="card-header">
+                        <h3>Password</h3>
+                        <p>Update your password</p>
+                    </div>
+                    <div class="card-body">
+                        <form id="password-form">
+                            <div class="form-group password-group">
+                                <label for="current-password">Current Password</label>
+                                <div class="password-input-container">
+                                    <input type="password" id="current-password" name="currentPassword" required />
+                                    <button type="button" class="toggle-password-btn">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group password-group">
+                                <label for="new-password">New Password</label>
+                                <div class="password-input-container">
+                                    <input type="password" id="new-password" name="newPassword" minlength="8" required />
+                                    <button type="button" class="toggle-password-btn">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="hint-text">Minimum 8 characters</div>
+                            </div>
+
+                            <div class="form-group password-group">
+                                <label for="confirm-password">Confirm New Password</label>
+                                <div class="password-input-container">
+                                    <input type="password" id="confirm-password" name="confirmPassword" minlength="8" required />
+                                    <button type="button" class="toggle-password-btn">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="primary-btn">
+                                    <i class="bi bi-check-lg"></i> Update Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Payment Info -->
+            <div class="tab-content" id="payment-info">
+                <div class="profile-card">
+                    <div class="card-header">
+                        <h3>Payment Information</h3>
+                        <p>Update your payment details</p>
+                    </div>
+                    <div class="card-body">
+                        <form id="payment-form">
+                            <div class="form-group">
+                                <label for="card-number">Card Number</label>
+                                <input type="text" id="card-number" name="cardNumber" placeholder="**** **** **** ****" maxlength="19" required />
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="card-expiry">Expiry Date</label>
+                                    <input type="text" id="card-expiry" name="cardExpiry" placeholder="MM/YY" maxlength="5" required />
+                                </div>
+                                <div class="form-group">
+                                    <label for="card-cvv">CVV</label>
+                                    <input type="text" id="card-cvv" name="cardCvv" placeholder="***" maxlength="3" required />
+                                </div>
+                            </div>
+
+                            <div class="card-security-notice">
+                                <i class="bi bi-shield-lock"></i>
+                                <p>Your payment information is securely stored and encrypted</p>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="primary-btn">
+                                    <i class="bi bi-check-lg"></i> Update Payment Info
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Account -->
+            <div class="tab-content" id="account">
+                <div class="profile-card">
+                    <div class="card-header">
+                        <h3>Account Actions</h3>
+                        <p>Manage your account settings</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="account-action danger-zone">
+                            <div class="action-info">
+                                <h4>Delete Account</h4>
+                                <p>Permanently delete your account and all associated data</p>
+                            </div>
+                            <button id="delete-account-btn" class="danger-btn">
+                                <i class="bi bi-trash"></i> Delete Account
+                            </button>
+                        </div>
+
+                        <div class="danger-zone-notice">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <p>Account deletion cannot be undone. All your data will be permanently removed.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
-    
+
     <div id="footer"></div>
-    
-    <!-- Delete Account Confirmation Modal -->
-    <div id="delete-modal" class="modal">
+
+    <!-- Re-Authentication Modal -->
+    <div id="re-auth-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Delete Account</h3>
-                <button class="close-modal"><i class="bi bi-x-lg"></i></button>
+                <h3><i class="bi bi-shield-lock"></i> Confirm Identity</h3>
+                <button class="close-btn" id="close-modal">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
             <div class="modal-body">
-                <i class="bi bi-exclamation-triangle-fill warning-icon"></i>
-                <p>Are you sure you want to delete your account? This action cannot be undone.</p>
-                <p>All of your data will be permanently deleted, including booking history.</p>
-                <div class="confirmation-input">
-                    <label for="delete-confirm">To confirm, type "DELETE" below:</label>
-                    <input type="text" id="delete-confirm" placeholder="DELETE">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="secondary-btn close-modal">Cancel</button>
-                <button class="danger-btn" id="confirm-delete-btn" disabled>Delete Account</button>
+                <p>For security reasons, please re-enter your password to continue.</p>
+                <form id="re-auth-form">
+                    <div class="form-group password-group">
+                        <label for="auth-password">Current Password</label>
+                        <div class="password-input-container">
+                            <input type="password" id="auth-password" name="password" required />
+                            <button type="button" class="toggle-password-btn">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn">
+                            <i class="bi bi-check-lg"></i> Confirm
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-    
-    <!-- Success Toast -->
-    <div id="success-toast" class="toast">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="error-toast" class="toast error">
+        <i class="bi bi-exclamation-circle"></i>
+        <span id="error-message">Error message here</span>
+        <button class="close-toast"><i class="bi bi-x"></i></button>
+    </div>
+
+    <div id="success-toast" class="toast success">
         <i class="bi bi-check-circle"></i>
-        <span id="toast-message">Changes saved successfully</span>
+        <span id="success-message">Success message here</span>
+        <button class="close-toast"><i class="bi bi-x"></i></button>
     </div>
 
     <!-- Scripts -->
