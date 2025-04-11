@@ -269,20 +269,20 @@ h1 {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 100;
+  z-index: 1000;
   align-items: center;
   justify-content: center;
 }
 
 .modal-content {
   background-color: white;
+  border-radius: 12px;
   width: 90%;
   max-width: 400px;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   animation: modalFadeIn 0.3s;
 }
 
@@ -301,36 +301,45 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .modal-header h2 {
-  font-size: 1.2rem;
   margin: 0;
-  font-weight: 600;
-  color: #333;
+  font-size: 1.2rem;
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
 .modal-header h2 i {
-  color: var(--primary-color);
+  margin-right: 8px;
+  color: #ef4444;
 }
 
 .modal-body {
   padding: 20px;
+  text-align: center;
+}
+
+.modal-body p {
+  margin-bottom: 20px;
+  color: #4b5563;
+}
+
+.modal-body .login-btn {
+  min-width: 100px;
 }
 
 .close-btn {
   background: none;
   border: none;
-  font-size: 1.2rem;
   cursor: pointer;
+  font-size: 1.2rem;
   color: #666;
-  padding: 5px;
-  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .close-btn:hover {

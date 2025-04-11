@@ -126,6 +126,24 @@
       </div>
     </div>
 
+    <!-- Error Message Modal -->
+    <div id="error-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="bi bi-exclamation-circle"></i> Error</h2>
+          <button type="button" class="close-btn" id="close-error-modal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="error-modal-message">
+            Invalid email or password. Please try again.
+          </p>
+          <button class="login-btn" id="error-modal-ok-btn">OK</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Firebase and App Scripts -->
     <script type="module">
       // Import Firebase modules
@@ -233,7 +251,32 @@
           });
         }
 
-        // Handle login form submission
+        const errorModal = document.getElementById("error-modal");
+        const closeErrorModalBtn = document.getElementById("close-error-modal");
+        const errorModalOkBtn = document.getElementById("error-modal-ok-btn");
+        const errorModalMessage = document.getElementById(
+          "error-modal-message"
+        );
+
+        if (closeErrorModalBtn) {
+          closeErrorModalBtn.addEventListener("click", function () {
+            errorModal.style.display = "none";
+          });
+        }
+
+        if (errorModalOkBtn) {
+          errorModalOkBtn.addEventListener("click", function () {
+            errorModal.style.display = "none";
+          });
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener("click", function (event) {
+          if (event.target === errorModal) {
+            errorModal.style.display = "none";
+          }
+        });
+
         const loginForm = document.getElementById("login-form");
         if (loginForm) {
           loginForm.addEventListener("submit", async function (e) {
@@ -242,18 +285,24 @@
             // Get form data
             const email = document.getElementById("login-email").value.trim();
             const password = document.getElementById("login-password").value;
-            const errorMessage = document.getElementById("error-message");
-            const loginBtn = document.querySelector(".login-btn");
+            const loginBtn = this.querySelector("button[type='submit']");
 
-            // Clear any previous error messages
-            if (errorMessage) {
-              errorMessage.style.display = "none";
-              errorMessage.textContent = "";
-            }
+            // Debugging - check if elements exist
+            console.log("Login button found:", !!loginBtn);
+            console.log(
+              "Error modal found:",
+              !!document.getElementById("error-modal")
+            );
+            console.log(
+              "Error message element found:",
+              !!document.getElementById("error-modal-message")
+            );
 
             // Show loading state
-            loginBtn.disabled = true;
-            loginBtn.innerHTML = `<div class="spinner"></div>`;
+            if (loginBtn) {
+              loginBtn.disabled = true;
+              loginBtn.innerHTML = `<div class="spinner"></div>`;
+            }
 
             try {
               // Attempt to sign in
@@ -279,38 +328,77 @@
                 }
               } else {
                 // User document doesn't exist
-                if (errorMessage) {
-                  errorMessage.textContent = "User profile not found";
-                  errorMessage.style.display = "block";
+                console.log("User document not found in Firestore");
+                clearPasswordField(); // Clear password
+                showErrorModal(
+                  "User profile not found. Please contact support."
+                );
+
+                // Reset login button
+                if (loginBtn) {
+                  loginBtn.disabled = false;
+                  loginBtn.innerHTML = "Login";
                 }
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = "Login";
               }
             } catch (error) {
               console.error("Login error:", error);
 
-              if (errorMessage) {
-                // Display appropriate error message
-                if (
-                  error.code === "auth/wrong-password" ||
-                  error.code === "auth/user-not-found" ||
-                  error.code === "auth/invalid-login-credentials"
-                ) {
-                  errorMessage.textContent = "Invalid email or password";
-                } else if (error.code === "auth/too-many-requests") {
-                  errorMessage.textContent =
-                    "Too many failed attempts. Please try again later";
-                } else {
-                  errorMessage.textContent = "Login failed. Please try again";
-                }
+              // Clear password field
+              clearPasswordField();
 
-                errorMessage.style.display = "block";
+              // Determine error message
+              let errorMessage = "Login failed. Please try again.";
+
+              if (
+                error.code === "auth/wrong-password" ||
+                error.code === "auth/user-not-found" ||
+                error.code === "auth/invalid-login-credentials" ||
+                error.code === "auth/invalid-credential"
+              ) {
+                errorMessage = "Invalid email or password. Please try again.";
+              } else if (error.code === "auth/too-many-requests") {
+                errorMessage =
+                  "Too many failed attempts. Please try again later.";
+              } else if (error.code === "auth/network-request-failed") {
+                errorMessage =
+                  "Network error. Please check your internet connection.";
               }
 
-              loginBtn.disabled = false;
-              loginBtn.innerHTML = "Login";
+              console.log("Showing error modal with message:", errorMessage);
+              showErrorModal(errorMessage);
+
+              // Reset login button
+              if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = "Login";
+              }
             }
           });
+        }
+
+        // Function to show error modal - place this OUTSIDE the login form handler but inside DOMContentLoaded
+        function showErrorModal(message) {
+          console.log("Attempting to show error modal with message:", message);
+          const errorModal = document.getElementById("error-modal");
+          const errorMessage = document.getElementById("error-modal-message");
+
+          if (errorModal && errorMessage) {
+            errorMessage.textContent = message;
+            errorModal.style.display = "flex"; // Use flex to center the modal content
+            console.log("Error modal should now be visible");
+          } else {
+            console.error("Error modal elements not found!");
+            // Fallback
+            alert(message);
+          }
+        }
+
+        // Function to clear password
+        function clearPasswordField() {
+          const passwordInput = document.getElementById("login-password");
+          if (passwordInput) {
+            passwordInput.value = "";
+          }
         }
 
         // Handle password reset form submission
