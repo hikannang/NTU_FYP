@@ -6,7 +6,7 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-s
 import { getFunctions } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-functions.js";
 
 // Firebase configuration
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyBvSNS37RNg1L1hO7u76z1N_4pEExKbjhU",
   authDomain: "bao-car-liao.firebaseapp.com",
   projectId: "bao-car-liao",
