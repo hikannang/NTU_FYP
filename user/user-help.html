@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Help Center | BaoCarLiao</title>
+    <link rel="stylesheet" href="../static/css/users/user.css" />
+    <link rel="stylesheet" href="../static/css/users/user-help.css" />
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+    />
+</head>
+<body>
+    <div id="header"></div>
+
+    <main>
+        <!-- Page Header -->
+        <section id="help-header">
+            <div class="section-header">
+                <h1><i class="bi bi-question-circle"></i> Help Center</h1>
+                <button id="logout-button" class="secondary-btn">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </div>
+        </section>
+        
+        <!-- Help Center Content -->
+        <div class="help-container">
+            <!-- Search Section -->
+            <section class="search-section">
+                <div class="search-container">
+                    <i class="bi bi-search"></i>
+                    <input 
+                        type="text" 
+                        id="help-search" 
+                        placeholder="Search for answers..." 
+                    />
+                    <button class="search-btn">Search</button>
+                </div>
+                <div id="no-results-message" style="display: none;">
+                    <p>No results found. Please try different keywords or contact support.</p>
+                </div>
+            </section>
+            
+            <!-- Categories Section -->
+            <section class="categories-section">
+                <h2>Help Categories</h2>
+                <div class="category-grid">
+                    <div class="category-card" data-category="account">
+                        <i class="bi bi-person"></i>
+                        <h3>Account</h3>
+                        <p>Profile, settings, security</p>
+                    </div>
+                    <div class="category-card" data-category="booking">
+                        <i class="bi bi-calendar-check"></i>
+                        <h3>Bookings</h3>
+                        <p>Reserve, modify, cancel</p>
+                    </div>
+                    <div class="category-card" data-category="payment">
+                        <i class="bi bi-credit-card"></i>
+                        <h3>Payments</h3>
+                        <p>Billing, pricing, refunds</p>
+                    </div>
+                    <div class="category-card" data-category="vehicle">
+                        <i class="bi bi-car-front"></i>
+                        <h3>Vehicles</h3>
+                        <p>Car types, features, access</p>
+                    </div>
+                    <div class="category-card" data-category="emergency">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <h3>Emergency</h3>
+                        <p>Accidents, breakdowns</p>
+                    </div>
+                    <div class="category-card" data-category="other">
+                        <i class="bi bi-three-dots"></i>
+                        <h3>Other</h3>
+                        <p>General questions</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- FAQ Section -->
+            <section class="faq-section">
+                <h2>Frequently Asked Questions</h2>
+                
+                <!-- Account FAQs -->
+                <div class="faq-category" id="account-faqs">
+                    <h3><i class="bi bi-person"></i> Account Questions</h3>
+                    
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>How do I change my email address?</h4>
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>To change your email address:</p>
+                                <ol>
+                                    <li>Go to your profile by clicking on your name in the top right</li>
+                                    <li>Navigate to the "Email & Password" tab</li>
+                                    <li>Enter your new email address and current password</li>
+                                    <li>Click "Update Email"</li>
+                                </ol>
+                                <p>You'll receive a verification email to confirm your new address.</p>
+                                
+                                <div class="feedback-container">
+                                    <p>Was this answer helpful?</p>
+                                    <div class="feedback-buttons">
+                                        <button class="helpful-btn"><i class="bi bi-hand-thumbs-up"></i> Yes</button>
+                                        <button class="not-helpful-btn"><i class="bi bi-hand-thumbs-down"></i> No</button>
+                                        <span class="feedback-thank-you" style="display: none;">Thank you for your feedback!</span>
+                                    </div>
+                                    <div class="additional-feedback" style="display: none;">
+                                        <form class="additional-feedback-form">
+                                            <textarea placeholder="How can we improve this answer?"></textarea>
+                                            <button type="submit" class="submit-feedback-btn">Submit</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>How do I reset my password?</h4>
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>There are two ways to reset your password:</p>
+                                
+                                <p><strong>If you're logged in:</strong></p>
+                                <ol>
+                                    <li>Go to your profile</li>
+                                    <li>Select the "Email & Password" tab</li>
+                                    <li>Enter your current password and new password</li>
+                                    <li>Click "Update Password"</li>
+                                </ol>
+                                
+                                <p><strong>If you're not logged in:</strong></p>
+                                <ol>
+                                    <li>Click "Log In" at the top of the page</li>
+                                    <li>Click "Forgot Password"</li>
+                                    <li>Enter your email address</li>
+                                    <li>Follow the instructions sent to your email</li>
+                                </ol>
+                                
+                                <div class="feedback-container">
+                                    <p>Was this answer helpful?</p>
+                                    <div class="feedback-buttons">
+                                        <button class="helpful-btn"><i class="bi bi-hand-thumbs-up"></i> Yes</button>
+                                        <button class="not-helpful-btn"><i class="bi bi-hand-thumbs-down"></i> No</button>
+                                        <span class="feedback-thank-you" style="display: none;">Thank you for your feedback!</span>
+                                    </div>
+                                    <div class="additional-feedback" style="display: none;">
+                                        <form class="additional-feedback-form">
+                                            <textarea placeholder="How can we improve this answer?"></textarea>
+                                            <button type="submit" class="submit-feedback-btn">Submit</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>How do I delete my account?</h4>
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>To delete your account:</p>
+                                <ol>
+                                    <li>Go to your profile</li>
+                                    <li>Select the "Account" tab</li>
+                                    <li>Scroll down to the "Delete Account" section</li>
+                                    <li>Click "Delete Account" and confirm your decision</li>
+                                </ol>
+                                <p><strong>Important:</strong> Account deletion is permanent and cannot be undone. Any active bookings must be completed or canceled before deletion.</p>
+                                
+                                <div class="feedback-container">
+                                    <p>Was this answer helpful?</p>
+                                    <div class="feedback-buttons">
+                                        <button class="helpful-btn"><i class="bi bi-hand-thumbs-up"></i> Yes</button>
+                                        <button class="not-helpful-btn"><i class="bi bi-hand-thumbs-down"></i> No</button>
+                                        <span class="feedback-thank-you" style="display: none;">Thank you for your feedback!</span>
+                                    </div>
+                                    <div class="additional-feedback" style="display: none;">
+                                        <form class="additional-feedback-form">
+                                            <textarea placeholder="How can we improve this answer?"></textarea>
+                                            <button type="submit" class="submit-feedback-btn">Submit</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Booking FAQs -->
+                <div class="faq-category" id="booking-faqs">
+                    <h3><i class="bi bi-calendar-check"></i> Booking Questions</h3>
+                    
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>How do I book a car?</h4>
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Booking a car is simple:</p>
+                                <ol>
+                                    <li>From the dashboard, enter your location or use your current location</li>
+                                    <li>Select your preferred pickup date and time</li>
+                                    <li>Choose your booking duration</li>
+                                    <li>Click "Find Cars" to see available vehicles</li>
+                                    <li>Select a car from the list or map view</li>
+                                    <li>Review the booking details and price</li>
+                                    <li>Confirm your booking by clicking "Book Now"</li>
+                                </ol>
+                                <p>You'll receive a confirmation email with all the details of your booking.</p>
+                                
+                                <div class="feedback-container">
+                                    <p>Was this answer helpful?</p>
+                                    <div class="feedback-buttons">
+                                        <button class="helpful-btn"><i class="bi bi-hand-thumbs-up"></i> Yes</button>
+                                        <button class="not-helpful-btn"><i class="bi bi-hand-thumbs-down"></i> No</button>
+                                        <span class="feedback-thank-you" style="display: none;">Thank you for your feedback!</span>
+                                    </div>
+                                    <div class="additional-feedback" style="display: none;">
+                                        <form class="additional-feedback-form">
+                                            <textarea placeholder="How can we improve this answer?"></textarea>
+                                            <button type="submit" class="submit-feedback-btn">Submit</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>How do I cancel a booking?</h4>
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>To cancel a booking:</p>
+                                <ol>
+                                    <li>Go to "My Bookings" in your dashboard</li>
+                                    <li>Find the booking you want to cancel</li>
+                                    <li>Click "View Details"</li>
+                                    <li>Click the "Cancel Booking" button</li>
+                                    <li>Confirm your cancellation</li>
+                                </ol>
+                                <p><strong>Note:</strong> Our cancellation policy provides:</p>
+                                <ul>
+                                    <li>Full refund if canceled 24+ hours before pickup</li>
+                                    <li>50% refund if canceled between 3-24 hours before pickup</li>
+                                    <li>No refund if canceled less than 3 hours before pickup</li>
+                                </ul>
+                                
+                                <div class="feedback-container">
+                                    <p>Was this answer helpful?</p>
+                                    <div class="feedback-buttons">
+                                        <button class="helpful-btn"><i class="bi bi-hand-thumbs-up"></i> Yes</button>
+                                        <button class="not-helpful-btn"><i class="bi bi-hand-thumbs-down"></i> No</button>
+                                        <span class="feedback-thank-you" style="display: none;">Thank you for your feedback!</span>
+                                    </div>
+                                    <div class="additional-feedback" style="display: none;">
+                                        <form class="additional-feedback-form">
+                                            <textarea placeholder="How can we improve this answer?"></textarea>
+                                            <button type="submit" class="submit-feedback-btn">Submit</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment FAQs -->
+                <div class="faq-category" id="payment-faqs">
+                    <h3><i class="bi bi-credit-card"></i> Payment Questions</h3>
+                    
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>What payment methods do you accept?</h4>
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>We accept the following payment methods:</p>
+                                <ul>
+                                    <li>Credit Cards (Visa, Mastercard, American Express)</li>
+                                    <li>Debit Cards</li>
+                                    <li>PayPal</li>
+                                    <li>Apple Pay (on iOS devices)</li>
+                                    <li>Google Pay (on Android devices)</li>
+                                </ul>
+                                <p>All payments are securely processed and encrypted.</p>
+                                
+                                <div class="feedback-container">
+                                    <p>Was this answer helpful?</p>
+                                    <div class="feedback-buttons">
+                                        <button class="helpful-btn"><i class="bi bi-hand-thumbs-up"></i> Yes</button>
+                                        <button class="not-helpful-btn"><i class="bi bi-hand-thumbs-down"></i> No</button>
+                                        <span class="feedback-thank-you" style="display: none;">Thank you for your feedback!</span>
+                                    </div>
+                                    <div class="additional-feedback" style="display: none;">
+                                        <form class="additional-feedback-form">
+                                            <textarea placeholder="How can we improve this answer?"></textarea>
+                                            <button type="submit" class="submit-feedback-btn">Submit</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>How does the pricing work?</h4>
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Our pricing is transparent and based on several factors:</p>
+                                <ul>
+                                    <li><strong>Base Rate:</strong> Each vehicle has an hourly rate</li>
+                                    <li><strong>Duration:</strong> Longer bookings may have discounted hourly rates</li>
+                                    <li><strong>Insurance:</strong> Basic insurance is included in the price</li>
+                                    <li><strong>Location:</strong> Some high-demand areas may have higher rates</li>
+                                    <li><strong>Time:</strong> Peak times may have higher rates than off-peak</li>
+                                </ul>
+                                <p>The final price is always shown before you confirm your booking, with no hidden fees.</p>
+                                
+                                <div class="feedback-container">
+                                    <p>Was this answer helpful?</p>
+                                    <div class="feedback-buttons">
+                                        <button class="helpful-btn"><i class="bi bi-hand-thumbs-up"></i> Yes</button>
+                                        <button class="not-helpful-btn"><i class="bi bi-hand-thumbs-down"></i> No</button>
+                                        <span class="feedback-thank-you" style="display: none;">Thank you for your feedback!</span>
+                                    </div>
+                                    <div class="additional-feedback" style="display: none;">
+                                        <form class="additional-feedback-form">
+                                            <textarea placeholder="How can we improve this answer?"></textarea>
+                                            <button type="submit" class="submit-feedback-btn">Submit</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Contact Support Section -->
+            <section class="contact-section">
+                <h2>Still Need Help?</h2>
+                <p>Can't find what you're looking for? Contact our support team.</p>
+                
+                <div class="contact-options">
+                    <div class="contact-card">
+                        <i class="bi bi-envelope"></i>
+                        <h3>Email Support</h3>
+                        <p>Get a response within 24 hours</p>
+                        <a href="mailto:support@baocarliao.com" class="contact-link">support@baocarliao.com</a>
+                    </div>
+                    
+                    <div class="contact-card">
+                        <i class="bi bi-telephone"></i>
+                        <h3>Phone Support</h3>
+                        <p>Available 9am-6pm, Mon-Fri</p>
+                        <a href="tel:+6591234567" class="contact-link">+65 9123 4567</a>
+                    </div>
+                    
+                    <div class="contact-card">
+                        <i class="bi bi-chat-dots"></i>
+                        <h3>Live Chat</h3>
+                        <p>Available 24/7 for urgent issues</p>
+                        <button class="contact-link chat-btn">Start Chat</button>
+                    </div>
+                </div>
+                
+                <div class="contact-form-container">
+                    <h3>Send us a Message</h3>
+                    <form id="contact-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contact-name">Name</label>
+                                <input type="text" id="contact-name" name="name" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="contact-email">Email</label>
+                                <input type="email" id="contact-email" name="email" required />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-subject">Subject</label>
+                            <input type="text" id="contact-subject" name="subject" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-message">Message</label>
+                            <textarea id="contact-message" name="message" rows="5" required></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="primary-btn">
+                                <i class="bi bi-send"></i> Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="footer"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="error-toast" class="toast error">
+        <i class="bi bi-exclamation-circle"></i>
+        <span id="error-message">Error message here</span>
+        <button class="close-toast"><i class="bi bi-x"></i></button>
+    </div>
+
+    <div id="success-toast" class="toast success">
+        <i class="bi bi-check-circle"></i>
+        <span id="success-message">Success message here</span>
+        <button class="close-toast"><i class="bi bi-x"></i></button>
+    </div>
+
+    <!-- Chat Dialog (Hidden by default) -->
+    <div id="chat-dialog" class="chat-dialog">
+        <div class="chat-header">
+            <h3><i class="bi bi-chat-dots"></i> Support Chat</h3>
+            <button id="close-chat" class="close-btn"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="chat-body">
+            <div class="chat-messages">
+                <div class="message support-message">
+                    <div class="message-content">
+                        <p>Hello! How can I help you today?</p>
+                    </div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chat-message" placeholder="Type your message..." />
+                <button id="send-chat" class="send-btn"><i class="bi bi-send"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
+    <script src="../static/js/user/user-help.js" type="module"></script>
+</body>
+</html>
