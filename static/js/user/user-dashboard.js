@@ -69,8 +69,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     .getElementById("car-type-filter")
     .addEventListener("change", filterNearbyCars);
 
+  // Event listeners for filters
+  document.getElementById("search-btn").addEventListener("click", searchCars);
+  document.getElementById("current-location-btn").addEventListener("click", getCurrentLocation);
+  
+  // Add these new event listeners for filters
+  document.getElementById("car-type-filter").addEventListener("change", filterNearbyCars);
+  document.getElementById("seats-filter").addEventListener("change", filterNearbyCars);
+  document.getElementById("fuel-filter").addEventListener("change", filterNearbyCars);
+  document.getElementById("reset-all-filters").addEventListener("click", resetFilters);
+    
+
   // Setup logout functionality after header is loaded
   setupLogoutButton();
+
+
 });
 
 // Setup logout button
@@ -1437,43 +1450,48 @@ function parseCarType(carType) {
   };
 }
 
-// Modified createCarElement function to use the enhanced getCarModelInfo
+// Modified createCarElement function with proper dataset attributes
 function createCarElement(car) {
   const carEl = document.createElement("div");
   carEl.className = "car-card";
 
-  // Get the car type for dataset filtering
-  const baseCarType = car.car_type ? car.car_type.split("_")[0] : "unknown";
-  carEl.dataset.type = baseCarType.toLowerCase();
+  // Set data attributes for filtering based on your database structure
+  // Extract base car type (e.g., "modely" from "modely_red")
+  const baseCarType = car.car_type ? car.car_type.split("_")[0].toLowerCase() : "unknown";
+  carEl.dataset.type = baseCarType;
+  
+  // Set other filter attributes from database fields
+  carEl.dataset.seats = String(car.seating_capacity || "5");
+  carEl.dataset.fuel = (car.fuel_type || "petrol").toLowerCase();
+  
+  console.log(`Creating car card with attributes: type=${carEl.dataset.type}, seats=${carEl.dataset.seats}, fuel=${carEl.dataset.fuel}`);
 
-  // Prepare distance display
+  // Format distance display
   let distanceDisplay = "";
-  if (car.distance !== null) {
-    distanceDisplay = `<span class="car-distance"><i class="bi bi-geo"></i> ${car.distance.toFixed(
-      1
-    )} km</span>`;
+  if (car.distance !== undefined && car.distance !== null) {
+    distanceDisplay = `<span class="car-distance"><i class="bi bi-geo"></i> ${car.distance.toFixed(1)} km</span>`;
   }
 
-  // Prepare price display
+  // Format price display
   const priceDisplay = car.price_per_hour
     ? `$${car.price_per_hour.toFixed(2)}/hour`
     : "";
 
-  // Get license plate and car ID
+  // Format license plate display
   const licensePlate = car.license_plate || "No plate";
   const carId = car.id ? car.id.substring(0, 6) : "";
   const licensePlatePill = `${licensePlate}${carId ? ` (${carId})` : ""}`;
 
-  // Create HTML content with car name from displayName
+  // Create HTML content
   carEl.innerHTML = `
     <div class="car-image">
-      <img src="${car.image}" alt="${
-    car.displayName || `${car.make} ${car.modelName}`
-  }" onerror="this.src='../static/images/assets/car-placeholder.png';">
+      <img src="${car.image || `../static/images/car_images/${car.car_type || "car"}.png`}" 
+           alt="${car.displayName || `${car.make || 'Car'} ${car.model || ''}`}" 
+           onerror="this.src='../static/images/assets/car-placeholder.png';">
     </div>
     <div class="car-info">
       <div class="car-header">
-        <h3>${car.displayName || `${car.make} ${car.modelName}`}</h3>
+        <h3>${car.displayName || `${car.make || 'Car'} ${car.model || ''}`}</h3>
         <div class="license-plate-badge">${licensePlatePill}</div>
       </div>
       <div class="car-meta">
@@ -1681,127 +1699,165 @@ function addMarkersToMap(cars) {
 
 // Enhanced filterNearbyCars function
 function filterNearbyCars() {
-  const typeFilter = document
-    .getElementById("car-type-filter")
-    .value.toLowerCase();
+  console.log("Filtering nearby cars");
+
+  // Get filter values from the UI
+  const typeFilter = document.getElementById("car-type-filter").value.toLowerCase();
   const seatsFilter = document.getElementById("seats-filter").value;
   const fuelFilter = document.getElementById("fuel-filter").value.toLowerCase();
 
-  console.log("Filtering cars with criteria:", {
-    typeFilter,
-    seatsFilter,
-    fuelFilter,
-  });
+  console.log("Filter criteria:", { typeFilter, seatsFilter, fuelFilter });
 
+  // Variables to track visible cars
   let visibleCars = 0;
 
-  // Filter the car elements in the list view
+  // ---------- FILTER CAR CARDS IN LIST VIEW ----------
   const carCards = document.querySelectorAll("#nearby-cars .car-card");
+  
+  console.log(`Found ${carCards.length} car cards to filter`);
+  
   carCards.forEach((card) => {
-    // Get dataset values for filtering
-    const cardType = card.dataset.type;
-    const cardSeats = card.dataset.seats;
-    const cardFuel = card.dataset.fuel;
-
+    // Get dataset values from the card
+    const cardType = (card.dataset.type || "unknown").toLowerCase();
+    const cardSeats = String(card.dataset.seats || "5");
+    const cardFuel = (card.dataset.fuel || "petrol").toLowerCase();
+    
     // Check if card matches all selected filters
     const typeMatch = typeFilter === "all" || cardType === typeFilter;
     const seatsMatch = seatsFilter === "all" || cardSeats === seatsFilter;
     const fuelMatch = fuelFilter === "all" || cardFuel === fuelFilter;
 
-    // Apply filter
+    // Debug log for the first few cards to verify filtering logic
+    if (visibleCars < 3) {
+      console.log(`Card filter check: type=${cardType}(${typeMatch}), seats=${cardSeats}(${seatsMatch}), fuel=${cardFuel}(${fuelMatch})`);
+    }
+
+    // Apply filter - show or hide the card
     if (typeMatch && seatsMatch && fuelMatch) {
-      card.style.display = "block";
+      card.style.display = "flex";
       visibleCars++;
     } else {
       card.style.display = "none";
     }
   });
 
-  // Filter map markers to match visible cars
-  if (markers && markers.length > 0) {
+  console.log(`After filtering list view: ${visibleCars} cars visible`);
+
+  // ---------- FILTER MAP MARKERS ----------
+  if (map && markers && markers.length > 0) {
+    console.log(`Filtering ${markers.length} markers on map`);
+    let visibleMarkers = 0;
+    
     markers.forEach((marker) => {
-      // Skip markers without car data or user location marker
+      // Skip user location marker (doesn't have carId)
       if (!marker.carId) {
-        return; // This is likely the user location marker
+        return;
       }
 
-      // Find the corresponding car in nearbyCarsList
-      const car = nearbyCarsList.find((c) => c.id === marker.carId);
-      if (!car) return;
+      // Find the corresponding car data from nearbyCarsList
+      const car = nearbyCarsList.find(c => c.id === marker.carId);
+      
+      if (!car) {
+        console.log(`Warning: No car data found for marker with ID ${marker.carId}`);
+        return;
+      }
 
-      // Extract filtering data from car
-      const carType = car.car_type
-        ? car.car_type.split("_")[0].toLowerCase()
-        : "";
-      const carSeats = car.seating_capacity || "5";
-      const carFuel = car.fuel_type ? car.fuel_type.toLowerCase() : "petrol";
+      // Extract filter parameters from car data
+      // Based on your database structure: car.car_type, car.seating_capacity, car.fuel_type
+      const carType = car.car_type ? car.car_type.split('_')[0].toLowerCase() : "unknown";
+      const carSeats = String(car.seating_capacity || "5");
+      const carFuel = (car.fuel_type || "petrol").toLowerCase();
 
       // Apply same filtering logic as for cards
       const typeMatch = typeFilter === "all" || carType === typeFilter;
       const seatsMatch = seatsFilter === "all" || carSeats === seatsFilter;
       const fuelMatch = fuelFilter === "all" || carFuel === fuelFilter;
 
-      // Show/hide marker based on filter results
+      // Debug logging for a few markers
+      if (visibleMarkers < 3) {
+        console.log(`Marker filter check for car ${car.id || marker.carId}: ` +
+                    `type=${carType}(${typeMatch}), ` +
+                    `seats=${carSeats}(${seatsMatch}), ` +
+                    `fuel=${carFuel}(${fuelMatch})`);
+      }
+
+      // Show or hide marker based on filter match
       if (typeMatch && seatsMatch && fuelMatch) {
-        marker.setMap(map); // Show marker
+        marker.setMap(map);  // Show the marker
+        visibleMarkers++;
       } else {
-        marker.setMap(null); // Hide marker
+        marker.setMap(null); // Hide the marker
       }
     });
+
+    console.log(`After filtering map: ${visibleMarkers} markers visible`);
   }
 
-  // Show no results message when all cars are filtered out
-  const emptyStateEl = document.querySelector("#nearby-cars .empty-state");
+  // ---------- SHOW/HIDE NO RESULTS MESSAGE ----------
+  const existingEmptyState = document.querySelector("#nearby-cars .empty-state");
+  
   if (visibleCars === 0) {
-    if (!emptyStateEl) {
+    if (!existingEmptyState) {
+      // Create "No results" message with reset button
       const noResults = document.createElement("div");
       noResults.className = "empty-state";
       noResults.innerHTML = `
         <i class="bi bi-car-front"></i>
         <p>No cars match your filter criteria</p>
+        <button id="reset-filters-btn" class="secondary-btn">
+          <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+        </button>
       `;
       document.getElementById("nearby-cars").appendChild(noResults);
+      
+      // Add event listener to the reset button
+      document.getElementById("reset-filters-btn").addEventListener("click", resetFilters);
     }
-  } else if (emptyStateEl) {
-    emptyStateEl.remove();
+  } else if (existingEmptyState) {
+    // Remove "No results" message if we have visible cars
+    existingEmptyState.remove();
   }
 
-  console.log(`Filter applied - ${visibleCars} cars visible`);
+  console.log(`Filter operation completed: ${visibleCars} cars visible`);
 }
 
-// Function to reset all filters
+/**
+ * Reset all filters to their default values
+ */
 function resetFilters() {
   console.log("Resetting all filters");
 
-  // Reset filter dropdown values
+  // Reset filter dropdowns to "all"
   document.getElementById("car-type-filter").value = "all";
   document.getElementById("seats-filter").value = "all";
   document.getElementById("fuel-filter").value = "all";
 
-  // Make all car cards visible
+  // Show all car cards in the list view
   const carCards = document.querySelectorAll("#nearby-cars .car-card");
-  carCards.forEach((card) => {
-    card.style.display = "block";
+  carCards.forEach(card => {
+    card.style.display = "flex";
   });
 
-  // Show all car markers on the map
+  // Show all markers on the map
   if (markers && markers.length > 0) {
-    markers.forEach((marker) => {
-      if (marker.carId) {
-        // Only show car markers (not user location)
+    markers.forEach(marker => {
+      if (marker.carId) { // Skip user location marker
         marker.setMap(map);
       }
     });
   }
 
-  // Remove any "No results" message
+  // Remove "No results" message if present
   const emptyStateEl = document.querySelector("#nearby-cars .empty-state");
   if (emptyStateEl) {
     emptyStateEl.remove();
   }
 
-  console.log("All filters reset");
+  console.log("Filters reset successfully");
 }
+
+// Make resetFilters accessible globally for HTML onclick handlers
+window.resetFilters = resetFilters;
 
 // Calculate distance between two points (in km)
 function calculateDistance(lat1, lon1, lat2, lon2) {
