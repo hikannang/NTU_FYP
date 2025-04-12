@@ -177,14 +177,66 @@ h1 {
   padding-left: 15px;
 }
 
-/* Password toggle */
+/* Password toggle button styling with improved vertical centering */
 .password-toggle {
   position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 12px;
+  top: 0;
+  bottom: 0; 
+  height: 100%; 
+  width: 40px; 
+  display: flex;          
+  align-items: center;    
+  justify-content: center; 
+  transition: color 0.2s;
+  z-index: 2;
+  transform: none; 
   color: #6b7280;
   cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* Ensure the icon itself is centered */
+.password-toggle i {
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Adjust input padding to make room for icon */
+.input-group input[type="password"] {
+  padding-right: 40px;
+}
+
+.password-toggle:hover {
+  color: #1e88e5;
+}
+
+/* Make sure the input group has position relative */
+.input-group {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.input-group input,
+.input-group textarea {
+  width: 100%;
+  padding: 16px 20px 16px 45px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: border-color 0.2s;
+  background-color: #f9fafb;
+  height: 52px; /* Add explicit height for consistency */
+  line-height: 20px; /* Add consistent line height */
+}
+
+/* Adjust input padding to make room for icon */
+.input-group input[type="password"] {
+  padding-right: 40px;
 }
 
 /* Error message */

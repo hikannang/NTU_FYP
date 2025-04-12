@@ -40,13 +40,16 @@
             <div class="input-group">
               <i class="bi bi-lock"></i>
               <input type="password" id="password" placeholder="Password" required>
-              <span class="password-toggle" id="password-toggle">
-                <i class="bi bi-eye-slash"></i>
-              </span>
+              <button type="button" class="password-toggle">
+                <i class="bi bi-eye"></i>
+              </button>
             </div>
             <div class="input-group">
-              <i class="bi bi-lock-fill"></i>
+              <i class="bi bi-lock"></i>
               <input type="password" id="confirm-password" placeholder="Confirm Password" required>
+              <button type="button" class="password-toggle">
+                <i class="bi bi-eye"></i>
+              </button>
             </div>
             <div class="error" id="password-error"></div>
 
@@ -152,19 +155,27 @@
       const step3 = document.getElementById('step3');
       const progressSteps = document.querySelectorAll('.progress-step');
 
-      // Password toggle functionality
-      const passwordToggle = document.getElementById('password-toggle');
-      const passwordInput = document.getElementById('password');
-      
-      passwordToggle.addEventListener('click', function() {
-        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordInput.setAttribute('type', type);
+      // Get all password toggle buttons
+    const toggleButtons = document.querySelectorAll('.password-toggle');
+    
+    // Add event listener to each button
+    toggleButtons.forEach(function(button) {
+      button.addEventListener('click', function() {
+        // Find the password input field that is a sibling of this button
+        const passwordInput = this.previousElementSibling;
         
-        // Toggle eye icon
-        const icon = passwordToggle.querySelector('i');
-        icon.classList.toggle('bi-eye');
-        icon.classList.toggle('bi-eye-slash');
+        // Toggle between password and text type
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          this.querySelector('i').classList.remove('bi-eye');
+          this.querySelector('i').classList.add('bi-eye-slash');
+        } else {
+          passwordInput.type = 'password';
+          this.querySelector('i').classList.remove('bi-eye-slash');
+          this.querySelector('i').classList.add('bi-eye');
+        }
       });
+    });
       
       // Next button handlers
       document.getElementById('step1-next').addEventListener('click', function() {
@@ -253,24 +264,9 @@
       document.getElementById('signup-form').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // You would integrate with your existing auth.js here
-        // For now, we'll just show a success message
+        
         alert('Account creation successful! Redirecting to login...');
         
-        // In a real implementation, you would call your Firebase signup function
-        // and handle the authentication process
-        
-        // Example:
-        // const userData = {
-        //   email: document.getElementById('email').value,
-        //   firstName: document.getElementById('first-name').value,
-        //   lastName: document.getElementById('last-name').value,
-        //   phone: document.getElementById('phone').value,
-        //   address: document.getElementById('address').value,
-        //   licenseNumber: document.getElementById('license-number').value,
-        //   licenseIssueDate: document.getElementById('license-issue-date').value
-        // };
-        // signUp(userData);
       });
     });
   </script>
