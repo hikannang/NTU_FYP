@@ -1466,8 +1466,8 @@ async function viewBookingDetails(bookingId, carId) {
     
     // Update modal title
     if (modalTitle) {
-      modalTitle.textContent = `Booking Details: ${bookingId}`;
-    }
+  modalTitle.textContent = `Booking Details: ${bookingId}`;
+}
     
     // Format status with proper styling
     const statusClass = getStatusClass(booking.status || 'unknown');
