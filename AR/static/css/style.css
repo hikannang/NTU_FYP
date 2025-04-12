@@ -443,43 +443,130 @@ html{
     position: relative;
 }
 
+/* Full Viewport Modal Styling */
 #destinationModal {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
+    width: 100vw; /* Use viewport width units */
+    height: 100vh; /* Use viewport height units */
+    background-color: rgba(0, 0, 0, 0.8); /* 80% black background (20% transparent) */
     z-index: 9999;
     display: none; /* Hidden by default */
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+    margin: 0; /* Remove any margins */
+    padding: 0; /* Remove any padding */
+    box-sizing: border-box;
+    overflow: hidden; /* Prevent scrolling behind the modal */
+}
+
+/* For iOS Safari specifically - handles bottom bar better */
+@supports (-webkit-touch-callout: none) {
+    #destinationModal {
+        height: -webkit-fill-available;
+    }
 }
 
 #destinationModal .modal-content {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     padding: 20px;
-    background-color: white;
-    border-radius: 10px;
-    width: 80%; /* Takes 80% with 10% margin on each side */
-    max-width: 400px;
-    max-height: 80vh;
-    overflow-y: auto;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh; /* 80% of viewport height */
+    overflow-y: auto; /* Allow scrolling if content is too tall */
+    background-color: rgba(255, 255, 255, 0.2); /* 80% transparent white */
+    backdrop-filter: blur(8px); /* Frosted glass effect */
+    -webkit-backdrop-filter: blur(8px); /* For Safari */
+    border-radius: 15px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    margin: 0 auto; /* Center horizontally */
+    position: relative; /* For positioning children */
 }
 
+/* Make sure images are properly sized */
 #destinationModal .car-image {
+    width: auto;
     max-width: 80%;
-    height: auto;
-    margin-bottom: 20px;
+    max-height: 30vh; /* Limit height to 30% of viewport */
+    object-fit: contain;
+    margin: 0 0 20px 0;
+    border-radius: 10px;
 }
 
-#destinationModal .modal-title,
-#destinationModal .directions-label,
-#destinationModal #directionsText,
-#destinationModal .dismiss-text {
-    width: 100%;
-    text-align: center;
+/* Text styling for better readability */
+#destinationModal .modal-title {
+    color: white;
+    font-size: clamp(18px, 5vw, 24px); /* Responsive font size */
+    font-weight: bold;
     margin-bottom: 15px;
+    text-align: center;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    width: 100%;
+}
+
+#destinationModal .directions-label {
+    color: white;
+    font-size: clamp(16px, 4vw, 20px); /* Responsive font size */
+    font-weight: 600;
+    margin: 0 0 10px 0;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+#destinationModal #directionsText {
+    color: white;
+    font-size: clamp(14px, 3.5vw, 18px); /* Responsive font size */
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+    text-align: center;
+    max-width: 100%;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    padding: 0 10px;
+    word-wrap: break-word;
+}
+
+#destinationModal .dismiss-text {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: clamp(12px, 3vw, 16px); /* Responsive font size */
+    font-style: italic;
+    text-align: center;
+    margin-top: 15px;
+    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Animation for modal appearance */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#destinationModal.show {
+    display: flex;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Media queries for better mobile experience */
+@media screen and (max-width: 480px) {
+    #destinationModal .modal-content {
+        width: 95%;
+        padding: 15px;
+        max-height: 85vh;
+    }
+    
+    #destinationModal .car-image {
+        max-height: 25vh;
+    }
+}
+
+/* Fix for devices with notches or dynamic islands */
+@media screen and (max-width: 896px) and (orientation: landscape) {
+    #destinationModal .modal-content {
+        max-height: 75vh;
+        padding: 15px 20px;
+    }
 }

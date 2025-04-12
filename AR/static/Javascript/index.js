@@ -588,10 +588,13 @@ function updateDistanceDisplay() {
 function showDestinationModal() {
     console.log("Showing destination modal");
     
-    // Update car image - correct the image path
+    // Lock the background scrolling when modal is shown
+    document.body.style.overflow = 'hidden';
+    
+    // Update car image
     const carImage = document.getElementById('carImage');
     if (carImage) {
-        // FIXED: Use correct path with ./ instead of ../
+        // Set default image first
         carImage.src = '../static/images/car_images/default.png';
         
         // Try to load car-specific image
@@ -608,7 +611,6 @@ function showDestinationModal() {
                 carImage.src = '../static/images/car_images/default.png';
             };
             
-            // FIXED: Correct path with ./ instead of ../
             actualImage.src = `../static/images/car_images/${window.carType}.png`;
         }
     } else {
@@ -618,53 +620,38 @@ function showDestinationModal() {
     // Update directions text
     const directionsText = document.getElementById('directionsText');
     if (directionsText) {
-        // Log to verify data
         console.log("Setting directions:", carDirections);
         directionsText.textContent = carDirections || "Follow the arrow to reach your car.";
     } else {
         console.error("Directions text element not found");
     }
     
-    // Add debug information about car ID and booking ID
-    const debugInfo = document.getElementById('debugInfo');
-    if (debugInfo) {
-        debugInfo.textContent = `Booking ID: ${bookingId || 'Not loaded'}, Car ID: ${window.carId || 'Not loaded'}, Car Type: ${window.carType || 'Not loaded'}`;
-        debugInfo.style.backgroundColor = "#f8f8f8";
-        debugInfo.style.padding = "5px";
-        debugInfo.style.marginTop = "10px";
-        debugInfo.style.borderRadius = "5px";
-        debugInfo.style.fontSize = "12px";
-        debugInfo.style.fontFamily = "monospace";
-    } else {
-        // If debug element doesn't exist, create it
-        const newDebugInfo = document.createElement('div');
-        newDebugInfo.id = 'debugInfo';
-        newDebugInfo.textContent = `Booking ID: ${bookingId || 'Not loaded'}, Car ID: ${window.carId || 'Not loaded'}, Car Type: ${window.carType || 'Not loaded'}`;
-        newDebugInfo.style.backgroundColor = "#f8f8f8";
-        newDebugInfo.style.padding = "5px";
-        newDebugInfo.style.marginTop = "10px";
-        newDebugInfo.style.borderRadius = "5px";
-        newDebugInfo.style.fontSize = "12px";
-        newDebugInfo.style.fontFamily = "monospace";
-        newDebugInfo.style.width = "100%";
-        newDebugInfo.style.textAlign = "center";
-        
-        // Add the debug info to the modal
-        const modalContent = document.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.appendChild(newDebugInfo);
-        }
-    }
-    
-    // Show the modal
+    // Show the modal with animation
     const modal = document.getElementById('destinationModal');
     if (modal) {
-        // Make sure modal is centered and takes the full screen
+        modal.classList.add('show');
         modal.style.display = 'flex';
-        modal.style.justifyContent = 'center';
-        modal.style.alignItems = 'center';
+        
+        // Add tap/click event to dismiss modal
+        modal.addEventListener('click', function(e) {
+            // Only dismiss if clicking on the backdrop, not the content
+            if (e.target === modal) {
+                hideDestinationModal();
+            }
+        });
     } else {
-        console.error("Modal element not found");
+        console.error("Destination modal element not found");
+    }
+}
+
+// Add a function to hide the modal
+function hideDestinationModal() {
+    const modal = document.getElementById('destinationModal');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        // Restore scrolling
+        document.body.style.overflow = '';
     }
 }
 
