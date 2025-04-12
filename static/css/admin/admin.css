@@ -843,3 +843,78 @@ body {
     font-size: 1.1rem;
   }
 }
+
+/* Maintenance Alerts styling */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px;
+  text-align: left;
+}
+
+.data-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 13px;
+  background-color: rgba(236, 239, 241, 0.5);
+}
+
+.data-table td {
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.alert-row .text-danger {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.alert-row .text-warning {
+  color: #ffc107;
+  font-weight: 500;
+}
+
+.alert-type {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.overdue .alert-type {
+  background-color: #ffeeee;
+  color: #dc3545;
+}
+
+.upcoming .alert-type,
+.due-today .alert-type {
+  background-color: #fff8e6;
+  color: #ffc107;
+}
+
+.car-id-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.car-id-cell i {
+  font-size: 1.1rem;
+}
+
+.car-id {
+  color: #6c757d;
+  font-size: 0.85rem;
+}
+
+/* No alerts message styling */
+.no-alerts td {
+  text-align: center;
+  padding: 20px;
+  color: #6c757d;
+  font-style: italic;
+}

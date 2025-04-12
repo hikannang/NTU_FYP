@@ -153,18 +153,31 @@
           </div>
         </div>
 
-        <!-- Maintenance Alerts -->
+                <!-- Maintenance Alerts -->
         <div class="dashboard-card maintenance-alerts">
           <div class="card-header">
-            <h2>Maintenance Alerts</h2>
+            <h2>Maintenance & Insurance Alerts</h2>
             <a href="admin-cars.html" class="view-all">View All</a>
           </div>
-          <ul class="alerts-list" id="maintenance-alerts-list">
-            <!-- Will be populated dynamically -->
-            <li class="alert-item placeholder">Loading maintenance data...</li>
-          </ul>
+          <div class="card-body">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Vehicle</th>
+                  <th>Alert Type</th>
+                  <th>Due Date</th>
+                  <th>Timeline</th>
+                </tr>
+              </thead>
+              <tbody id="maintenance-alerts-body">
+                <!-- Alerts will be inserted here -->
+                <tr class="no-alerts">
+                  <td colspan="4">Loading alerts...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
       <!-- Quick Actions -->
       <div class="quick-actions">

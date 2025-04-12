@@ -862,26 +862,34 @@ function showErrorMessage(message) {
   }
 }
 
-function formatDate(dateField) {
-  if (!dateField) return "N/A";
-
-  try {
-    let date;
-    if (dateField instanceof Timestamp) {
-      date = dateField.toDate();
-    } else if (dateField.seconds) {
-      date = new Date(dateField.seconds * 1000);
-    } else if (dateField instanceof Date) {
-      date = dateField;
-    } else {
-      date = new Date(dateField);
-    }
-
-    return date.toLocaleDateString();
-  } catch (e) {
-    console.error("Error formatting date:", e);
-    return "Invalid date";
+// Update or add this formatting function in your admin-cars.js file:
+function formatDate(date) {
+  if (!date) return 'N/A';
+  
+  // Check if it's a Firestore Timestamp
+  if (date instanceof Timestamp) {
+    date = date.toDate();
   }
+  // Check for Firestore timestamp object format
+  else if (date.seconds !== undefined) {
+    date = new Date(date.seconds * 1000);
+  }
+  // Check if it's a string, try to parse it
+  else if (typeof date === 'string') {
+    date = new Date(date);
+  }
+  
+  // Check if we have a valid date
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    return 'Invalid Date';
+  }
+
+  // Format as DD/MM/YYYY
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const year = date.getFullYear();
+  
+  return `${day}/${month}/${year}`;
 }
 
 // Show toast notification

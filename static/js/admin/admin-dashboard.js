@@ -811,104 +811,140 @@ async function loadUserRegistrationData(period) {
   }
 }
 
-// Load maintenance alerts
+// Load maintenance and insurance alerts with color-coded dates
 async function loadMaintenanceAlerts() {
   try {
-    const alerts = [];
-    const now = new Date();
-
-    // Get cars that need maintenance soon or are past due
+    // Get current date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Get cars collection
     const carsSnapshot = await getDocs(collection(db, "cars"));
-
-    carsSnapshot.forEach((doc) => {
+    
+    // Array to store alerts
+    const alerts = [];
+    
+    // Process each car
+    carsSnapshot.forEach(doc => {
       const car = doc.data();
-
-      // Check service due date
+      car.id = doc.id;
+      
+      // Check for service due date alerts
       if (car.service_due) {
-        const serviceDueDate =
-          car.service_due instanceof Timestamp
-            ? new Date(car.service_due.seconds * 1000)
-            : new Date(car.service_due);
-
-        const daysDiff = Math.floor(
-          (serviceDueDate - now) / (1000 * 60 * 60 * 24)
-        );
-
-        if (daysDiff < 0) {
-          // Past due
-          alerts.push({
-            id: doc.id,
-            title: `${car.car_type || "Car"} (${
-              car.license_plate || "Unknown"
-            }) Service Overdue`,
-            details: `Service was due ${Math.abs(daysDiff)} days ago`,
-            severity: "high",
-            car_id: doc.id,
-          });
-        } else if (daysDiff < 14) {
-          // Changed from 7 to 14 days (Singapore context)
-          // Due within two weeks
-          alerts.push({
-            id: doc.id,
-            title: `${car.car_type || "Car"} (${
-              car.license_plate || "Unknown"
-            }) Service Due Soon`,
-            details: `Service due in ${daysDiff} days`,
-            severity: "medium",
-            car_id: doc.id,
-          });
+        const serviceDueDate = parseFirestoreDate(car.service_due);
+        
+        if (serviceDueDate) {
+          const daysDifference = calculateDaysDifference(today, serviceDueDate);
+          
+          // Add to alerts if service is due within 30 days or overdue
+          if (daysDifference <= 30) {
+            alerts.push({
+              type: 'service',
+              car: car,
+              title: `Service ${daysDifference < 0 ? 'Overdue' : 'Due Soon'}`,
+              details: `${car.license_plate || 'Unknown'} (${car.id})`,
+              dueDate: serviceDueDate,
+              daysDifference: daysDifference,
+              severity: daysDifference < 0 ? 'high' : 'medium',
+              formattedDate: formatDate(serviceDueDate),
+              countText: formatDaysDifference(daysDifference)
+            });
+          }
         }
       }
-
-      // Check insurance expiry
+      
+      // Check for insurance expiry alerts
       if (car.insurance_expiry) {
-        const insuranceExpiryDate =
-          car.insurance_expiry instanceof Timestamp
-            ? new Date(car.insurance_expiry.seconds * 1000)
-            : new Date(car.insurance_expiry);
-
-        const daysDiff = Math.floor(
-          (insuranceExpiryDate - now) / (1000 * 60 * 60 * 24)
-        );
-
-        if (daysDiff < 0) {
-          // Expired
-          alerts.push({
-            id: `${doc.id}-insurance`,
-            title: `${car.car_type || "Car"} (${
-              car.license_plate || "Unknown"
-            }) Insurance Expired`,
-            details: `Insurance expired ${Math.abs(daysDiff)} days ago`,
-            severity: "high",
-            car_id: doc.id,
-          });
-        } else if (daysDiff < 30) {
-          // Changed from 14 to 30 days (Singapore context)
-          // Expiring soon
-          alerts.push({
-            id: `${doc.id}-insurance`,
-            title: `${car.car_type || "Car"} (${
-              car.license_plate || "Unknown"
-            }) Insurance Expiring Soon`,
-            details: `Insurance expires in ${daysDiff} days`,
-            severity: "medium",
-            car_id: doc.id,
-          });
+        const insuranceExpiryDate = parseFirestoreDate(car.insurance_expiry);
+        
+        if (insuranceExpiryDate) {
+          const daysDifference = calculateDaysDifference(today, insuranceExpiryDate);
+          
+          // Add to alerts if insurance expires within 30 days or is expired
+          if (daysDifference <= 30) {
+            alerts.push({
+              type: 'insurance',
+              car: car,
+              title: `Insurance ${daysDifference < 0 ? 'Expired' : 'Expiring Soon'}`,
+              details: `${car.license_plate || 'Unknown'} (${car.id})`,
+              dueDate: insuranceExpiryDate,
+              daysDifference: daysDifference,
+              severity: daysDifference < 0 ? 'high' : 'medium',
+              formattedDate: formatDate(insuranceExpiryDate),
+              countText: formatDaysDifference(daysDifference)
+            });
+          }
         }
       }
     });
-
-    // Sort by severity (high to low)
-    alerts.sort((a, b) => {
-      if (a.severity === "high" && b.severity !== "high") return -1;
-      if (a.severity !== "high" && b.severity === "high") return 1;
-      return 0;
-    });
-
-    dashboardData.maintenanceAlerts = alerts.slice(0, 5); // Only show top 5
+    
+    // Sort alerts by days_difference (most urgent first)
+    alerts.sort((a, b) => a.daysDifference - b.daysDifference);
+    
+    // Store in dashboard data
+    dashboardData.maintenanceAlerts = alerts;
+    
+    console.log(`Loaded ${alerts.length} maintenance/insurance alerts`);
   } catch (error) {
     console.error("Error loading maintenance alerts:", error);
     throw error;
+  }
+}
+
+// Helper function to parse Firestore dates in various formats
+function parseFirestoreDate(dateInput) {
+  if (!dateInput) return null;
+  
+  try {
+    // Check if it's a Timestamp
+    if (dateInput instanceof Timestamp) {
+      return dateInput.toDate();
+    }
+    
+    // Check for Firebase timestamp object
+    if (dateInput.seconds !== undefined) {
+      return new Date(dateInput.seconds * 1000);
+    }
+    
+    // For string dates
+    if (typeof dateInput === 'string') {
+      const d = new Date(dateInput);
+      if (!isNaN(d.getTime())) {
+        return d;
+      }
+    }
+    
+    // For numeric timestamp
+    if (typeof dateInput === 'number') {
+      return new Date(dateInput);
+    }
+    
+    return null;
+  } catch (e) {
+    console.error("Date parsing error:", e);
+    return null;
+  }
+}
+
+// Calculate difference in days between two dates
+function calculateDaysDifference(startDate, endDate) {
+  const startUtc = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const endUtc = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  
+  return Math.floor((endUtc - startUtc) / (1000 * 60 * 60 * 24));
+}
+
+// Format days difference with color coding
+function formatDaysDifference(days) {
+  if (days < 0) {
+    // Overdue/expired - red text
+    return `<span class="text-danger">${Math.abs(days)} days ago</span>`;
+  } else if (days === 0) {
+    // Due today - yellow text
+    return `<span class="text-warning">Today</span>`;
+  } else {
+    // Upcoming - yellow text
+    return `<span class="text-warning">${days} days left</span>`;
   }
 }
 
@@ -1278,40 +1314,100 @@ function renderUserRegistrationChart() {
   });
 }
 
-// Render maintenance alerts
+// Render maintenance alerts with new table format
 function renderMaintenanceAlerts() {
   const alertsList = document.getElementById("maintenance-alerts-list");
-
-  if (!alertsList) return;
-
+  
+  if (!alertsList) {
+    // Try to find table body instead (for table format)
+    const tableBody = document.getElementById("maintenance-alerts-body");
+    if (!tableBody) {
+      console.error("Maintenance alerts container not found");
+      return;
+    }
+    
+    if (dashboardData.maintenanceAlerts.length === 0) {
+      tableBody.innerHTML = `
+        <tr class="no-alerts">
+          <td colspan="4">No maintenance or insurance alerts</td>
+        </tr>
+      `;
+      return;
+    }
+    
+    let alertsHTML = "";
+    
+    dashboardData.maintenanceAlerts.forEach(alert => {
+      // Determine icon based on alert type
+      const icon = alert.type === 'service' 
+        ? '<i class="bi bi-wrench text-primary"></i>'
+        : '<i class="bi bi-shield-check text-success"></i>';
+      
+      alertsHTML += `
+        <tr class="alert-row ${alert.daysDifference < 0 ? 'overdue' : 'upcoming'}">
+          <td>
+            <div class="car-id-cell">
+              ${icon}
+              <span>${alert.car.license_plate || 'Unknown'}</span>
+              <span class="car-id">(${alert.car.id})</span>
+            </div>
+          </td>
+          <td>
+            <span class="alert-type">${alert.title}</span>
+          </td>
+          <td>
+            <span class="due-date">${alert.formattedDate}</span>
+          </td>
+          <td>
+            <span class="days-counter">${alert.countText}</span>
+          </td>
+        </tr>
+      `;
+    });
+    
+    tableBody.innerHTML = alertsHTML;
+    return;
+  }
+  
+  // Original list format if table not found
   if (dashboardData.maintenanceAlerts.length === 0) {
     alertsList.innerHTML = `
-      <li class="alert-item placeholder">No maintenance alerts found</li>
+      <li class="alert-item placeholder">No maintenance or insurance alerts</li>
     `;
     return;
   }
-
+  
   let alertsContent = "";
-
-  dashboardData.maintenanceAlerts.forEach((alert) => {
-    const iconClass =
-      alert.severity === "high"
-        ? "bi-exclamation-triangle"
-        : "bi-exclamation-circle";
-
+  
+  dashboardData.maintenanceAlerts.forEach(alert => {
+    const iconClass = alert.type === 'service' 
+      ? "bi-wrench" 
+      : "bi-shield-check";
+    
+    const severityClass = alert.daysDifference < 0 ? "alert-high" : "alert-medium";
+    
     alertsContent += `
-      <li class="alert-item">
+      <li class="alert-item ${severityClass}">
         <div class="alert-icon">
           <i class="bi ${iconClass}"></i>
         </div>
         <div class="alert-info">
           <p class="alert-title">${alert.title}</p>
-          <p class="alert-details">${alert.details}</p>
+          <p class="alert-details">
+            ${alert.details} - ${alert.formattedDate} 
+            <span class="${alert.daysDifference < 0 ? 'text-danger' : 'text-warning'}">
+              (${alert.daysDifference < 0 
+                ? Math.abs(alert.daysDifference) + ' days ago' 
+                : alert.daysDifference === 0 
+                  ? 'Today' 
+                  : alert.daysDifference + ' days left'})
+            </span>
+          </p>
         </div>
       </li>
     `;
   });
-
+  
   alertsList.innerHTML = alertsContent;
 }
 
