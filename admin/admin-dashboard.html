@@ -1,208 +1,249 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard | BaoCarLiao</title>
-  <link rel="stylesheet" href="../static/css/admin/admin.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-  <div id="header"></div>
-  
-  <div class="admin-content">
-    <!-- Dashboard Overview Section -->
-    <div class="dashboard-header">
-      <h1>Dashboard Overview</h1>
-      <div class="date-filter">
-        <button class="filter-btn active" data-period="day">Today</button>
-        <button class="filter-btn" data-period="week">This Week</button>
-        <button class="filter-btn" data-period="month">This Month</button>
-      </div>
-    </div>
-    
-    <!-- Stats Cards -->
-    <div class="stats-container">
-      <div class="stat-card" id="bookings-card">
-        <div class="stat-icon">
-          <i class="bi bi-calendar-check"></i>
-        </div>
-        <div class="stat-info">
-          <h3>Active Bookings</h3>
-          <p class="stat-number" id="active-bookings">0</p>
-          <p class="stat-trend positive"><i class="bi bi-arrow-up"></i> 12% from last period</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard | BaoCarLiao</title>
+    <link rel="stylesheet" href="../static/css/admin/admin.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="header"></div>
+
+    <div class="admin-content">
+      <!-- Dashboard Overview Section -->
+      <div class="dashboard-header">
+        <h1>Dashboard Overview</h1>
+        <div class="date-filter">
+          <button class="filter-btn active" data-period="day">Today</button>
+          <button class="filter-btn" data-period="week">This Week</button>
+          <button class="filter-btn" data-period="month">This Month</button>
         </div>
       </div>
-      
-      <div class="stat-card" id="users-card">
-        <div class="stat-icon">
-          <i class="bi bi-people"></i>
+
+      <!-- Stats Cards -->
+      <div class="stats-container">
+        <div class="stat-card" id="bookings-card">
+          <div class="stat-icon">
+            <i class="bi bi-calendar-check"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Active Bookings</h3>
+            <p class="stat-number" id="active-bookings">0</p>
+            <p class="stat-trend positive">
+              <i class="bi bi-arrow-up"></i> 12% from last period
+            </p>
+          </div>
         </div>
-        <div class="stat-info">
-          <h3>Total Users</h3>
-          <p class="stat-number" id="total-users">0</p>
-          <p class="stat-trend positive"><i class="bi bi-arrow-up"></i> 5% from last period</p>
+
+        <div class="stat-card" id="users-card">
+          <div class="stat-icon">
+            <i class="bi bi-people"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Total Users</h3>
+            <p class="stat-number" id="total-users">0</p>
+            <p class="stat-trend positive">
+              <i class="bi bi-arrow-up"></i> 5% from last period
+            </p>
+          </div>
         </div>
-      </div>
-      
-      <div class="stat-card" id="cars-card">
-        <div class="stat-icon">
-          <i class="bi bi-car-front"></i>
+
+        <div class="stat-card" id="cars-card">
+          <div class="stat-icon">
+            <i class="bi bi-car-front"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Available Cars</h3>
+            <p class="stat-number" id="available-cars">0</p>
+            <p class="stat-trend negative">
+              <i class="bi bi-arrow-down"></i> 3% from last period
+            </p>
+          </div>
         </div>
-        <div class="stat-info">
-          <h3>Available Cars</h3>
-          <p class="stat-number" id="available-cars">0</p>
-          <p class="stat-trend negative"><i class="bi bi-arrow-down"></i> 3% from last period</p>
-        </div>
-      </div>
-      
-      <div class="stat-card" id="revenue-card">
-        <div class="stat-icon">
-          <i class="bi bi-graph-up-arrow"></i>
-        </div>
-        <div class="stat-info">
-          <h3>Revenue</h3>
-          <p class="stat-number" id="total-revenue">$0</p>
-          <p class="stat-trend positive"><i class="bi bi-arrow-up"></i> 8% from last period</p>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Booking Activity and Cars Status -->
-    <div class="dashboard-row">
-      <!-- Recent Bookings -->
-      <div class="dashboard-card booking-activity">
-        <div class="card-header">
-          <h2>Recent Bookings</h2>
-          <a href="admin-bookings.html" class="view-all">View All</a>
-        </div>
-        <div class="table-responsive">
-          <table class="dashboard-table" id="recent-bookings-table">
-            <thead>
-              <tr>
-                <th>Booking ID</th>
-                <th>User</th>
-                <th>Car</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Will be populated dynamically -->
-              <tr class="placeholder-row">
-                <td colspan="6">Loading bookings data...</td>
-              </tr>
-            </tbody>
-          </table>
+
+        <div class="stat-card" id="revenue-card">
+          <div class="stat-icon">
+            <i class="bi bi-graph-up-arrow"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Revenue</h3>
+            <p class="stat-number" id="total-revenue">$0</p>
+            <p class="stat-trend positive">
+              <i class="bi bi-arrow-up"></i> 8% from last period
+            </p>
+          </div>
         </div>
       </div>
-      
-      <!-- Car Status -->
-      <div class="dashboard-card car-status">
-        <div class="card-header">
-          <h2>Car Status</h2>
-          <a href="admin-cars.html" class="view-all">View All</a>
+
+      <!-- Booking Activity and Cars Status -->
+      <div class="dashboard-row">
+        <!-- Recent Bookings -->
+        <div class="dashboard-card booking-activity">
+          <div class="card-header">
+            <h2>Recent Bookings</h2>
+            <a href="admin-bookings.html" class="view-all">View All</a>
+          </div>
+          <div class="table-responsive">
+            <table class="dashboard-table" id="recent-bookings-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>User</th>
+                  <th>Car</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Will be populated dynamically -->
+                <tr class="placeholder-row">
+                  <td colspan="6">Loading bookings data...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div class="status-chart">
+
+        <!-- Car Status -->
+        <div class="dashboard-card car-status">
+          <div class="card-header">
+            <h2>Car Status</h2>
+            <a href="admin-cars.html" class="view-all">View All</a>
+          </div>
+          <div class="status-chart">
+            <div class="chart-container">
+              <canvas id="carStatusChart"></canvas>
+            </div>
+            <div class="status-legend">
+              <div class="legend-item">
+                <span class="status-dot available"></span>
+                <span class="status-text">Available</span>
+              </div>
+              <div class="legend-item">
+                <span class="status-dot booked"></span>
+                <span class="status-text">Booked</span>
+              </div>
+              <div class="legend-item">
+                <span class="status-dot maintenance"></span>
+                <span class="status-text">Maintenance</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second Row: User Activity and Maintenance Alerts -->
+      <div class="dashboard-row">
+        <!-- User Registration Chart -->
+        <div class="dashboard-card user-registration">
+          <div class="card-header">
+            <h2>User Registrations</h2>
+          </div>
           <div class="chart-container">
-            <canvas id="carStatusChart"></canvas>
-          </div>
-          <div class="status-legend">
-            <div class="legend-item">
-              <span class="status-dot available"></span>
-              <span class="status-text">Available</span>
-            </div>
-            <div class="legend-item">
-              <span class="status-dot booked"></span>
-              <span class="status-text">Booked</span>
-            </div>
-            <div class="legend-item">
-              <span class="status-dot maintenance"></span>
-              <span class="status-text">Maintenance</span>
-            </div>
+            <canvas id="userRegistrationChart"></canvas>
           </div>
         </div>
+
+        <!-- Maintenance Alerts -->
+        <div class="dashboard-card maintenance-alerts">
+          <div class="card-header">
+            <h2>Maintenance Alerts</h2>
+            <a href="admin-cars.html" class="view-all">View All</a>
+          </div>
+          <ul class="alerts-list" id="maintenance-alerts-list">
+            <!-- Will be populated dynamically -->
+            <li class="alert-item placeholder">Loading maintenance data...</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="actions-container">
+          <a href="admin-addCars.html" class="action-card">
+            <i class="bi bi-plus-circle"></i>
+            <span>Add New Car</span>
+          </a>
+          <a href="admin-users.html" class="action-card">
+            <i class="bi bi-person-plus"></i>
+            <span>Manage Users</span>
+          </a>
+          <a href="admin-bookings.html" class="action-card">
+            <i class="bi bi-calendar-event"></i>
+            <span>View Bookings</span>
+          </a>
+          <a href="admin-reports.html" class="action-card">
+            <i class="bi bi-file-earmark-bar-graph"></i>
+            <span>Generate Reports</span>
+          </a>
+        </div>
       </div>
     </div>
-    
-    <!-- Second Row: User Activity and Maintenance Alerts -->
-    <div class="dashboard-row">
-      <!-- User Registration Chart -->
-      <div class="dashboard-card user-registration">
-        <div class="card-header">
-          <h2>User Registrations</h2>
+
+    <!-- Booking Details Modal -->
+    <div id="booking-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Booking Details</h2>
+          <button class="close-modal">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
-        <div class="chart-container">
-          <canvas id="userRegistrationChart"></canvas>
+        <div class="modal-body" id="modal-body">
+          <!-- Content will be dynamically added here -->
         </div>
-      </div>
-      
-      <!-- Maintenance Alerts -->
-      <div class="dashboard-card maintenance-alerts">
-        <div class="card-header">
-          <h2>Maintenance Alerts</h2>
-          <a href="admin-cars.html" class="view-all">View All</a>
+        <div class="modal-footer">
+          <button class="close-modal secondary-btn">Close</button>
+          <a id="edit-booking-btn" class="primary-btn">
+            <i class="bi bi-pencil"></i> Edit Booking
+          </a>
         </div>
-        <ul class="alerts-list" id="maintenance-alerts-list">
-          <!-- Will be populated dynamically -->
-          <li class="alert-item placeholder">Loading maintenance data...</li>
-        </ul>
       </div>
     </div>
-    
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-      <h2>Quick Actions</h2>
-      <div class="actions-container">
-        <a href="admin-addCars.html" class="action-card">
-          <i class="bi bi-plus-circle"></i>
-          <span>Add New Car</span>
-        </a>
-        <a href="admin-users.html" class="action-card">
-          <i class="bi bi-person-plus"></i>
-          <span>Manage Users</span>
-        </a>
-        <a href="admin-bookings.html" class="action-card">
-          <i class="bi bi-calendar-event"></i>
-          <span>View Bookings</span>
-        </a>
-        <a href="admin-reports.html" class="action-card">
-          <i class="bi bi-file-earmark-bar-graph"></i>
-          <span>Generate Reports</span>
-        </a>
-      </div>
-    </div>
-  </div>
-  
-  <div id="footer"></div>
-  
-  <!-- Chart.js for graphs -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
-  <!-- Firebase Scripts -->
-  <script src="../static/js/common/firebase-config.js" type="module"></script>
-  <script src="../static/js/common/auth.js" type="module"></script>
-  
-  <!-- Custom Scripts -->
-  <script type="module">
-    import { checkAdmin } from '../static/js/common/auth.js';
-    import { db } from '../static/js/common/firebase-config.js';
-    
-    // Load header and footer
-    document.getElementById('header').innerHTML = await fetch('../static/headerFooter/admin-header.html').then(response => response.text());
-    document.getElementById('footer').innerHTML = await fetch('../static/headerFooter/admin-footer.html').then(response => response.text());
-    
-    // Check admin authorization
-    try {
-      const userData = await checkAdmin();
-      document.getElementById('welcome-message').textContent = `Welcome, ${userData.firstName}`;
-    } catch (error) {
-      alert(error);
-      window.location.href = "../index.html";
-    }
-  </script>
-  <script src="../static/js/admin/admin-dashboard.js" type="module"></script>
-</body>
+
+    <div id="footer"></div>
+
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Firebase Scripts -->
+    <script src="../static/js/common/firebase-config.js" type="module"></script>
+    <script src="../static/js/common/auth.js" type="module"></script>
+
+    <!-- Custom Scripts -->
+    <script type="module">
+      import { checkAdmin } from "../static/js/common/auth.js";
+      import { db } from "../static/js/common/firebase-config.js";
+
+      // Load header and footer
+      document.getElementById("header").innerHTML = await fetch(
+        "../static/headerFooter/admin-header.html"
+      ).then((response) => response.text());
+      document.getElementById("footer").innerHTML = await fetch(
+        "../static/headerFooter/admin-footer.html"
+      ).then((response) => response.text());
+
+      // Check admin authorization
+      try {
+        const userData = await checkAdmin();
+        document.getElementById(
+          "welcome-message"
+        ).textContent = `Welcome, ${userData.firstName}`;
+      } catch (error) {
+        alert(error);
+        window.location.href = "../index.html";
+      }
+    </script>
+    <script src="../static/js/admin/admin-dashboard.js" type="module"></script>
+  </body>
 </html>

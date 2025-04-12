@@ -1,6 +1,12 @@
 <!DOCTYPE html>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" />
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+/>
+<link
+  href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+  rel="stylesheet"
+/>
 
 <style>
   * {
@@ -336,11 +342,14 @@
 
 <div class="user-header">
   <div class="header-left">
-    <button id="sidebar-toggle" class="sidebar-toggle">
-      <i class="bi bi-list"></i>
-    </button>
     <div class="logo-container">
-      <img src="../static/images/logo.png" alt="BaoCarLiao Logo" class="logo" />
+      <a href="admin-dashboard.html">
+        <img
+          src="../static/images/logo.png"
+          alt="BaoCarLiao Logo"
+          class="logo"
+        />
+      </a>
     </div>
   </div>
   <div class="header-right">
@@ -464,10 +473,10 @@
     // Set up logout button
     const logoutButton = document.getElementById("logout-button");
     if (logoutButton) {
-      logoutButton.addEventListener("click", function(event) {
+      logoutButton.addEventListener("click", function (event) {
         // Prevent default link behavior
         event.preventDefault();
-        
+
         // Import the auth module (requires the page to be using modules)
         import("../static/js/common/auth.js")
           .then((auth) => {
@@ -512,7 +521,11 @@
 
       // Update notification badge if present
       const notificationCount = document.getElementById("notification-count");
-      if (notificationCount && userData.notifications && userData.notifications > 0) {
+      if (
+        notificationCount &&
+        userData.notifications &&
+        userData.notifications > 0
+      ) {
         notificationCount.textContent = userData.notifications;
         notificationCount.style.display = "flex";
       }
