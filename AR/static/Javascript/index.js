@@ -629,42 +629,35 @@ function showDestinationModal() {
     // Show the modal with animation
     const modal = document.getElementById('destinationModal');
     if (modal) {
-        // Remove any existing click event listeners to prevent multiple bindings
+        // Remove any previous click handlers by cloning the modal
         const newModal = modal.cloneNode(true);
         modal.parentNode.replaceChild(newModal, modal);
         
-        // Get fresh reference to the modal
+        // Get fresh reference
         const freshModal = document.getElementById('destinationModal');
         
-        // Display the modal
+        // Show the modal
         freshModal.classList.add('show');
         freshModal.style.display = 'flex';
         
-        // Add tap/click event to dismiss modal on ANY click
-        freshModal.addEventListener('click', function() {
-            console.log("Modal clicked, hiding modal");
-            hideDestinationModal();
-        });
-        
-        // Add a small delay before enabling the click handler to prevent accidental dismissals
+        // Add a short delay to prevent accidental immediate dismissal
         setTimeout(() => {
-            console.log("Modal click handler activated");
-        }, 500);
-        
-        // Also allow dismissal with the ESC key
-        document.addEventListener('keydown', function escKeyHandler(e) {
-            if (e.key === "Escape") {
+            // Add click handler to close modal on ANY click (not just outside content)
+            freshModal.addEventListener('click', function modalClickHandler() {
+                console.log("Modal clicked, hiding modal");
                 hideDestinationModal();
-                // Remove this event listener once modal is closed
-                document.removeEventListener('keydown', escKeyHandler);
-            }
-        });
+                // Remove the event listener after first click
+                freshModal.removeEventListener('click', modalClickHandler);
+            });
+            
+            console.log("Modal click handler activated");
+        }, 800); // Delay to prevent accidental clicks
     } else {
         console.error("Destination modal element not found");
     }
 }
 
-// Add a function to hide the modal
+// Improved hideDestinationModal function
 function hideDestinationModal() {
     console.log("Hiding destination modal");
     
