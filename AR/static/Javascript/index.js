@@ -629,14 +629,34 @@ function showDestinationModal() {
     // Show the modal with animation
     const modal = document.getElementById('destinationModal');
     if (modal) {
-        modal.classList.add('show');
-        modal.style.display = 'flex';
+        // Remove any existing click event listeners to prevent multiple bindings
+        const newModal = modal.cloneNode(true);
+        modal.parentNode.replaceChild(newModal, modal);
         
-        // Add tap/click event to dismiss modal
-        modal.addEventListener('click', function(e) {
-            // Only dismiss if clicking on the backdrop, not the content
-            if (e.target === modal) {
+        // Get fresh reference to the modal
+        const freshModal = document.getElementById('destinationModal');
+        
+        // Display the modal
+        freshModal.classList.add('show');
+        freshModal.style.display = 'flex';
+        
+        // Add tap/click event to dismiss modal on ANY click
+        freshModal.addEventListener('click', function() {
+            console.log("Modal clicked, hiding modal");
+            hideDestinationModal();
+        });
+        
+        // Add a small delay before enabling the click handler to prevent accidental dismissals
+        setTimeout(() => {
+            console.log("Modal click handler activated");
+        }, 500);
+        
+        // Also allow dismissal with the ESC key
+        document.addEventListener('keydown', function escKeyHandler(e) {
+            if (e.key === "Escape") {
                 hideDestinationModal();
+                // Remove this event listener once modal is closed
+                document.removeEventListener('keydown', escKeyHandler);
             }
         });
     } else {
@@ -646,12 +666,17 @@ function showDestinationModal() {
 
 // Add a function to hide the modal
 function hideDestinationModal() {
+    console.log("Hiding destination modal");
+    
     const modal = document.getElementById('destinationModal');
     if (modal) {
         modal.classList.remove('show');
         modal.style.display = 'none';
         // Restore scrolling
         document.body.style.overflow = '';
+        console.log("Modal hidden successfully");
+    } else {
+        console.error("Could not find destination modal to hide");
     }
 }
 

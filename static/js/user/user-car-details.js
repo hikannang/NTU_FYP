@@ -272,31 +272,62 @@ function updateCarDetailsUI() {
     carTypeBadge.textContent = carData.car_type?.split("_")[0] || "Car";
   }
 
-  // Set car image based on type with fallback paths
-  const carImageElement = document.getElementById("car-main-image");
+// Set car image based on type with correct relative path from browser perspective
+  const carImageElement = document.getElementById("car-image");
   if (carImageElement) {
-    // Try to load the car image with various path options
-    carImageElement.src = `../static/images/car_images/${
-      carData.car_type || "car"
-    }.png`;
+    // Debug - log the car type we're dealing with
+    console.log("Car type for image:", carData.car_type);
+    
+    const imagePath = `../static/images/car_images/${carData.car_type || "car"}.png`;
+    console.log("Attempting to load car image from:", imagePath);
+    
+    carImageElement.src = imagePath;
     carImageElement.onerror = () => {
-      // First fallback
-      carImageElement.src = `../static/images/assets/${
-        carData.car_type || "car"
-      }.png`;
+      console.warn(`Failed to load image from ${imagePath}, trying fallback...`);
+      
+      // Try without the color suffix (vezel_white -> vezel)
+      const baseType = carData.car_type?.split("_")[0] || "car";
+      const fallbackPath = `../static/images/car_images/${baseType}.png`;
+      
+      carImageElement.src = fallbackPath;
       carImageElement.onerror = () => {
-        // Second fallback
-        carImageElement.src = "../static/images/assets/car-placeholder.jpg";
+        console.warn(`Failed to load fallback image from ${fallbackPath}, using placeholder...`);
+        carImageElement.src = "../static/images/assets/car-placeholder.png";
       };
     };
+  } else {
+    console.error("Car image element not found - check your HTML for element with id='car-image'");
   }
 
-  // Set car address
-  const carAddressElement = document.getElementById("car-address");
-  if (carAddressElement) {
-    carAddressElement.textContent = carData.address || "Location not available";
+  // Set car location information - using the address field from car data
+  const carLocationElement = document.getElementById("car-location");
+  if (carLocationElement) {
+    // Debug - log the location data we have
+    console.log("Car location data:", {
+      address: carData.address,
+      currentLocation: carData.current_location
+    });
+    
+    if (carData.address) {
+      // We have an address string - use it directly
+      carLocationElement.textContent = carData.address;
+    } else if (carData.current_location) {
+      // We have coordinates but no address - format the coordinates
+      const lat = parseFloat(carData.current_location.latitude);
+      const lng = parseFloat(carData.current_location.longitude);
+      
+      if (!isNaN(lat) && !isNaN(lng)) {
+        carLocationElement.textContent = `Location: (${lat.toFixed(6)}, ${lng.toFixed(6)})`;
+        
+      } else {
+        carLocationElement.textContent = "Location coordinates invalid";
+      }
+    } else {
+      carLocationElement.textContent = "Location not available";
+    }
+  } else {
+    console.error("Car location element not found - check your HTML for element with id='car-location'");
   }
-
   // Set car color
   const carColorElement = document.getElementById("car-color");
   if (carColorElement) {
@@ -322,13 +353,9 @@ function updateCarDetailsUI() {
   }
 
   // Set big luggage capacity
-  const bigLuggage = document.getElementById("big-luggage");
-  if (bigLuggage) {
-    // Changed from big_luggage to large_luggage to match database
-    bigLuggage.textContent =
-      carData.large_luggage !== undefined
-        ? carData.large_luggage.toString()
-        : "0";
+  const largeLuggageElement = document.getElementById("large-luggage");
+  if (largeLuggageElement) {
+    largeLuggageElement.textContent = carData.large_luggage || "0";
   }
 
   // Set price
