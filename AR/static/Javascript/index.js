@@ -663,8 +663,9 @@ async function fetchCarData(bookingId) {
     }
 
     // 7. Update the modal if it's already visible
-    if (document.getElementById("destinationModal")?.style.display === "flex") {
-      updateDestinationModal(); // Changed from updateAdditionalCarInfo
+    const modal = document.getElementById("destinationModal");
+    if (modal && modal.style && modal.style.display === "flex") {
+      updateDestinationModal();
     }
   } catch (error) {
     console.error("❌ Error in fetchCarData:", error);
@@ -877,6 +878,34 @@ function addDebugInfo() {
             <div><b>Car:</b> ${window.carModelName || "N/A"}</div>
         `;
   }, 500);
+}
+
+// Add this function to your index.js file
+function initMapButton() {
+  const mapDot = document.getElementById("mapDot");
+
+  if (mapDot) {
+    console.log("Setting up map button click handler");
+
+    mapDot.addEventListener("click", function (event) {
+      event.stopPropagation(); // Prevent other click handlers from firing
+
+      // Open Google Maps with the destination coordinates
+      if (destination.latitude && destination.longitude) {
+        const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination.latitude},${destination.longitude}&travelmode=walking`;
+        window.open(googleMapsUrl, "_blank");
+        console.log("Opening Google Maps navigation");
+      } else {
+        console.error("No destination coordinates available for navigation");
+        showError("Navigation coordinates not available");
+      }
+    });
+
+    // Make it visually clickable
+    mapDot.style.cursor = "pointer";
+  } else {
+    console.warn("Map button element not found");
+  }
 }
 
 // Initialize app when page loads
