@@ -335,13 +335,12 @@ function calculateGPSDirection() {
     return 0;
 }
 
-// Update UI to show arrow direction - with correct compass behavior
+// Update UI to show arrow direction with proper counter-rotation compass behavior
 function updateUI() {
     const arrow = document.querySelector(".arrow");
     
     if (arrow) {
-        // Calculate direction using bearing and device orientation
-        // This will give us the angle where the target is relative to where we're facing
+        // Calculate direction based on AR or GPS
         let directionAngle;
         
         if (arEntityLoaded) {
@@ -352,25 +351,31 @@ function updateUI() {
             directionAngle = calculateGPSDirection();
         }
         
+        // IMPORTANT: Apply a counter-rotation by inverting the angle
+        // This makes the arrow rotate in the opposite direction of device rotation
+        // When you turn 30 degrees clockwise, arrow turns 30 degrees counter-clockwise
+        const compassAngle = (360 - directionAngle) % 360;
+        
         // Update the global direction variable for other functions to use
-        direction = (360 - directionAngle);
+        direction = compassAngle;
         
         // Apply smoother transition for stability
         arrow.style.transition = "transform 0.3s ease-out";
         
-        // Rotate the arrow - NO additional 180 degree offset
-        // This will make the arrow point directly where the target is
-        arrow.style.transform = `translate(-50%, -50%) rotate(${directionAngle}deg)`;
+        // Rotate the arrow with the counter-rotation angle
+        arrow.style.transform = `translate(-50%, -50%) rotate(${compassAngle}deg)`;
         
-        // Debug log occasionally
+        // Debug log occasionally - shows both original and inverted angle
         if (Math.random() < 0.01) {
-            console.log("Arrow pointing at:", directionAngle.toFixed(1) + "°");
+            console.log("Arrow direction - Raw:", directionAngle.toFixed(1) + "°", 
+                        "Counter-rotated:", compassAngle.toFixed(1) + "°");
         }
     }
     
     // Continue updating
     requestAnimationFrame(updateUI);
 }
+
 // Create AR marker at destination
 function createDestinationMarker(lat, lng) {
   // Remove existing marker if it exists
