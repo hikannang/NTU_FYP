@@ -28,7 +28,7 @@ let arEntityLoaded = false;
 
 // Constants
 const DISTANCE_UPDATE_INTERVAL = 1000; // Update distance every second
-const MODAL_TRIGGER_DISTANCE = 200; // Show modal when within 200 meters
+const MODAL_TRIGGER_DISTANCE = 20; // Show modal when within 20 meters
 
 // Initialize AR experience and fetch car data
 function initAR() {
