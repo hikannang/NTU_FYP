@@ -130,22 +130,34 @@
       </div>
     </div>
 
-        <div id="destinationModal" class="modal">
+    <!-- Destination Modal -->
+    <div id="destinationModal" class="modal">
       <div class="modal-content">
-        <img id="carImage" class="car-image" src="../static/images/car_images/default.png" alt="Car Image">
-        <h2 id="modalTitle" class="modal-title">You are almost arriving, here's a recap of your car information:</h2>
-        
-        <!-- These should be simple elements with IDs, not nested elements -->
+        <img
+          id="carImage"
+          class="car-image"
+          src="../static/images/car_images/default.png"
+          alt="Car Image"
+        />
+        <h2 id="modalTitle" class="modal-title">
+          You are almost arriving, here's a recap of your car information:
+        </h2>
+
         <div class="car-details-box">
-          <div class="car-detail" id="carLicensePlate">License plate: Loading...</div>
-          <div class="car-detail" id="carModelName">Car model: Loading...</div>
+          <div id="carLicensePlate" class="car-detail">
+            License plate: Loading...
+          </div>
+          <div id="carModelName" class="car-detail">Car model: Loading...</div>
         </div>
-        
-        <h3 id="directionsLabel" class="directions-label">And here is the direction to the booked car:</h3>
+
+        <h3 id="directionsLabel" class="directions-label">
+          And here is the direction to the booked car:
+        </h3>
         <p id="directionsText" class="directions-text">Loading directions...</p>
         <p class="dismiss-text">Press anywhere to dismiss</p>
       </div>
     </div>
+
     <!-- Loading Screen -->
     <div id="loadingScreen" class="loading-screen" style="display: none">
       <div class="spinner"></div>
