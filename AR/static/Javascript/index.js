@@ -308,33 +308,16 @@ function calculateARDirection() {
   }
 }
 
-// Calculate GPS-based direction
+// Replace calculateGPSDirection with this version:
 function calculateGPSDirection() {
-  if (smoothedHeading !== null) {
-    // Get bearing to target
-    const bearingToTarget = calculateBearing();
-
-    // Calculate ABSOLUTE direction angle (this is key - we're not calculating relative angle)
-    let directionAngle = bearingToTarget;
-
-    // No need to subtract heading here - we'll handle the counter-rotation in updateUI
-
-    // Log occasionally
-    if (Math.random() < 0.01) {
-      console.log(
-        "GPS absolute direction:",
-        directionAngle.toFixed(1) + "°",
-        "(Heading:",
-        smoothedHeading.toFixed(1) + "°",
-        "Bearing:",
-        bearingToTarget.toFixed(1) + "°)"
-      );
+    
+    if (smoothedHeading !== null) {
+        
+        return smoothedHeading;
     }
-
-    return directionAngle;
-  }
-
-  return 0;
+    
+    // Fallback to 0 if no heading data
+    return 0;
 }
 
 // Update UI to show arrow direction with proper counter-rotation compass behavior
