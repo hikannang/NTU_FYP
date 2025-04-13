@@ -757,22 +757,36 @@ function updateDestinationModal() {
 
 // Show destination modal
 function showDestinationModal() {
-  console.log("Showing destination modal");
-
-  const modal = document.getElementById("destinationModal");
-  if (!modal) {
-    console.error("Modal element not found!");
-    return;
-  }
-
-  // Lock the background scrolling
-  document.body.style.overflow = "hidden";
-
-  // Update the modal content
-  updateDestinationModal();
-
-  // Show the modal
-  modal.style.display = "flex";
+    console.log("Showing destination modal");
+    
+    const modal = document.getElementById("destinationModal");
+    if (!modal) {
+        console.error("Modal element not found!");
+        return;
+    }
+    
+    // Lock the background scrolling
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    
+    // Update modal content
+    updateDestinationModal();
+    
+    // Show the modal with flex display
+    modal.style.display = "flex";
+    
+    // Force a redraw to ensure the modal takes up the full screen
+    modal.offsetHeight;
+    
+    // Add click handler to close modal
+    const closeOnClick = function() {
+        modal.style.display = "none";
+        document.body.style.overflow = 'auto';
+        document.documentElement.style.overflow = 'auto';
+        modal.removeEventListener('click', closeOnClick);
+    };
+    
+    modal.addEventListener('click', closeOnClick);
 }
 
 // Helper function to load car image with fallbacks

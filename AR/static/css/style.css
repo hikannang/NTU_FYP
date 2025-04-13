@@ -443,195 +443,141 @@ html{
     position: relative;
 }
 
-/* Full Viewport Modal Styling */
+
+/* Full Viewport Modal Styling - Updated */
 #destinationModal {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw; /* Use viewport width units */
-    height: 100vh; /* Use viewport height units */
-    background-color: rgba(0, 0, 0, 0.8); /* 80% black background (20% transparent) */
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
     z-index: 9999;
     display: none; /* Hidden by default */
     align-items: center;
     justify-content: center;
-    margin: 0; /* Remove any margins */
-    padding: 0; /* Remove any padding */
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
-    overflow: hidden; /* Prevent scrolling behind the modal */
+    overflow: hidden;
 }
 
-/* For iOS Safari specifically - handles bottom bar better */
-@supports (-webkit-touch-callout: none) {
-    #destinationModal {
-        height: -webkit-fill-available;
-    }
-}
-
+/* Make sure modal content is also full-screen */
 #destinationModal .modal-content {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 20px;
-    width: 90%;
-    max-width: 500px;
-    max-height: 80vh; /* 80% of viewport height */
-    overflow-y: auto; /* Allow scrolling if content is too tall */
-    background-color: rgba(255, 255, 255, 0.2); /* 80% transparent white */
-    backdrop-filter: blur(8px); /* Frosted glass effect */
-    -webkit-backdrop-filter: blur(8px); /* For Safari */
-    border-radius: 15px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    margin: 0 auto; /* Center horizontally */
-    position: relative; /* For positioning children */
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    max-width: none; /* Remove max-width limitation */
+    max-height: none; /* Remove max-height limitation */
+    overflow-y: auto;
+    background-color: rgba(0, 0, 0, 0.85); /* Darker background */
+    margin: 0;
+    padding: 30px;
+    border-radius: 0; /* Remove rounded corners for full-screen effect */
+    border: none; /* Remove border */
+    box-shadow: none; /* Remove shadow */
 }
 
-/* Make sure images are properly sized */
+/* Make car image larger */
 #destinationModal .car-image {
     width: auto;
-    max-width: 80%;
-    max-height: 30vh; /* Limit height to 30% of viewport */
+    max-width: 90%;
+    max-height: 40vh;
     object-fit: contain;
-    margin: 0 0 20px 0;
+    margin: 0 0 30px 0;
     border-radius: 10px;
 }
 
-/* Text styling for better readability */
+/* Larger text for title */
 #destinationModal .modal-title {
     color: white;
-    font-size: clamp(18px, 5vw, 24px); /* Responsive font size */
+    font-size: clamp(24px, 6vw, 32px); /* Larger responsive font size */
     font-weight: bold;
-    margin-bottom: 15px;
+    margin-bottom: 25px;
     text-align: center;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     width: 100%;
+    padding: 0 20px;
 }
 
+/* Larger text for directions label */
 #destinationModal .directions-label {
     color: white;
-    font-size: clamp(16px, 4vw, 20px); /* Responsive font size */
+    font-size: clamp(22px, 5vw, 28px); /* Larger responsive font size */
     font-weight: 600;
-    margin: 0 0 10px 0;
+    margin: 10px 0 15px 0;
     text-align: center;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+/* Larger text for directions */
 #destinationModal #directionsText {
     color: white;
-    font-size: clamp(14px, 3.5vw, 18px); /* Responsive font size */
-    line-height: 1.5;
-    margin: 0 0 20px 0;
+    font-size: clamp(18px, 4.5vw, 24px); /* Larger responsive font size */
+    line-height: 1.6;
+    margin: 0 0 30px 0;
     text-align: center;
-    max-width: 100%;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    padding: 0 10px;
-    word-wrap: break-word;
+    max-width: 90%;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    padding: 0 20px;
 }
 
+/* Larger dismiss text */
 #destinationModal .dismiss-text {
     color: rgba(255, 255, 255, 0.7);
-    font-size: clamp(12px, 3vw, 16px); /* Responsive font size */
+    font-size: clamp(16px, 4vw, 20px); /* Larger responsive font size */
     font-style: italic;
     text-align: center;
-    margin-top: 15px;
-    text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+    margin-top: 25px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-/* Animation for modal appearance */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-#destinationModal.show {
-    display: flex;
-    animation: fadeIn 0.3s ease-out;
-}
-
-/* Media queries for better mobile experience */
-@media screen and (max-width: 480px) {
-    #destinationModal .modal-content {
-        width: 95%;
-        padding: 15px;
-        max-height: 85vh;
-    }
-    
-    #destinationModal .car-image {
-        max-height: 25vh;
-    }
-}
-
-/* Fix for devices with notches or dynamic islands */
-@media screen and (max-width: 896px) and (orientation: landscape) {
-    #destinationModal .modal-content {
-        max-height: 75vh;
-        padding: 15px 20px;
-    }
-}
-
-/* Car details styling for destination modal */
+/* Update car details box to be wider */
 .car-details-box {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  padding: 15px;
-  margin: 5px 0 15px 0;
-  width: 100%;
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+    padding: 20px;
+    margin: 10px 0 25px 0;
+    width: 90%;
+    max-width: 600px;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 }
 
+/* Larger text for car details */
 .car-detail {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.car-detail:last-child {
-  margin-bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
 }
 
 .detail-label {
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: clamp(14px, 3.5vw, 16px);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: clamp(18px, 4.5vw, 24px);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .detail-value {
-  font-weight: 600;
-  color: white;
-  font-size: clamp(14px, 3.5vw, 16px);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  max-width: 60%;
-  text-align: right;
-  word-break: break-word;
+    font-weight: 600;
+    color: white;
+    font-size: clamp(18px, 4.5vw, 24px);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    max-width: 60%;
+    text-align: right;
+    word-break: break-word;
 }
 
-/* Add more space between modal title and car details */
-#destinationModal .modal-title + .car-details-box {
-  margin-top: 15px;
-}
-
-/* Adjust spacing between car details and directions section */
-#destinationModal .car-details-box + .modal-title {
-  margin-top: 10px;
-}
-
-/* Media query for smaller screens */
-@media screen and (max-width: 480px) {
-  .car-details-box {
-    padding: 12px;
-  }
-  
-  .car-detail {
-    margin-bottom: 8px;
-  }
-  
-  .detail-label,
-  .detail-value {
-    font-size: 14px;
-  }
+/* Add a container for car image and main content to improve layout */
+#destinationModal .modal-main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
 }
