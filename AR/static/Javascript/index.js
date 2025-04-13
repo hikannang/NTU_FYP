@@ -25,18 +25,18 @@ let arEntityLoaded = false;
 const DISTANCE_UPDATE_INTERVAL = 1000; // Update distance every second
 const MODAL_TRIGGER_DISTANCE = 200; // Show modal when within 200 meters
 
-// Initialize AR experience
+// Initialize AR experience and fetch car data
 function initAR() {
   console.log("Initializing AR experience");
-
+  
   // Parse URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   const targetLat = parseFloat(urlParams.get("lat"));
   const targetLng = parseFloat(urlParams.get("lng"));
-  const bookingId = urlParams.get("booking");
-
+  const bookingId = urlParams.get("id"); // Get booking ID from URL parameter "id"
+  
   console.log("URL parameters:", { targetLat, targetLng, bookingId });
-
+  
   // Set target coordinates
   if (!isNaN(targetLat) && !isNaN(targetLng)) {
     target.latitude = targetLat;
@@ -44,25 +44,28 @@ function initAR() {
     destination.latitude = targetLat;
     destination.longitude = targetLng;
     console.log("Target set to:", target);
-
+    
     // Start location and orientation services
     startServices();
-
+    
     // Start UI updates
     updateUI();
-
+    
     // Start distance calculations
     setInterval(updateDistanceDisplay, DISTANCE_UPDATE_INTERVAL);
+    
+    // Initialize map button
+    initMapButton();
   } else {
     console.error("No valid coordinates in URL parameters");
     showError("Missing or invalid location coordinates");
   }
-
+  
   // Fetch car data if booking ID is provided
   if (bookingId) {
     fetchCarData(bookingId);
   } else {
-    console.warn("No booking ID provided");
+    console.warn("No booking ID provided in URL");
   }
 }
 
@@ -514,243 +517,212 @@ function updateDistanceDisplay() {
 async function fetchCarData(bookingId) {
   try {
     console.log("🔍 Fetching car data for booking ID:", bookingId);
-
+    
     if (!bookingId) {
       console.error("❌ Invalid booking ID provided");
       return;
     }
-
-    // 1. Retrieve the booking document
+    
+    // 1. Retrieve the booking document using the bookingId from the URL
     console.log("📚 Retrieving booking document...");
     const bookingRef = doc(db, "bookings", bookingId);
     const bookingSnapshot = await getDoc(bookingRef);
-
+    
     if (!bookingSnapshot.exists()) {
       console.error("❌ Booking document not found for ID:", bookingId);
-
-      // Fallback for demo purposes
-      if (bookingId === "demo_booking") {
-        console.log("📝 Using demo data for car");
-        window.carType = "vezel_white";
-        window.carId = "car1";
-        window.carModelName = "Honda Vezel (White)";
-        window.carLicensePlate = "SGP1234A";
-        carDirections =
-          "The car is located in parking lot B, spot 42. It's a white Honda Vezel.";
-        window.carDirections = carDirections;
-      }
       return;
     }
-
+    
     // 2. Extract booking data
     const bookingData = bookingSnapshot.data();
     console.log("📋 Booking data retrieved:", bookingData);
-
+    
     // 3. Get car_id and car_type from the booking
     const carId = bookingData.car_id || null;
     const carType = bookingData.car_type || null;
-
-    if (!carType) {
-      console.warn("⚠️ No car_type found in booking");
-      window.carModelName = "Unknown";
+    
+    if (!carType || !carId) {
+      console.warn("⚠️ Missing car_type or car_id in booking:", { carId, carType });
       return;
     }
-
+    
     console.log("🚗 Car info from booking:", { carId, carType });
-
+    
     // Save to global variables
     window.carType = carType;
     window.carId = carId;
-
-    // 4. Parse car_type to extract model and color
+    
+    // 4. Extract base model name and color from car_type
     let baseModelName = carType;
     let carColor = "";
-
-    if (carType.includes("_")) {
-      const parts = carType.split("_");
+    
+    if (carType.includes('_')) {
+      const parts = carType.split('_');
       baseModelName = parts[0];
       carColor = parts[1] || "";
-
+      
       if (carColor) {
         carColor = carColor.charAt(0).toUpperCase() + carColor.slice(1);
       }
     }
-
-    console.log("🚗 Parsed car type:", { baseModelName, carColor });
-
-    // 5. Fetch the car model details from car_models collection
-    let modelName = "";
-
+    
+    // 5. Get car model name from car_models collection based on car_type
     try {
-      console.log("🔍 Fetching car model document:", baseModelName);
+      console.log("🔍 Fetching car model document for:", baseModelName);
       const modelDocRef = doc(db, "car_models", baseModelName);
       const modelDoc = await getDoc(modelDocRef);
-
+      
       if (modelDoc.exists()) {
         const modelData = modelDoc.data();
         console.log("📋 Car model data:", modelData);
-
+        
+        // Get the model name
         if (modelData.name) {
-          modelName = modelData.name;
-          console.log("✅ Found model name:", modelName);
+          window.modelName = modelData.name;
+          console.log("✅ Found model name:", window.modelName);
+          
+          // Format full model name with color
+          if (carColor) {
+            window.carModelName = `${window.modelName} (${carColor})`;
+          } else {
+            window.carModelName = window.modelName;
+          }
         } else {
-          console.warn("⚠️ No 'name' field in model document");
-
-          // Try alternative field names that might contain the model name
-          const possibleNameFields = [
-            "displayName",
-            "display_name",
-            "model_name",
-            "make_model",
-          ];
-
-          for (const field of possibleNameFields) {
-            if (modelData[field]) {
-              modelName = modelData[field];
-              console.log(
-                `✅ Found name in alternate field '${field}':`,
-                modelName
-              );
-              break;
-            }
+          console.warn("⚠️ No name field in car model document");
+          window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
+          if (carColor) {
+            window.carModelName += ` (${carColor})`;
           }
         }
       } else {
         console.warn("⚠️ Car model document not found for:", baseModelName);
-
-        // Debug: List available model documents
-        try {
-          console.log("📋 Listing available car models...");
-          const modelsRef = collection(db, "car_models");
-          const modelsSnapshot = await getDocs(modelsRef);
-
-          if (modelsSnapshot.empty) {
-            console.log("📋 No documents in car_models collection");
-          } else {
-            console.log(`📋 Found ${modelsSnapshot.size} model documents:`);
-            modelsSnapshot.forEach((doc) => {
-              console.log(` - ${doc.id}`);
-            });
-          }
-        } catch (e) {
-          console.error("❌ Error listing car models:", e);
+        window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
+        if (carColor) {
+          window.carModelName += ` (${carColor})`;
         }
       }
     } catch (modelError) {
       console.error("❌ Error fetching car model:", modelError);
-    }
-
-    // 6. Format the car model name with color
-    if (modelName && carColor) {
-      window.carModelName = `${modelName} (${carColor})`;
-    } else if (modelName) {
-      window.carModelName = modelName;
-    } else {
-      // Fallback: Use capitalized base model name
-      window.carModelName =
-        baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
+      window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
       if (carColor) {
         window.carModelName += ` (${carColor})`;
       }
     }
-
+    
     console.log("🏷️ Final car model name:", window.carModelName);
-
-    // 7. Fetch car document to get license plate and directions
-    if (carId) {
-      try {
-        console.log("🔍 Fetching car document for ID:", carId);
-        const carDocRef = doc(db, "cars", carId.toString());
-        const carDoc = await getDoc(carDocRef);
-
-        if (carDoc.exists()) {
-          const carData = carDoc.data();
-          console.log("📋 Car document data:", carData);
-
-          // Set license plate
-          window.carLicensePlate = carData.license_plate || "Unknown";
-          console.log("🔢 License plate:", window.carLicensePlate);
-
-          // Set directions
-          carDirections =
-            carData.directions || "Follow the arrow to reach your car.";
-          window.carDirections = carDirections;
-          console.log("🧭 Directions:", window.carDirections);
-        } else {
-          console.warn("⚠️ Car document not found for ID:", carId);
-          window.carLicensePlate = "Unknown";
-          window.carDirections = "Follow the arrow to reach your car.";
-        }
-      } catch (carError) {
-        console.error("❌ Error fetching car document:", carError);
+    
+    // 6. Get license plate and directions from cars collection using car_id
+    try {
+      console.log("🔍 Fetching car document for ID:", carId);
+      const carDocRef = doc(db, "cars", carId);
+      const carDoc = await getDoc(carDocRef);
+      
+      if (carDoc.exists()) {
+        const carData = carDoc.data();
+        console.log("📋 Car document data:", carData);
+        
+        // Get license plate
+        window.carLicensePlate = carData.license_plate || "Unknown";
+        console.log("🔢 License plate:", window.carLicensePlate);
+        
+        // Get directions
+        window.carDirections = carData.directions || "Follow the arrow to reach your car.";
+        console.log("🧭 Directions:", window.carDirections);
+      } else {
+        console.warn("⚠️ Car document not found for ID:", carId);
         window.carLicensePlate = "Unknown";
         window.carDirections = "Follow the arrow to reach your car.";
       }
-    } else {
-      console.warn("⚠️ No car_id provided in booking");
+    } catch (carError) {
+      console.error("❌ Error fetching car document:", carError);
       window.carLicensePlate = "Unknown";
       window.carDirections = "Follow the arrow to reach your car.";
     }
-
-    // 8. Update the modal if it's already visible
-    if (document.getElementById("destinationModal")?.style.display === "flex") {
-      updateAdditionalCarInfo();
+    
+    // 7. Update the modal if it's already visible
+    if (document.getElementById('destinationModal')?.style.display === 'flex') {
+      updateDestinationModal();
     }
+    
   } catch (error) {
     console.error("❌ Error in fetchCarData:", error);
+  }
+}
+
+// Update destination modal content
+function updateDestinationModal() {
+  console.log("Updating destination modal content");
+  
+  // Update car image based on car_type
+  const carImage = document.getElementById("carImage");
+  if (carImage && window.carType) {
+    const carImagePath = `../static/images/car_images/${window.carType}.png`;
+    console.log("🖼️ Setting car image path:", carImagePath);
+    
+    // Try to load the specific car image
+    const testImg = new Image();
+    testImg.onload = function() {
+      carImage.src = carImagePath;
+      console.log("✅ Successfully loaded car image");
+    };
+    
+    testImg.onerror = function() {
+      carImage.src = "../static/images/car_images/default.png";
+      console.warn("⚠️ Failed to load car image, using default");
+    };
+    
+    testImg.src = carImagePath;
+  }
+  
+  // Update modal title
+  const modalTitle = document.getElementById("modalTitle");
+  if (modalTitle) {
+    modalTitle.textContent = "You are almost arriving, here's a recap of your car information:";
+  }
+  
+  // Update license plate
+  const licensePlateElement = document.getElementById("carLicensePlate");
+  if (licensePlateElement && window.carLicensePlate) {
+    licensePlateElement.textContent = `License plate: ${window.carLicensePlate}`;
+  }
+  
+  // Update car model
+  const carModelElement = document.getElementById("carModelName");
+  if (carModelElement && window.carModelName) {
+    carModelElement.textContent = `Car model: ${window.carModelName}`;
+  }
+  
+  // Update directions label
+  const directionsLabel = document.getElementById("directionsLabel");
+  if (directionsLabel) {
+    directionsLabel.textContent = "And here is the direction to the booked car:";
+  }
+  
+  // Update directions text
+  const directionsText = document.getElementById("directionsText");
+  if (directionsText && window.carDirections) {
+    directionsText.textContent = window.carDirections;
   }
 }
 
 // Show destination modal
 function showDestinationModal() {
   console.log("Showing destination modal");
-
+  
   const modal = document.getElementById("destinationModal");
   if (!modal) {
     console.error("Modal element not found!");
     return;
   }
-
+  
   // Lock the background scrolling
   document.body.style.overflow = "hidden";
-
-  // Update car image
-  const carImage = document.getElementById("carImage");
-  if (carImage) {
-    console.log("Updating car image");
-    // Set default image first
-    carImage.src = "../static/images/car_images/default.png";
-
-    if (window.carType) {
-      console.log("Loading car image for type:", window.carType);
-      loadCarImageWithFallbacks(carImage, [
-        `../static/images/car_images/${window.carType}.png`,
-        `../static/images/car_images/${window.carType.split("_")[0]}.png`,
-        `../static/images/car_models/${window.carType}.png`,
-        `../static/images/cars/${window.carType}.png`,
-        "../static/images/car_images/default.png",
-      ]);
-    }
-  }
-
-  // Update directions text
-  const directionsText = document.getElementById("directionsText");
-  if (directionsText) {
-    directionsText.textContent =
-      window.carDirections || "Follow the arrow to reach your car.";
-  }
-
-  // Update additional car info
-  updateAdditionalCarInfo();
-
+  
+  // Update the modal content
+  updateDestinationModal();
+  
   // Show the modal
   modal.style.display = "flex";
-
-  // Add click handler to close modal
-  modal.addEventListener("click", function () {
-    modal.style.display = "none";
-    document.body.style.overflow = "auto"; // Unlock scrolling
-  });
 }
 
 // Update additional car information in the modal
