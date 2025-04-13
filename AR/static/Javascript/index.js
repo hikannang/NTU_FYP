@@ -245,139 +245,132 @@ function calculateBearing() {
 
 // Calculate direction from camera to AR entity
 function calculateARDirection() {
-  const arEntity = document.getElementById("destinationMarker");
-  if (!arEntity || !arEntityLoaded || !hasOrientationSupport) {
-    // Fall back to GPS-based direction if AR entity isn't available
-    return calculateGPSDirection();
-  }
-
-  try {
-    // Get the AR entity's world position
-    const scene = document.querySelector("a-scene");
-    if (!scene || !scene.object3D) {
-      console.warn("A-Frame scene not fully initialized");
-      return calculateGPSDirection();
+    const arEntity = document.getElementById('destinationMarker');
+    if (!arEntity || !arEntityLoaded || !hasOrientationSupport) {
+        // Fall back to GPS-based direction if AR entity isn't available
+        return calculateGPSDirection();
     }
 
-    // Get camera and marker objects
-    const camera = document.querySelector("[camera]");
-    if (!camera || !camera.object3D) {
-      console.warn("Camera not found in scene");
-      return calculateGPSDirection();
+    try {
+        // Get the AR entity's world position
+        const scene = document.querySelector('a-scene');
+        if (!scene || !scene.object3D) {
+            console.warn("A-Frame scene not fully initialized");
+            return calculateGPSDirection();
+        }
+
+        // Get camera and marker objects
+        const camera = document.querySelector('[camera]');
+        if (!camera || !camera.object3D) {
+            console.warn("Camera not found in scene");
+            return calculateGPSDirection();
+        }
+
+        // Get world positions (3D coordinates in the scene)
+        const worldPos = new THREE.Vector3();
+        arEntity.object3D.getWorldPosition(worldPos);
+        
+        // Get camera position and direction
+        const camPos = new THREE.Vector3();
+        camera.object3D.getWorldPosition(camPos);
+        
+        // Get direction from camera to AR entity
+        const directionVector = new THREE.Vector3().subVectors(worldPos, camPos);
+        
+        // Project onto XZ plane (ignore Y/height difference)
+        directionVector.y = 0;
+        directionVector.normalize();
+        
+        // Get camera forward vector (where the camera is looking)
+        const camForward = new THREE.Vector3(0, 0, -1);
+        camForward.applyQuaternion(camera.object3D.quaternion);
+        camForward.y = 0;
+        camForward.normalize();
+        
+        // Calculate angle between the direction vector and camera forward
+        const angle = Math.atan2(
+            directionVector.x * camForward.z - directionVector.z * camForward.x,
+            directionVector.x * camForward.x + directionVector.z * camForward.z
+        ) * (180 / Math.PI);
+        
+        // Log occasionally (not every frame)
+        if (Math.random() < 0.01) { // Log approximately 1% of calculations
+            console.log("AR-based direction:", angle.toFixed(1) + "°");
+        }
+        
+        return angle;
+    } catch (e) {
+        console.warn("Error calculating AR direction:", e);
+        return calculateGPSDirection();
     }
-
-    // Get world positions (3D coordinates in the scene)
-    const worldPos = new THREE.Vector3();
-    arEntity.object3D.getWorldPosition(worldPos);
-
-    // Get camera position and direction
-    const camPos = new THREE.Vector3();
-    camera.object3D.getWorldPosition(camPos);
-
-    // Get direction from camera to AR entity
-    const directionVector = new THREE.Vector3().subVectors(worldPos, camPos);
-
-    // Project onto XZ plane (ignore Y/height difference)
-    directionVector.y = 0;
-    directionVector.normalize();
-
-    // Get camera forward vector (where the camera is looking)
-    const camForward = new THREE.Vector3(0, 0, -1);
-    camForward.applyQuaternion(camera.object3D.quaternion);
-    camForward.y = 0;
-    camForward.normalize();
-
-    // Calculate angle between the direction vector and camera forward
-    const angle =
-      Math.atan2(
-        directionVector.x * camForward.z - directionVector.z * camForward.x,
-        directionVector.x * camForward.x + directionVector.z * camForward.z
-      ) *
-      (180 / Math.PI);
-
-    // Log occasionally (not every frame)
-    if (Math.random() < 0.01) {
-      // Log approximately 1% of calculations
-      console.log("AR-based direction:", angle.toFixed(1) + "°");
-    }
-
-    return angle;
-  } catch (e) {
-    console.warn("Error calculating AR direction:", e);
-    return calculateGPSDirection();
-  }
 }
 
 // Calculate GPS-based direction
 function calculateGPSDirection() {
-  // Calculate based on compass heading and bearing to target
-  if (smoothedHeading !== null) {
-    // Get bearing to target (from current GPS to target GPS)
-    const bearingToTarget = calculateBearing();
-
-    // Calculate direction (difference between bearing and heading)
-    let directionAngle = bearingToTarget - smoothedHeading;
-
-    // Normalize to 0-360
-    if (directionAngle < 0) {
-      directionAngle += 360;
+    // Calculate based on compass heading and bearing to target
+    if (smoothedHeading !== null) {
+        // Get bearing to target (from current GPS to target GPS)
+        const bearingToTarget = calculateBearing();
+        
+        // Calculate direction (difference between bearing and heading)
+        // This gives us where the target is relative to where we're facing
+        let directionAngle = bearingToTarget - smoothedHeading;
+        
+        // Normalize to 0-360
+        if (directionAngle < 0) {
+            directionAngle += 360;
+        }
+        
+        // Log occasionally
+        if (Math.random() < 0.01) {
+            console.log("GPS direction:", directionAngle.toFixed(1) + "°", 
+                       "(Heading:", smoothedHeading.toFixed(1) + "°", 
+                       "Bearing:", bearingToTarget.toFixed(1) + "°)");
+        }
+        
+        return directionAngle;
     }
-
-    // Log occasionally
-    if (Math.random() < 0.01) {
-      console.log(
-        "GPS-based direction:",
-        directionAngle.toFixed(1) + "°",
-        "(Heading:",
-        smoothedHeading.toFixed(1) + "°",
-        "Bearing:",
-        bearingToTarget.toFixed(1) + "°)"
-      );
-    }
-
-    return directionAngle;
-  }
-
-  // Fallback to 0 if no heading data
-  return 0;
+    
+    // Fallback to 0 if no heading data
+    return 0;
 }
 
-// Update UI to show arrow direction - with reversed rotation
+// Update UI to show arrow direction - with correct compass behavior
 function updateUI() {
-  const arrow = document.querySelector(".arrow");
-
-  if (arrow) {
-    // Calculate direction - prefer AR-based direction when available
-    const directionAngle = calculateARDirection();
-
-    // Update the global direction variable for other functions to use
-    direction = directionAngle;
-
-    // IMPORTANT: Reverse the angle by adding 180 degrees
-    // This makes the arrow point in the opposite direction
-    const reversedAngle = (directionAngle + 180) % 360;
-
-    // Apply smoother transition for stability
-    arrow.style.transition = "transform 0.3s ease-out";
-
-    // Rotate the arrow with reversed angle
-    arrow.style.transform = `translate(-50%, -50%) rotate(${reversedAngle}deg)`;
-
-    // Debug log occasionally (every ~100 frames)
-    if (Math.random() < 0.01) {
-      console.log(
-        "Arrow direction: Original =",
-        directionAngle.toFixed(1) + "°",
-        "Reversed =",
-        reversedAngle.toFixed(1) + "°"
-      );
+    const arrow = document.querySelector(".arrow");
+    
+    if (arrow) {
+        // Calculate direction using bearing and device orientation
+        // This will give us the angle where the target is relative to where we're facing
+        let directionAngle;
+        
+        if (arEntityLoaded) {
+            // If AR entity is loaded, use AR-based direction
+            directionAngle = calculateARDirection();
+        } else {
+            // Otherwise use GPS-based calculation
+            directionAngle = calculateGPSDirection();
+        }
+        
+        // Update the global direction variable for other functions to use
+        direction = directionAngle;
+        
+        // Apply smoother transition for stability
+        arrow.style.transition = "transform 0.3s ease-out";
+        
+        // Rotate the arrow - NO additional 180 degree offset
+        // This will make the arrow point directly where the target is
+        arrow.style.transform = `translate(-50%, -50%) rotate(${directionAngle}deg)`;
+        
+        // Debug log occasionally
+        if (Math.random() < 0.01) {
+            console.log("Arrow pointing at:", directionAngle.toFixed(1) + "°");
+        }
     }
-  }
-
-  // Continue updating
-  requestAnimationFrame(updateUI);
+    
+    // Continue updating
+    requestAnimationFrame(updateUI);
 }
-
 // Create AR marker at destination
 function createDestinationMarker(lat, lng) {
   // Remove existing marker if it exists
