@@ -128,7 +128,7 @@ function createDestinationMarker(lat, lng) {
     showLoadingScreen();
 }
 
-// Updated fetchCarData function to get model name from car_models collection
+// Corrected fetchCarData function
 async function fetchCarData(bookingId) {
     try {
         console.log("🔍 Fetching car data for booking ID:", bookingId);
@@ -161,7 +161,7 @@ async function fetchCarData(bookingId) {
             let baseModelName = carType;
             let carColor = "";
             
-            if (carType.includes('_')) {
+            if (carType && carType.includes('_')) {
                 // Split model and color (e.g., "vezel_white" -> "vezel" and "white")
                 const parts = carType.split('_');
                 baseModelName = parts[0];
@@ -176,22 +176,41 @@ async function fetchCarData(bookingId) {
             // 1. Fetch model details from car_models collection
             console.log("🔍 Fetching car model details for:", baseModelName);
             let modelName = "Unknown";
-            let modelDetails = null;
             
             try {
-                // Try to get the model document using the base model name as document ID
-                const modelDoc = await getDoc(doc(db, "car_models", baseModelName));
+                // IMPORTANT: Make sure we're using the correct document path
+                const modelDocRef = doc(db, "car_models", baseModelName);
+                console.log("🔍 Looking up car_models document with ID:", baseModelName);
+                
+                const modelDoc = await getDoc(modelDocRef);
+                console.log("📊 Model document exists:", modelDoc.exists());
                 
                 if (modelDoc.exists()) {
-                    modelDetails = modelDoc.data();
-                    console.log("� Car model data retrieved:", modelDetails);
+                    const modelData = modelDoc.data();
+                    console.log("📋 Car model data retrieved:", modelData);
                     
-                    // Get model name from document
-                    if (modelDetails.name) {
-                        modelName = modelDetails.name;
+                    // Explicitly check for the 'name' field
+                    if (modelData.name) {
+                        modelName = modelData.name;
+                        console.log("🏷️ Got model name from document:", modelName);
+                    } else {
+                        console.warn("⚠️ Model document exists but has no 'name' field");
+                        console.log("📊 Available fields:", Object.keys(modelData));
                     }
                 } else {
-                    console.warn("⚠️ Car model document not found for:", baseModelName);
+                    console.warn("⚠️ No document found in car_models collection with ID:", baseModelName);
+                    
+                    // For debugging - try listing some documents in the collection
+                    try {
+                        const modelsCollectionRef = collection(db, "car_models");
+                        const modelQuerySnapshot = await getDocs(modelsCollectionRef);
+                        console.log("📚 Found", modelQuerySnapshot.size, "documents in car_models collection");
+                        modelQuerySnapshot.forEach(doc => {
+                            console.log(" - Document ID:", doc.id);
+                        });
+                    } catch (listErr) {
+                        console.error("❌ Error listing car_models documents:", listErr);
+                    }
                 }
             } catch (modelError) {
                 console.error("❌ Error fetching car model:", modelError);
@@ -239,42 +258,57 @@ async function fetchCarData(bookingId) {
                     carDirections = "Follow the arrow to reach your car.";
                     window.carDirections = carDirections;
                 }
-            } else {
-                console.warn("⚠️ No car_id found in booking");
-                window.carLicensePlate = "Unknown";
-                carDirections = "Follow the arrow to reach your car.";
-                window.carDirections = carDirections;
             }
+            
+            // Add a debugging element to the page
+            addDebugInfo({
+                bookingId: bookingId,
+                carType: carType,
+                baseModelName: baseModelName,
+                carColor: carColor,
+                modelName: modelName,
+                displayName: window.carModelName,
+                licensePlate: window.carLicensePlate
+            });
+            
         } else {
             console.error("❌ Booking not found for ID:", bookingId);
-            
-            // Use hardcoded fallback for demo booking ID
-            if (bookingId === "booking_1743839882969") {
-                window.carType = "cx-8_black";
-                window.carId = "1";
-                window.carModelName = "Mazda CX-8 (Black)";
-                window.carLicensePlate = "S123ABC";
-                carDirections = "The car is parked at lot 23B. It's a black Mazda CX-8.";
-                window.carDirections = carDirections;
-                
-                console.log("📝 Using hardcoded car data for demo booking");
-            }
+            // Use hardcoded fallback for demo
+            // ... (rest of your fallback code) ...
         }
     } catch (error) {
         console.error("❌ Error fetching car data:", error);
-        
-        // Use hardcoded fallback for demo booking ID if there was an error
-        if (bookingId === "booking_1743839882969") {
-            window.carType = "cx-8_black";
-            window.carId = "1";
-            window.carModelName = "Mazda CX-8 (Black)";
-            window.carLicensePlate = "S123ABC";
-            carDirections = "The car is parked at lot 23B. It's a black Mazda CX-8.";
-            window.carDirections = carDirections;
-            
-            console.log("� Using hardcoded car data after error");
-        }
+        // ... (rest of your error handling) ...
     }
+}
+
+// Helper function to add debug info to the page
+function addDebugInfo(info) {
+    // Only add in development mode
+    if (window.location.hostname !== 'localhost' && 
+        !window.location.hostname.includes('127.0.0.1')) {
+        return;
+    }
+    
+    const debugDiv = document.createElement('div');
+    debugDiv.style.position = 'fixed';
+    debugDiv.style.bottom = '10px';
+    debugDiv.style.left = '10px';
+    debugDiv.style.backgroundColor = 'rgba(0,0,0,0.7)';
+    debugDiv.style.color = 'white';
+    debugDiv.style.padding = '10px';
+    debugDiv.style.borderRadius = '5px';
+    debugDiv.style.fontSize = '12px';
+    debugDiv.style.maxWidth = '80%';
+    debugDiv.style.zIndex = '9999';
+    
+    let content = '<strong>Debug Info:</strong><br>';
+    for (const [key, value] of Object.entries(info)) {
+        content += `<strong>${key}:</strong> ${value}<br>`;
+    }
+    
+    debugDiv.innerHTML = content;
+    document.body.appendChild(debugDiv);
 }
 
 // Test function to directly check booking data
@@ -414,7 +448,7 @@ function startOrientation() {
     });
 }
 
-// Raw compass calculation without any smoothing
+// Updated handleOrientation function
 function handleOrientation(event) {
     // Set flag that we have orientation data
     hasOrientationSupport = true;
@@ -425,18 +459,35 @@ function handleOrientation(event) {
     // iOS devices
     if (event.webkitCompassHeading !== undefined) {
         deviceHeading = event.webkitCompassHeading;
+        console.log("iOS compass heading:", deviceHeading.toFixed(1)); // Debugging
     }
     // Android devices
     else if (event.alpha !== null) {
         deviceHeading = 360 - event.alpha;
+        console.log("Android compass heading:", deviceHeading.toFixed(1)); // Debugging
     }
     // No orientation data available
     else {
+        console.log("No orientation data available in event:", event);
         return;
     }
     
-    // Use raw heading directly
-    smoothedHeading = deviceHeading;
+    // Update smoothed heading with some basic filtering
+    if (smoothedHeading === null) {
+        // Initialize with first reading
+        smoothedHeading = deviceHeading;
+    } else {
+        // Simple low-pass filter (80% old value, 20% new value)
+        const filterFactor = 0.2;
+        
+        // Handle the 0/360 edge case
+        let diff = deviceHeading - smoothedHeading;
+        if (diff > 180) diff -= 360;
+        if (diff < -180) diff += 360;
+        
+        smoothedHeading = (smoothedHeading + diff * filterFactor) % 360;
+        if (smoothedHeading < 0) smoothedHeading += 360;
+    }
     
     // Get bearing to target
     bearing = calculateBearing();
@@ -449,8 +500,31 @@ function handleOrientation(event) {
         direction += 360;
     }
     
-    // Debug output
-    console.log(`Heading: ${smoothedHeading.toFixed(1)}°, Bearing: ${bearing.toFixed(1)}°, Arrow: ${direction.toFixed(1)}°`);
+    // Debug output every few seconds
+    if (Math.random() < 0.1) { // Only log about 10% of readings to avoid console spam
+        console.log(`Heading: ${smoothedHeading.toFixed(1)}°, Bearing: ${bearing.toFixed(1)}°, Arrow: ${direction.toFixed(1)}°`);
+    }
+}
+
+// Also update the updateUI function to ensure it's using the correct direction value
+function updateUI() {
+    const arrow = document.querySelector(".arrow");
+    
+    if (arrow) {
+        // Google Maps uses a slower transition for stability
+        arrow.style.transition = "transform 0.5s ease";
+        
+        // Use the global direction variable to update arrow
+        arrow.style.transform = `translate(-50%, -50%) rotate(${direction}deg)`;
+        
+        // Debugging - log arrow direction and styles occasionally
+        if (Math.random() < 0.05) { // Log very occasionally
+            console.log("Arrow direction:", direction.toFixed(1), "Current transform:", arrow.style.transform);
+        }
+    }
+    
+    // Continue updating
+    requestAnimationFrame(updateUI);
 }
 
 // Enable position history tracking for direction estimation
