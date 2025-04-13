@@ -516,7 +516,7 @@ function updateDistanceDisplay() {
   }
 }
 
-// Update the fetchCarData function to properly retrieve model name
+// Updated fetchCarData function to use full car_type for lookup
 async function fetchCarData(bookingId) {
   try {
     console.log("🔍 Fetching car data for booking ID:", bookingId);
@@ -555,13 +555,11 @@ async function fetchCarData(bookingId) {
     window.carType = carType;
     window.carId = carId;
     
-    // 4. Extract base model name and color from car_type
-    let baseModelName = carType;
+    // 4. Extract color for display purposes only
     let carColor = "";
     
     if (carType.includes('_')) {
       const parts = carType.split('_');
-      baseModelName = parts[0];  // This is the model_id to use for car_models lookup
       carColor = parts[1] || "";
       
       if (carColor) {
@@ -569,10 +567,10 @@ async function fetchCarData(bookingId) {
       }
     }
     
-    // 5. Get car model name from car_models collection based on baseModelName (model_id)
+    // 5. Get car model name from car_models collection using full carType
     try {
-      console.log("🔍 Fetching car model document for model_id:", baseModelName);
-      const modelDocRef = doc(db, "car_models", baseModelName);
+      console.log("🔍 Fetching car model document for car_type:", carType);
+      const modelDocRef = doc(db, "car_models", carType); // Using full carType here
       const modelDoc = await getDoc(modelDocRef);
       
       if (modelDoc.exists()) {
@@ -595,25 +593,16 @@ async function fetchCarData(bookingId) {
           console.log("🚗 Final formatted car model name:", window.carModelName);
         } else {
           console.warn("⚠️ No 'name' field found in car_models document");
-          window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
-          if (carColor) {
-            window.carModelName += ` (${carColor})`;
-          }
+          fallbackToBaseModel(carType, carColor);
         }
       } else {
-        console.warn("⚠️ Car model document not found for model_id:", baseModelName);
-        window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
-        if (carColor) {
-          window.carModelName += ` (${carColor})`;
-        }
+        console.warn("⚠️ Car model document not found for car_type:", carType);
+        fallbackToBaseModel(carType, carColor);
       }
     } catch (modelError) {
       console.error("❌ Error fetching car model:", modelError);
       console.error("Error details:", modelError.message);
-      window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
-      if (carColor) {
-        window.carModelName += ` (${carColor})`;
-      }
+      fallbackToBaseModel(carType, carColor);
     }
     
     // 6. Get license plate and directions from cars collection using car_id
@@ -652,6 +641,43 @@ async function fetchCarData(bookingId) {
     
   } catch (error) {
     console.error("❌ Error in fetchCarData:", error);
+  }
+}
+
+// Helper function to try base model if full carType lookup fails
+async function fallbackToBaseModel(carType, carColor) {
+  try {
+    // Extract base model name
+    const baseModelName = carType.split('_')[0];
+    
+    console.log("🔄 Trying fallback to base model:", baseModelName);
+    const baseModelDocRef = doc(db, "car_models", baseModelName);
+    const baseModelDoc = await getDoc(baseModelDocRef);
+    
+    if (baseModelDoc.exists()) {
+      const modelData = baseModelDoc.data();
+      
+      if (modelData.name) {
+        window.modelName = modelData.name;
+        
+        if (carColor) {
+          window.carModelName = `${window.modelName} (${carColor})`;
+        } else {
+          window.carModelName = window.modelName;
+        }
+        
+        console.log("✅ Found model name from base model:", window.carModelName);
+        return;
+      }
+    }
+    
+    // If we get here, the fallback failed too
+    window.carModelName = carType.charAt(0).toUpperCase() + carType.slice(1);
+    console.log("⚠️ Using formatted car_type as model name:", window.carModelName);
+    
+  } catch (error) {
+    console.error("❌ Error in fallback lookup:", error);
+    window.carModelName = carType.charAt(0).toUpperCase() + carType.slice(1);
   }
 }
 
