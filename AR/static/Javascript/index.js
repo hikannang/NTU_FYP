@@ -320,7 +320,7 @@ function calculateGPSDirection() {
     return 0;
 }
 
-// Update UI to show arrow direction with proper counter-rotation compass behavior
+// Update UI function with smooth compass transition across 0°
 function updateUI() {
   const arrow = document.querySelector(".arrow");
 
@@ -337,26 +337,51 @@ function updateUI() {
     }
 
     // IMPORTANT: Apply a counter-rotation by inverting the angle
-    const compassAngle = (360 - directionAngle) % 360;
-
+    let compassAngle = (360 - directionAngle) % 360;
+    
+    // Store the previous angle for comparison
+    if (typeof window.prevCompassAngle === 'undefined') {
+      window.prevCompassAngle = compassAngle;
+    }
+    
+    // Check for the 0/360 boundary crossing and choose the shorter path
+    const diff = compassAngle - window.prevCompassAngle;
+    
+    // If the difference is more than 180 degrees, we crossed the boundary
+    if (Math.abs(diff) > 180) {
+      // If the new angle is near 0, use 360 for smoother animation
+      if (compassAngle < 180) {
+        compassAngle += 360;
+      }
+      // If the new angle is near 360, use negative angle for smoother animation
+      else if (compassAngle > 180) {
+        compassAngle -= 360;
+      }
+    }
+    
     // Update the global direction variable for other functions to use
-    direction = compassAngle;
-
+    direction = compassAngle % 360; // Keep the normalized version for other functions
+    
     // Apply smoother transition for stability
     arrow.style.transition = "transform 0.3s ease-out";
-
-    // Rotate the arrow with the counter-rotation angle
+    
+    // Use the potentially unnormalized angle for rotation to ensure smooth animation
     arrow.style.transform = `translate(-50%, -50%) rotate(${compassAngle}deg)`;
-
-    // Debug log occasionally - shows both original and inverted angle
+    
+    // Debug log occasionally - shows both original and processed angle
     if (Math.random() < 0.01) {
       console.log(
         "Arrow direction - Raw:",
         directionAngle.toFixed(1) + "°",
         "Counter-rotated:",
+        (compassAngle % 360).toFixed(1) + "°", 
+        "Animation angle:",
         compassAngle.toFixed(1) + "°"
       );
     }
+    
+    // Save the current angle for the next frame
+    window.prevCompassAngle = compassAngle;
   }
 
   // Continue updating
