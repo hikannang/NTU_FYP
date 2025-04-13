@@ -353,7 +353,7 @@ function updateUI() {
         }
         
         // Update the global direction variable for other functions to use
-        direction = directionAngle;
+        direction = (360 - directionAngle);
         
         // Apply smoother transition for stability
         arrow.style.transition = "transform 0.3s ease-out";
