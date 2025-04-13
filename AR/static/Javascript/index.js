@@ -335,39 +335,31 @@ function calculateGPSDirection() {
     return 0;
 }
 
-// Update UI to show arrow direction - with counter-turning compass behavior
+// Update UI to show arrow direction - with proper compass mirroring behavior
 function updateUI() {
     const arrow = document.querySelector(".arrow");
     
     if (arrow) {
         // Calculate direction based on AR or GPS
-        let rawAngle;
+        const directionAngle = arEntityLoaded ? calculateARDirection() : calculateGPSDirection();
         
-        if (arEntityLoaded) {
-            // If AR entity is loaded, use AR-based direction
-            rawAngle = calculateARDirection();
-        } else {
-            // Otherwise use GPS-based calculation
-            rawAngle = calculateGPSDirection();
-        }
+        // Store raw angle for debugging
+        direction = directionAngle;
         
-        // IMPORTANT: Add 180° to make the arrow point in the opposite direction
-        // This makes it work as a counter-turning compass
-        const compassAngle = (rawAngle + 180) % 360;
-        
-        // Update the global direction variable for other functions to use
-        direction = compassAngle;
+        // Apply the REVERSED angle to the arrow (negate the angle)
+        // This makes it behave like a proper compass needle
+        const compassAngle = (360 - directionAngle) % 360;
         
         // Apply smoother transition for stability
         arrow.style.transition = "transform 0.3s ease-out";
         
-        // Rotate the arrow with counter-turning behavior
+        // Rotate the arrow with the mirror/compass behavior
         arrow.style.transform = `translate(-50%, -50%) rotate(${compassAngle}deg)`;
         
         // Debug log occasionally
         if (Math.random() < 0.01) {
             console.log("Compass angle:", compassAngle.toFixed(1) + "°", 
-                       "(Raw angle:", rawAngle.toFixed(1) + "°)");
+                       "(Raw angle:", directionAngle.toFixed(1) + "°)");
         }
     }
     
@@ -508,7 +500,7 @@ async function fetchCarData(bookingId) {
     }
 
     // 1. Retrieve the booking document
-    console.log("📚 Retrieving booking document...");
+    console.log("📚 Retrieving booking document from path:", `bookings/${bookingId}`);
     const bookingRef = doc(db, "bookings", bookingId);
     const bookingSnapshot = await getDoc(bookingRef);
 
@@ -519,7 +511,7 @@ async function fetchCarData(bookingId) {
 
     // 2. Extract booking data
     const bookingData = bookingSnapshot.data();
-    console.log("📋 Booking data retrieved:", bookingData);
+    console.log("📋 Raw booking data:", bookingData);
 
     // 3. Get car_id and car_type from the booking
     const carId = bookingData.car_id || null;
@@ -550,7 +542,7 @@ async function fetchCarData(bookingId) {
     
     // 5. Get car details from cars collection using car_id
     try {
-      console.log("🔍 Fetching car document for ID:", carId);
+      console.log("🔍 Fetching car document for ID:", carId, "from path:", `cars/${carId}`);
       const carDocRef = doc(db, "cars", carId);
       const carDoc = await getDoc(carDocRef);
       
@@ -572,6 +564,7 @@ async function fetchCarData(bookingId) {
       }
     } catch (carError) {
       console.error("❌ Error fetching car document:", carError);
+      console.error("Error details:", carError.message, carError.stack);
       window.carLicensePlate = "Unknown";
       window.carDirections = "Follow the arrow to reach your car.";
     }
@@ -581,7 +574,7 @@ async function fetchCarData(bookingId) {
       // Extract base model name (without color)
       const baseModelName = carType.split('_')[0];
       
-      console.log("🔍 Fetching car model for:", baseModelName);
+      console.log("🔍 Fetching car model document from path:", `car_models/${baseModelName}`);
       const modelDocRef = doc(db, "car_models", baseModelName);
       const modelDoc = await getDoc(modelDocRef);
       
@@ -601,26 +594,42 @@ async function fetchCarData(bookingId) {
           }
         } else {
           console.warn("⚠️ No name field in car model document");
-          window.carModelName = carType;
+          // Fallback to base model name
+          window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
+          if (carColor) {
+            window.carModelName += ` (${carColor})`;
+          }
         }
       } else {
         console.warn("⚠️ Car model not found for:", baseModelName);
-        window.carModelName = carType;
+        // Fallback to base model name
+        window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
+        if (carColor) {
+          window.carModelName += ` (${carColor})`;
+        }
       }
     } catch (modelError) {
       console.error("❌ Error fetching car model:", modelError);
-      window.carModelName = carType;
+      console.error("Error details:", modelError.message, modelError.stack);
+      // Fallback
+      window.carModelName = carType.charAt(0).toUpperCase() + carType.slice(1);
     }
+    
+    console.log("✅ Final car data:", {
+      type: window.carType,
+      modelName: window.carModelName,
+      licensePlate: window.carLicensePlate,
+      directions: window.carDirections
+    });
     
     // 7. Update the modal if it's already visible
     if (document.getElementById('destinationModal')?.style.display === 'flex') {
       updateDestinationModal();
     }
     
-    console.log("✅ Car data fetch complete");
-    
   } catch (error) {
     console.error("❌ Error in fetchCarData:", error);
+    console.error("Error details:", error.message, error.stack);
   }
 }
 
@@ -652,14 +661,26 @@ function showDestinationModal() {
 
 // Update destination modal content
 function updateDestinationModal() {
+  console.log("Updating modal content with car data:", {
+    type: window.carType,
+    model: window.carModelName,
+    license: window.carLicensePlate,
+    directions: window.carDirections
+  });
+
   // Update car image
   const carImage = document.getElementById("carImage");
   if (carImage) {
-    console.log("Updating car image for type:", window.carType);
+    console.log("Setting car image for type:", window.carType);
+    
+    // Set default image first
+    carImage.src = "../static/images/car_images/default.png";
+    
     // Load car image based on car_type
     if (window.carType) {
       // Set specific car image path
       const carImagePath = `../static/images/car_images/${window.carType}.png`;
+      console.log("Trying to load image from:", carImagePath);
       
       // Try to load the image
       const testImg = new Image();
@@ -669,32 +690,31 @@ function updateDestinationModal() {
       };
       
       testImg.onerror = function() {
-        carImage.src = "../static/images/car_images/default.png";
-        console.warn("⚠️ Failed to load car image, using default");
+        console.warn("❌ Failed to load car image, using default");
       };
       
       testImg.src = carImagePath;
-    } else {
-      carImage.src = "../static/images/car_images/default.png";
     }
   }
 
-  // Update modal title and content
+  // Update modal title
   const modalTitle = document.getElementById("modalTitle");
   if (modalTitle) {
     modalTitle.textContent = "You are almost arriving, here's a recap of your car information:";
   }
 
-  // Update license plate
+  // Update license plate - FIX: use textContent instead of setting element as content
   const licensePlateElement = document.getElementById("carLicensePlate");
   if (licensePlateElement) {
     licensePlateElement.textContent = `License Plate: ${window.carLicensePlate || "Unknown"}`;
+    console.log("Set license plate text to:", licensePlateElement.textContent);
   }
 
-  // Update car model
+  // Update car model - FIX: use textContent instead of setting element as content
   const carModelElement = document.getElementById("carModelName");
   if (carModelElement) {
     carModelElement.textContent = `Car Model: ${window.carModelName || "Unknown"}`;
+    console.log("Set car model text to:", carModelElement.textContent);
   }
 
   // Update directions heading
@@ -703,10 +723,11 @@ function updateDestinationModal() {
     directionsLabel.textContent = "And here is the direction to the booked car:";
   }
 
-  // Update directions text
+  // Update directions text - FIX: use textContent
   const directionsText = document.getElementById("directionsText");
   if (directionsText) {
     directionsText.textContent = window.carDirections || "Follow the arrow to reach your car.";
+    console.log("Set directions text to:", directionsText.textContent);
   }
 }
 
