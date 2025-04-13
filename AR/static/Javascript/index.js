@@ -516,7 +516,7 @@ function updateDistanceDisplay() {
   }
 }
 
-// Updated fetchCarData function
+// Update the fetchCarData function to properly retrieve model name
 async function fetchCarData(bookingId) {
   try {
     console.log("🔍 Fetching car data for booking ID:", bookingId);
@@ -561,7 +561,7 @@ async function fetchCarData(bookingId) {
     
     if (carType.includes('_')) {
       const parts = carType.split('_');
-      baseModelName = parts[0];
+      baseModelName = parts[0];  // This is the model_id to use for car_models lookup
       carColor = parts[1] || "";
       
       if (carColor) {
@@ -569,18 +569,19 @@ async function fetchCarData(bookingId) {
       }
     }
     
-    // 5. Get car model name from car_models collection based on car_type
+    // 5. Get car model name from car_models collection based on baseModelName (model_id)
     try {
-      console.log("🔍 Fetching car model document for:", baseModelName);
+      console.log("🔍 Fetching car model document for model_id:", baseModelName);
       const modelDocRef = doc(db, "car_models", baseModelName);
       const modelDoc = await getDoc(modelDocRef);
       
       if (modelDoc.exists()) {
         const modelData = modelDoc.data();
-        console.log("📋 Car model data:", modelData);
+        console.log("📋 Car model data retrieved:", modelData);
         
-        // Get the model name
+        // Get the "name" field from the document
         if (modelData.name) {
+          // Store the name in a global variable
           window.modelName = modelData.name;
           console.log("✅ Found model name:", window.modelName);
           
@@ -590,15 +591,17 @@ async function fetchCarData(bookingId) {
           } else {
             window.carModelName = window.modelName;
           }
+          
+          console.log("🚗 Final formatted car model name:", window.carModelName);
         } else {
-          console.warn("⚠️ No name field in car model document");
+          console.warn("⚠️ No 'name' field found in car_models document");
           window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
           if (carColor) {
             window.carModelName += ` (${carColor})`;
           }
         }
       } else {
-        console.warn("⚠️ Car model document not found for:", baseModelName);
+        console.warn("⚠️ Car model document not found for model_id:", baseModelName);
         window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
         if (carColor) {
           window.carModelName += ` (${carColor})`;
@@ -606,13 +609,12 @@ async function fetchCarData(bookingId) {
       }
     } catch (modelError) {
       console.error("❌ Error fetching car model:", modelError);
+      console.error("Error details:", modelError.message);
       window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
       if (carColor) {
         window.carModelName += ` (${carColor})`;
       }
     }
-    
-    console.log("🏷️ Final car model name:", window.carModelName);
     
     // 6. Get license plate and directions from cars collection using car_id
     try {
