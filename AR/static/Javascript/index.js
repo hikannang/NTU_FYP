@@ -128,161 +128,151 @@ function createDestinationMarker(lat, lng) {
     showLoadingScreen();
 }
 
-// Updated fetchCarData function with more robust error handling and debug info
+// Updated fetchCarData function to get model name from car_models collection
 async function fetchCarData(bookingId) {
     try {
         console.log("🔍 Fetching car data for booking ID:", bookingId);
         
         if (!bookingId) {
-            console.error("❌ Invalid booking ID");
+            console.error("Invalid booking ID");
             return;
         }
         
-        // Log the db object to verify it's initialized
-        console.log("📋 Firestore DB object:", db);
-        
-        // Explicitly check for Firebase initialization
-        if (!db) {
-            throw new Error("Firebase not initialized - db is null or undefined");
-        }
-        
         // Get booking document
-        console.log("📚 Attempting to fetch booking document from 'bookings' collection...");
+        console.log("📚 Fetching booking document...");
         const bookingRef = doc(db, "bookings", bookingId);
         const bookingSnapshot = await getDoc(bookingRef);
-        
-        console.log("📄 Booking document exists:", bookingSnapshot.exists());
         
         if (bookingSnapshot.exists()) {
             const bookingData = bookingSnapshot.data();
             console.log("📋 Raw booking data:", bookingData);
             
-            // Verify the data structure
-            if (!bookingData) {
-                throw new Error("Booking document exists but data() returned null/undefined");
-            }
-            
-            // Extract car_id and car_type with explicit fallbacks
+            // Extract car_id and car_type from booking
             const carId = bookingData.car_id || null;
             const carType = bookingData.car_type || "default";
             
-            console.log("🚗 Extracted car data:", { 
-                carId: carId, 
-                carType: carType 
-            });
+            console.log("🚗 Extracted car info:", { carId, carType });
             
-            // Check if the expected data exists
-            if (!carId) {
-                console.warn("⚠️ Missing car_id in booking data. Available fields:", Object.keys(bookingData));
-            }
-            
-            if (!carType || carType === "default") {
-                console.warn("⚠️ Missing car_type in booking data. Available fields:", Object.keys(bookingData));
-            }
-            
-            // Save car_type globally so showDestinationModal can use it
+            // Save car data globally
             window.carType = carType;
             window.carId = carId;
             
-            // Now fetch the car document to get directions
-            if (carId) {
-                console.log("🔍 Attempting to fetch car document for ID:", carId);
+            // Get base model name (without color)
+            let baseModelName = carType;
+            let carColor = "";
+            
+            if (carType.includes('_')) {
+                // Split model and color (e.g., "vezel_white" -> "vezel" and "white")
+                const parts = carType.split('_');
+                baseModelName = parts[0];
+                carColor = parts[1];
                 
-                // Try different formats for car ID
-                const possibleCarRefs = [
-                    doc(db, "cars", carId.toString()),
-                    doc(db, "cars", carId)
-                ];
-                
-                let carDoc = null;
-                
-                // Try each possible reference
-                for (const ref of possibleCarRefs) {
-                    try {
-                        const snapshot = await getDoc(ref);
-                        if (snapshot.exists()) {
-                            carDoc = snapshot;
-                            break;
-                        }
-                    } catch (e) {
-                        console.warn("⚠️ Error with car reference:", e.message);
-                    }
+                // Capitalize color
+                if (carColor) {
+                    carColor = carColor.charAt(0).toUpperCase() + carColor.slice(1);
                 }
+            }
+            
+            // 1. Fetch model details from car_models collection
+            console.log("🔍 Fetching car model details for:", baseModelName);
+            let modelName = "Unknown";
+            let modelDetails = null;
+            
+            try {
+                // Try to get the model document using the base model name as document ID
+                const modelDoc = await getDoc(doc(db, "car_models", baseModelName));
                 
-                if (carDoc && carDoc.exists()) {
+                if (modelDoc.exists()) {
+                    modelDetails = modelDoc.data();
+                    console.log("� Car model data retrieved:", modelDetails);
+                    
+                    // Get model name from document
+                    if (modelDetails.name) {
+                        modelName = modelDetails.name;
+                    }
+                } else {
+                    console.warn("⚠️ Car model document not found for:", baseModelName);
+                }
+            } catch (modelError) {
+                console.error("❌ Error fetching car model:", modelError);
+            }
+            
+            // Format car model name with color: "Honda Vezel (White)"
+            if (modelName && carColor) {
+                window.carModelName = `${modelName} (${carColor})`;
+            } else if (modelName) {
+                window.carModelName = modelName;
+            } else {
+                // Fallback: capitalize base model name
+                window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
+                if (carColor) {
+                    window.carModelName += ` (${carColor})`;
+                }
+            }
+            
+            console.log("✅ Car model name set to:", window.carModelName);
+            
+            // 2. Now fetch the car document to get license plate and directions
+            if (carId) {
+                console.log("🔍 Fetching car details for ID:", carId);
+                
+                const carDoc = await getDoc(doc(db, "cars", carId.toString()));
+                
+                if (carDoc.exists()) {
                     const carData = carDoc.data();
                     console.log("📋 Car data retrieved:", carData);
                     
-                    // Save car directions for display in the destination modal
+                    // Save car directions
                     carDirections = carData.directions || "Follow the arrow to reach your car.";
                     window.carDirections = carDirections;
                     
-                    console.log("✅ All data retrieved successfully.");
+                    // Save license plate
+                    window.carLicensePlate = carData.license_plate || "Unknown";
+                    
+                    console.log("✅ Car details set:", {
+                        licensePlate: window.carLicensePlate,
+                        directions: window.carDirections
+                    });
                 } else {
                     console.warn("⚠️ Car document not found for ID:", carId);
+                    window.carLicensePlate = "Unknown";
                     carDirections = "Follow the arrow to reach your car.";
                     window.carDirections = carDirections;
                 }
             } else {
-                console.warn("⚠️ No car_id found in booking to fetch car details");
+                console.warn("⚠️ No car_id found in booking");
+                window.carLicensePlate = "Unknown";
                 carDirections = "Follow the arrow to reach your car.";
                 window.carDirections = carDirections;
             }
         } else {
-            // Booking not found
-            console.error("❌ Booking document not found for ID:", bookingId);
+            console.error("❌ Booking not found for ID:", bookingId);
             
-            // Use hardcoded fallback for specific ID
+            // Use hardcoded fallback for demo booking ID
             if (bookingId === "booking_1743839882969") {
-                console.log("🔧 Using hardcoded data for known booking ID");
-                window.carType = "cx-8_black"; 
+                window.carType = "cx-8_black";
                 window.carId = "1";
-                carDirections = "The car is parked at lot 23B. It's a black Mazda CX-8. The car plate number is S123ABC.";
+                window.carModelName = "Mazda CX-8 (Black)";
+                window.carLicensePlate = "S123ABC";
+                carDirections = "The car is parked at lot 23B. It's a black Mazda CX-8.";
                 window.carDirections = carDirections;
+                
+                console.log("📝 Using hardcoded car data for demo booking");
             }
         }
     } catch (error) {
         console.error("❌ Error fetching car data:", error);
-        console.error("Error details:", error.message);
         
-        // Check for specific Firebase errors
-        if (error.code) {
-            console.error("Firebase error code:", error.code);
-            
-            if (error.code === "permission-denied") {
-                console.error("🔒 PERMISSION DENIED - Security rules are preventing database access");
-                
-                // Add a visible permission error message
-                const errorMsg = document.createElement('div');
-                errorMsg.style.position = 'fixed';
-                errorMsg.style.top = '80px';
-                errorMsg.style.left = '10px';
-                errorMsg.style.backgroundColor = 'red';
-                errorMsg.style.color = 'white';
-                errorMsg.style.padding = '10px';
-                errorMsg.style.borderRadius = '5px';
-                errorMsg.style.zIndex = '10000';
-                errorMsg.textContent = 'Firebase Permission Error: Cannot access database';
-                document.body.appendChild(errorMsg);
-            }
-        }
-        
-        // Use hardcoded fallback
+        // Use hardcoded fallback for demo booking ID if there was an error
         if (bookingId === "booking_1743839882969") {
-            console.log("🔧 Using hardcoded data after error");
             window.carType = "cx-8_black";
             window.carId = "1";
-            carDirections = "The car is parked at lot 23B. It's a black Mazda CX-8. The car plate number is S123ABC.";
+            window.carModelName = "Mazda CX-8 (Black)";
+            window.carLicensePlate = "S123ABC";
+            carDirections = "The car is parked at lot 23B. It's a black Mazda CX-8.";
             window.carDirections = carDirections;
-        }
-    } finally {
-        // Always call showDestinationModal when close enough, even if data loading failed
-        if (distance < 150 && !isViewed) {
-            console.log("📱 Showing destination modal regardless of data status");
-            isViewed = true;
             
-            // Slight delay to allow for any async operations to complete
-            setTimeout(showDestinationModal, 500);
+            console.log("� Using hardcoded car data after error");
         }
     }
 }
@@ -591,27 +581,33 @@ function showDestinationModal() {
     // Lock the background scrolling when modal is shown
     document.body.style.overflow = 'hidden';
     
-    // Update car image
+    // Update car image with better model detection
     const carImage = document.getElementById('carImage');
     if (carImage) {
         // Set default image first
         carImage.src = '../static/images/car_images/default.png';
         
-        // Try to load car-specific image
+        // Try to load car-specific image with progressive fallbacks
         if (window.carType) {
             console.log("Loading car image for type:", window.carType);
             
-            const actualImage = new Image();
-            actualImage.onload = function() {
-                carImage.src = this.src;
-                console.log("Car image loaded successfully:", this.src);
-            };
-            actualImage.onerror = function() {
-                console.warn("Failed to load car image:", this.src);
-                carImage.src = '../static/images/car_images/default.png';
-            };
+            // First, try the specific car type (e.g., "vezel_white")
+            loadCarImageWithFallbacks(carImage, [
+                `../static/images/car_images/${window.carType}.png`,
+                `../static/images/car_images/${window.carType.split('_')[0]}.png`, // Try without color
+                `../static/images/car_models/${window.carType}.png`, // Try car_models folder
+                `../static/images/cars/${window.carType}.png`, // Try cars folder
+                '../static/images/car_images/default.png' // Final fallback
+            ]);
+        } else if (window.carModelId) {
+            // If we have a model ID but no type
+            console.log("Loading car image for model ID:", window.carModelId);
             
-            actualImage.src = `../static/images/car_images/${window.carType}.png`;
+            loadCarImageWithFallbacks(carImage, [
+                `../static/images/car_images/${window.carModelId}.png`,
+                `../static/images/car_models/${window.carModelId}.png`,
+                '../static/images/car_images/default.png'
+            ]);
         }
     } else {
         console.error("Car image element not found");
@@ -625,6 +621,9 @@ function showDestinationModal() {
     } else {
         console.error("Directions text element not found");
     }
+    
+    // Add more car information to modal
+    updateAdditionalCarInfo();
     
     // Show the modal with animation
     const modal = document.getElementById('destinationModal');
@@ -654,6 +653,49 @@ function showDestinationModal() {
         }, 800); // Delay to prevent accidental clicks
     } else {
         console.error("Destination modal element not found");
+    }
+}
+
+// Helper function to try multiple image paths with fallbacks
+function loadCarImageWithFallbacks(imgElement, pathsArray, currentIndex = 0) {
+    if (currentIndex >= pathsArray.length) {
+        console.warn("All image paths failed, using default");
+        imgElement.src = '../static/images/car_images/default.png';
+        return;
+    }
+    
+    const currentPath = pathsArray[currentIndex];
+    console.log(`Trying to load image from: ${currentPath}`);
+    
+    // Create a temporary image to test loading
+    const testImg = new Image();
+    
+    testImg.onload = function() {
+        console.log(`Successfully loaded: ${currentPath}`);
+        imgElement.src = currentPath;
+    };
+    
+    testImg.onerror = function() {
+        console.warn(`Failed to load: ${currentPath}, trying next option...`);
+        loadCarImageWithFallbacks(imgElement, pathsArray, currentIndex + 1);
+    };
+    
+    testImg.src = currentPath;
+}
+
+// Function to add more car information to the modal
+function updateAdditionalCarInfo() {
+    // Add license plate info
+    const licensePlateElement = document.getElementById('carLicensePlate');
+    if (licensePlateElement) {
+        licensePlateElement.textContent = window.carLicensePlate || "Unknown";
+    }
+    
+    // Add car model info with the proper format
+    const carModelElement = document.getElementById('carModelName');
+    if (carModelElement) {
+        // Use the model name we retrieved from car_models collection
+        carModelElement.textContent = window.carModelName || "Unknown";
     }
 }
 
@@ -713,31 +755,111 @@ function startServices() {
     servicesStarted = true;
     console.log("Starting location and orientation services");
     
-    // Start geolocation
+    // Get user location with improved error handling and longer timeout
     navigator.geolocation.getCurrentPosition(
+        // Success callback
         function(position) {
-            console.log("Initial position obtained");
             setCurrentPosition(position);
+            console.log("Initial position acquired:", position.coords.latitude, position.coords.longitude);
             
-            // Start continuous tracking
-            navigator.geolocation.watchPosition(
-                setCurrentPosition, 
-                function(error) { 
-                    console.error("Geolocation error:", error);
-                    alert("Location error: " + error.message);
+            // Start watching for position updates
+            startPositionWatching();
+            
+            // Create destination marker if we have target coordinates
+            if (target.latitude && target.longitude) {
+                createDestinationMarker(target.latitude, target.longitude);
+            }
+        },
+        // Error callback
+        function(error) {
+            let errorMessage = "Unknown location error";
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = "Location permission denied. Please enable location services.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = "Location information unavailable. Please check your device settings.";
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = "Location request timed out. Poor GPS signal or connectivity issues.";
+                    break;
+            }
+            
+            // Display error but don't alert (less intrusive)
+            console.error("Geolocation error:", errorMessage);
+            
+            // Show error in UI instead of alert
+            const errorElement = document.getElementById('location-error');
+            if (errorElement) {
+                errorElement.textContent = errorMessage;
+                errorElement.style.display = 'block';
+                
+                // Hide after 5 seconds
+                setTimeout(() => {
+                    errorElement.style.display = 'none';
+                }, 5000);
+            }
+            
+            // Try again with high accuracy disabled (may help in some cases)
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    console.log("Got position with lower accuracy");
+                    setCurrentPosition(position);
+                    startPositionWatching();
                 },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                err => console.error("Second position attempt failed:", err),
+                { 
+                    enableHighAccuracy: false,
+                    timeout: 15000,
+                    maximumAge: 30000 
+                }
             );
         },
-        function(error) {
-            console.error("Initial position error:", error);
-            alert("Cannot access your location. Please enable location services.");
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+        // Options with longer timeout
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,     // Increase timeout to 10 seconds (default is often 3s)
+            maximumAge: 5000    // Allow cached positions up to 5 seconds old
+        }
+    );
+}
+
+// Update the position watching function to be more resilient
+function startPositionWatching() {
+    // Clear any existing watch
+    if (positionWatchId) {
+        navigator.geolocation.clearWatch(positionWatchId);
+    }
+    
+    // Start a new position watch
+    positionWatchId = navigator.geolocation.watchPosition(
+        setCurrentPosition,
+        handlePositionError,
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 2000
+        }
     );
     
-    // Start orientation
-    startOrientation();
+    console.log("Position watching started with ID:", positionWatchId);
+}
+
+// Error handler for continuous position watching
+function handlePositionError(error) {
+    console.warn("Position watching error:", error.code, error.message);
+    
+    // Only show UI for complete failures, not intermittent ones
+    if (error.code === error.PERMISSION_DENIED) {
+        const errorElement = document.getElementById('location-error');
+        if (errorElement) {
+            errorElement.textContent = "Location permission denied. Please enable location services.";
+            errorElement.style.display = 'block';
+        }
+    }
+    
+    // For timeouts or unavailable positions, we just log and wait for the next update
 }
 
 // Expose functions to global scope for HTML

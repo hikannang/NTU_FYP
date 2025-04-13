@@ -140,8 +140,22 @@
           alt="Car Image"
         />
         <h2 class="modal-title">
-          You are arriving! Here's the directions to the car:
+          You are arriving! Here's the details of the car:
         </h2>
+        
+        <!-- Added car details section -->
+        <div class="car-details-box">
+          <div class="car-detail">
+            <span class="detail-label">Model:</span>
+            <span id="carModelName" class="detail-value">Loading...</span>
+          </div>
+          <div class="car-detail">
+            <span class="detail-label">License Plate:</span>
+            <span id="carLicensePlate" class="detail-value">Loading...</span>
+          </div>
+        </div>
+        
+        <h2 class="modal-title">Here's the directions to the car:</h2>
         <h3 class="directions-label">Directions</h3>
         <p id="directionsText">Follow the arrow to reach your car.</p>
         <p class="dismiss-text">Tap anywhere to dismiss</p>

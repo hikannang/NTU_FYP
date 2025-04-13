@@ -570,3 +570,68 @@ html{
         padding: 15px 20px;
     }
 }
+
+/* Car details styling for destination modal */
+.car-details-box {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 15px;
+  margin: 5px 0 15px 0;
+  width: 100%;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.car-detail {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.car-detail:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: clamp(14px, 3.5vw, 16px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.detail-value {
+  font-weight: 600;
+  color: white;
+  font-size: clamp(14px, 3.5vw, 16px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  max-width: 60%;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* Add more space between modal title and car details */
+#destinationModal .modal-title + .car-details-box {
+  margin-top: 15px;
+}
+
+/* Adjust spacing between car details and directions section */
+#destinationModal .car-details-box + .modal-title {
+  margin-top: 10px;
+}
+
+/* Media query for smaller screens */
+@media screen and (max-width: 480px) {
+  .car-details-box {
+    padding: 12px;
+  }
+  
+  .car-detail {
+    margin-bottom: 8px;
+  }
+  
+  .detail-label,
+  .detail-value {
+    font-size: 14px;
+  }
+}
