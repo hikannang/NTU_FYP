@@ -521,7 +521,15 @@ function updateDistanceDisplay() {
 // Fetch car data from booking ID
 async function fetchCarData(bookingId) {
   try {
-    console.log("🔍 Fetching car data for booking ID:", bookingId);
+    cconsole.log("Fetching car data for booking ID:", bookingId);
+    
+    // Test database connection
+    try {
+      const testDoc = await getDoc(doc(db, "test", "test"));
+      console.log("Database connection test:", testDoc.exists() ? "Successful" : "Document not found but connection worked");
+    } catch (dbError) {
+      console.error("Database connection failed:", dbError);
+    }
     
     if (!bookingId) {
       console.error("❌ Invalid booking ID provided");
@@ -654,26 +662,33 @@ async function fetchCarData(bookingId) {
   }
 }
 
-// Update destination modal content
+// Update destination modal with car information
 function updateDestinationModal() {
-  console.log("Updating destination modal content");
+  console.log("Updating destination modal with data:", {
+    carType: window.carType,
+    carModelName: window.carModelName,
+    carLicensePlate: window.carLicensePlate,
+    carDirections: window.carDirections
+  });
   
-  // Update car image based on car_type
+  // Update car image
   const carImage = document.getElementById("carImage");
   if (carImage && window.carType) {
-    const carImagePath = `../static/images/car_images/${window.carType}.png`;
-    console.log("🖼️ Setting car image path:", carImagePath);
+    // Set default image first
+    carImage.src = "../static/images/car_images/default.png";
     
-    // Try to load the specific car image
+    // Try to load specific car image
+    const carImagePath = `../static/images/car_images/${window.carType}.png`;
+    console.log("Trying to load car image:", carImagePath);
+    
     const testImg = new Image();
     testImg.onload = function() {
       carImage.src = carImagePath;
-      console.log("✅ Successfully loaded car image");
+      console.log("Successfully loaded car image");
     };
     
     testImg.onerror = function() {
-      carImage.src = "../static/images/car_images/default.png";
-      console.warn("⚠️ Failed to load car image, using default");
+      console.warn("Failed to load car image, using default");
     };
     
     testImg.src = carImagePath;
@@ -685,16 +700,20 @@ function updateDestinationModal() {
     modalTitle.textContent = "You are almost arriving, here's a recap of your car information:";
   }
   
-  // Update license plate
+  // Fix 1: Update license plate - use textContent correctly
   const licensePlateElement = document.getElementById("carLicensePlate");
-  if (licensePlateElement && window.carLicensePlate) {
-    licensePlateElement.textContent = `License plate: ${window.carLicensePlate}`;
+  if (licensePlateElement) {
+    // Use string value instead of assigning an element
+    licensePlateElement.textContent = `License plate: ${window.carLicensePlate || "Unknown"}`;
+    console.log("Set license plate text to:", licensePlateElement.textContent);
   }
   
-  // Update car model
+  // Fix 2: Update car model - use textContent correctly
   const carModelElement = document.getElementById("carModelName");
-  if (carModelElement && window.carModelName) {
-    carModelElement.textContent = `Car model: ${window.carModelName}`;
+  if (carModelElement) {
+    // Use string value instead of assigning an element
+    carModelElement.textContent = `Car model: ${window.carModelName || "Unknown"}`;
+    console.log("Set car model text to:", carModelElement.textContent);
   }
   
   // Update directions label
@@ -705,8 +724,9 @@ function updateDestinationModal() {
   
   // Update directions text
   const directionsText = document.getElementById("directionsText");
-  if (directionsText && window.carDirections) {
-    directionsText.textContent = window.carDirections;
+  if (directionsText) {
+    directionsText.textContent = window.carDirections || "Follow the arrow to reach your car.";
+    console.log("Set directions text to:", directionsText.textContent);
   }
 }
 
