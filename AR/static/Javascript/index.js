@@ -1,6 +1,6 @@
 // Import Firebase services from firebase-config.js instead of initializing directly
 import { db } from "../../../static/js/common/firebase-config.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+import { doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
 // Global variables
 var distance;
@@ -128,157 +128,185 @@ function createDestinationMarker(lat, lng) {
     showLoadingScreen();
 }
 
-// Corrected fetchCarData function
+// Comprehensive fetchCarData function with detailed logging and error handling
 async function fetchCarData(bookingId) {
     try {
         console.log("🔍 Fetching car data for booking ID:", bookingId);
         
         if (!bookingId) {
-            console.error("Invalid booking ID");
+            console.error("❌ Invalid booking ID provided");
             return;
         }
         
-        // Get booking document
-        console.log("📚 Fetching booking document...");
+        // 1. Retrieve the booking document
+        console.log("📚 Retrieving booking document...");
         const bookingRef = doc(db, "bookings", bookingId);
         const bookingSnapshot = await getDoc(bookingRef);
         
-        if (bookingSnapshot.exists()) {
-            const bookingData = bookingSnapshot.data();
-            console.log("📋 Raw booking data:", bookingData);
+        if (!bookingSnapshot.exists()) {
+            console.error("❌ Booking document not found for ID:", bookingId);
             
-            // Extract car_id and car_type from booking
-            const carId = bookingData.car_id || null;
-            const carType = bookingData.car_type || "default";
-            
-            console.log("🚗 Extracted car info:", { carId, carType });
-            
-            // Save car data globally
-            window.carType = carType;
-            window.carId = carId;
-            
-            // Get base model name (without color)
-            let baseModelName = carType;
-            let carColor = "";
-            
-            if (carType && carType.includes('_')) {
-                // Split model and color (e.g., "vezel_white" -> "vezel" and "white")
-                const parts = carType.split('_');
-                baseModelName = parts[0];
-                carColor = parts[1];
-                
-                // Capitalize color
-                if (carColor) {
-                    carColor = carColor.charAt(0).toUpperCase() + carColor.slice(1);
-                }
+            // Fallback for demo purposes
+            if (bookingId === "demo_booking") {
+                console.log("📝 Using demo data for car");
+                window.carType = "vezel_white";
+                window.carId = "car1";
+                window.carModelName = "Honda Vezel (White)";
+                window.carLicensePlate = "SGP1234A";
+                carDirections = "The car is located in parking lot B, spot 42. It's a white Honda Vezel.";
+                window.carDirections = carDirections;
             }
+            return;
+        }
+        
+        // 2. Extract booking data
+        const bookingData = bookingSnapshot.data();
+        console.log("📋 Booking data retrieved:", bookingData);
+        
+        // 3. Get car_id and car_type from the booking
+        const carId = bookingData.car_id || null;
+        const carType = bookingData.car_type || null;
+        
+        if (!carType) {
+            console.warn("⚠️ No car_type found in booking");
+            window.carModelName = "Unknown";
+            return;
+        }
+        
+        console.log("🚗 Car info from booking:", { carId, carType });
+        
+        // Save to global variables
+        window.carType = carType;
+        window.carId = carId;
+        
+        // 4. Parse car_type to extract model and color
+        let baseModelName = carType;
+        let carColor = "";
+        
+        if (carType.includes('_')) {
+            const parts = carType.split('_');
+            baseModelName = parts[0];
+            carColor = parts[1] || "";
             
-            // 1. Fetch model details from car_models collection
-            console.log("🔍 Fetching car model details for:", baseModelName);
-            let modelName = "Unknown";
+            if (carColor) {
+                carColor = carColor.charAt(0).toUpperCase() + carColor.slice(1);
+            }
+        }
+        
+        console.log("🚗 Parsed car type:", { baseModelName, carColor });
+        
+        // 5. Fetch the car model details from car_models collection
+        let modelName = "";
+        
+        try {
+            console.log("🔍 Fetching car model document:", baseModelName);
+            const modelDocRef = doc(db, "car_models", baseModelName);
+            const modelDoc = await getDoc(modelDocRef);
             
-            try {
-                // IMPORTANT: Make sure we're using the correct document path
-                const modelDocRef = doc(db, "car_models", baseModelName);
-                console.log("🔍 Looking up car_models document with ID:", baseModelName);
+            if (modelDoc.exists()) {
+                const modelData = modelDoc.data();
+                console.log("� Car model data:", modelData);
                 
-                const modelDoc = await getDoc(modelDocRef);
-                console.log("📊 Model document exists:", modelDoc.exists());
-                
-                if (modelDoc.exists()) {
-                    const modelData = modelDoc.data();
-                    console.log("📋 Car model data retrieved:", modelData);
-                    
-                    // Explicitly check for the 'name' field
-                    if (modelData.name) {
-                        modelName = modelData.name;
-                        console.log("🏷️ Got model name from document:", modelName);
-                    } else {
-                        console.warn("⚠️ Model document exists but has no 'name' field");
-                        console.log("📊 Available fields:", Object.keys(modelData));
-                    }
+                if (modelData.name) {
+                    modelName = modelData.name;
+                    console.log("✅ Found model name:", modelName);
                 } else {
-                    console.warn("⚠️ No document found in car_models collection with ID:", baseModelName);
+                    console.warn("⚠️ No 'name' field in model document");
                     
-                    // For debugging - try listing some documents in the collection
-                    try {
-                        const modelsCollectionRef = collection(db, "car_models");
-                        const modelQuerySnapshot = await getDocs(modelsCollectionRef);
-                        console.log("📚 Found", modelQuerySnapshot.size, "documents in car_models collection");
-                        modelQuerySnapshot.forEach(doc => {
-                            console.log(" - Document ID:", doc.id);
-                        });
-                    } catch (listErr) {
-                        console.error("❌ Error listing car_models documents:", listErr);
+                    // Try alternative field names that might contain the model name
+                    const possibleNameFields = ['displayName', 'display_name', 'model_name', 'make_model'];
+                    
+                    for (const field of possibleNameFields) {
+                        if (modelData[field]) {
+                            modelName = modelData[field];
+                            console.log(`✅ Found name in alternate field '${field}':`, modelName);
+                            break;
+                        }
                     }
                 }
-            } catch (modelError) {
-                console.error("❌ Error fetching car model:", modelError);
-            }
-            
-            // Format car model name with color: "Honda Vezel (White)"
-            if (modelName && carColor) {
-                window.carModelName = `${modelName} (${carColor})`;
-            } else if (modelName) {
-                window.carModelName = modelName;
             } else {
-                // Fallback: capitalize base model name
-                window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
-                if (carColor) {
-                    window.carModelName += ` (${carColor})`;
+                console.warn("⚠️ Car model document not found for:", baseModelName);
+                
+                // Debug: List available model documents
+                try {
+                    console.log("📋 Listing available car models...");
+                    const modelsRef = collection(db, "car_models");
+                    const modelsSnapshot = await getDocs(modelsRef);
+                    
+                    if (modelsSnapshot.empty) {
+                        console.log("📋 No documents in car_models collection");
+                    } else {
+                        console.log(`📋 Found ${modelsSnapshot.size} model documents:`);
+                        modelsSnapshot.forEach(doc => {
+                            console.log(` - ${doc.id}`);
+                        });
+                    }
+                } catch (e) {
+                    console.error("❌ Error listing car models:", e);
                 }
             }
-            
-            console.log("✅ Car model name set to:", window.carModelName);
-            
-            // 2. Now fetch the car document to get license plate and directions
-            if (carId) {
-                console.log("🔍 Fetching car details for ID:", carId);
-                
-                const carDoc = await getDoc(doc(db, "cars", carId.toString()));
+        } catch (modelError) {
+            console.error("❌ Error fetching car model:", modelError);
+        }
+        
+        // 6. Format the car model name with color
+        if (modelName && carColor) {
+            window.carModelName = `${modelName} (${carColor})`;
+        } else if (modelName) {
+            window.carModelName = modelName;
+        } else {
+            // Fallback: Use capitalized base model name
+            window.carModelName = baseModelName.charAt(0).toUpperCase() + baseModelName.slice(1);
+            if (carColor) {
+                window.carModelName += ` (${carColor})`;
+            }
+        }
+        
+        console.log("🏷️ Final car model name:", window.carModelName);
+        
+        // 7. Fetch car document to get license plate and directions
+        if (carId) {
+            try {
+                console.log("🔍 Fetching car document for ID:", carId);
+                const carDocRef = doc(db, "cars", carId.toString());
+                const carDoc = await getDoc(carDocRef);
                 
                 if (carDoc.exists()) {
                     const carData = carDoc.data();
-                    console.log("📋 Car data retrieved:", carData);
+                    console.log("📋 Car document data:", carData);
                     
-                    // Save car directions
-                    carDirections = carData.directions || "Follow the arrow to reach your car.";
-                    window.carDirections = carDirections;
-                    
-                    // Save license plate
+                    // Set license plate
                     window.carLicensePlate = carData.license_plate || "Unknown";
+                    console.log("🔢 License plate:", window.carLicensePlate);
                     
-                    console.log("✅ Car details set:", {
-                        licensePlate: window.carLicensePlate,
-                        directions: window.carDirections
-                    });
+                    // Set directions
+                    carDirections = carData.directions || 
+                                   "Follow the arrow to reach your car.";
+                    window.carDirections = carDirections;
+                    console.log("🧭 Directions:", window.carDirections);
                 } else {
                     console.warn("⚠️ Car document not found for ID:", carId);
                     window.carLicensePlate = "Unknown";
-                    carDirections = "Follow the arrow to reach your car.";
-                    window.carDirections = carDirections;
+                    window.carDirections = "Follow the arrow to reach your car.";
                 }
+            } catch (carError) {
+                console.error("❌ Error fetching car document:", carError);
+                window.carLicensePlate = "Unknown";
+                window.carDirections = "Follow the arrow to reach your car.";
             }
-            
-            // Add a debugging element to the page
-            addDebugInfo({
-                bookingId: bookingId,
-                carType: carType,
-                baseModelName: baseModelName,
-                carColor: carColor,
-                modelName: modelName,
-                displayName: window.carModelName,
-                licensePlate: window.carLicensePlate
-            });
-            
         } else {
-            console.error("❌ Booking not found for ID:", bookingId);
-            // Use hardcoded fallback for demo
-            // ... (rest of your fallback code) ...
+            console.warn("⚠️ No car_id provided in booking");
+            window.carLicensePlate = "Unknown";
+            window.carDirections = "Follow the arrow to reach your car.";
         }
+        
+        // 8. Update the modal if it's already visible
+        if (document.getElementById('destinationModal')?.style.display === 'flex') {
+            updateAdditionalCarInfo();
+        }
+        
     } catch (error) {
-        console.error("❌ Error fetching car data:", error);
-        // ... (rest of your error handling) ...
+        console.error("❌ Error in fetchCarData:", error);
     }
 }
 
@@ -450,6 +478,12 @@ function startOrientation() {
 
 // Updated handleOrientation function
 function handleOrientation(event) {
+    // First, check if we have valid orientation data
+    if (!event || (event.alpha === null && event.webkitCompassHeading === undefined)) {
+        console.log("Invalid orientation data:", event);
+        return;
+    }
+    
     // Set flag that we have orientation data
     hasOrientationSupport = true;
     
@@ -457,34 +491,39 @@ function handleOrientation(event) {
     let deviceHeading;
     
     // iOS devices
-    if (event.webkitCompassHeading !== undefined) {
+    if (typeof event.webkitCompassHeading === 'number') {
         deviceHeading = event.webkitCompassHeading;
-        console.log("iOS compass heading:", deviceHeading.toFixed(1)); // Debugging
+        // Log occasionally to avoid console flood
+        if (Math.random() < 0.01) console.log("iOS compass:", deviceHeading.toFixed(1));
     }
     // Android devices
-    else if (event.alpha !== null) {
+    else if (typeof event.alpha === 'number') {
         deviceHeading = 360 - event.alpha;
-        console.log("Android compass heading:", deviceHeading.toFixed(1)); // Debugging
+        // Log occasionally
+        if (Math.random() < 0.01) console.log("Android compass:", deviceHeading.toFixed(1));
     }
-    // No orientation data available
     else {
-        console.log("No orientation data available in event:", event);
+        console.log("No valid heading data in event:", event);
         return;
     }
     
-    // Update smoothed heading with some basic filtering
+    // Apply stronger smoothing when heading changes are large
+    // This prevents rapid oscillations
     if (smoothedHeading === null) {
-        // Initialize with first reading
         smoothedHeading = deviceHeading;
     } else {
-        // Simple low-pass filter (80% old value, 20% new value)
-        const filterFactor = 0.2;
+        // Calculate difference between current and previous heading
+        let diff = deviceHeading - smoothedHeading;
         
         // Handle the 0/360 edge case
-        let diff = deviceHeading - smoothedHeading;
         if (diff > 180) diff -= 360;
         if (diff < -180) diff += 360;
         
+        // Use different smoothing factor based on change magnitude
+        // Less smoothing for small changes, more for large changes
+        const filterFactor = Math.abs(diff) > 20 ? 0.05 : 0.2;
+        
+        // Apply smoothing
         smoothedHeading = (smoothedHeading + diff * filterFactor) % 360;
         if (smoothedHeading < 0) smoothedHeading += 360;
     }
@@ -498,11 +537,6 @@ function handleOrientation(event) {
     // Keep direction in 0-360 range
     if (direction < 0) {
         direction += 360;
-    }
-    
-    // Debug output every few seconds
-    if (Math.random() < 0.1) { // Only log about 10% of readings to avoid console spam
-        console.log(`Heading: ${smoothedHeading.toFixed(1)}°, Bearing: ${bearing.toFixed(1)}°, Arrow: ${direction.toFixed(1)}°`);
     }
 }
 
