@@ -578,7 +578,7 @@ function updateDistanceDisplay() {
     }
     
     // Force show modal when close to destination (more generous threshold)
-    if (distance < 20 && !isViewed) {
+    if (distance < 200 && !isViewed) {
         console.log("Within range of destination, showing modal");
         showDestinationModal();
         isViewed = true;
