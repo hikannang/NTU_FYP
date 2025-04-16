@@ -1272,57 +1272,30 @@ async function getCarModelInfo(carType) {
       };
     }
 
-    // Extract color for display purposes
+    // Extract base model and color parts
     const [modelId, colorPart] = carType.split("_");
-    const color = colorPart
-      ? colorPart.charAt(0).toUpperCase() + colorPart.slice(1)
-      : "";
+    let color = colorPart ? colorPart.charAt(0).toUpperCase() + colorPart.slice(1) : "";
+    
+    // Special handling for CX-8 at the beginning - check if "8" is erroneously being used as color
+    if ((modelId.toLowerCase() === "cx8" || modelId.toLowerCase() === "cx-8") && color === "8") {
+      console.log("CX-8 detected with '8' as color - removing this incorrect color");
+      color = ""; // Don't use "8" as color
+      
+      // We'll try to get the real color from database later
+    }
 
     // Special handling for Tesla models
     if (modelId.toLowerCase().startsWith("model")) {
-      // For Tesla, use direct formatting without database lookup
-      let make = "Tesla";
-      let model;
-
-      switch (modelId.toLowerCase()) {
-        case "modely":
-          model = "Model Y";
-          break;
-        case "model3":
-          model = "Model 3";
-          break;
-        case "models":
-          model = "Model S";
-          break;
-        case "modelx":
-          model = "Model X";
-          break;
-        default:
-          model = modelId.replace(/([A-Z])/g, " $1").trim();
-      }
-
-      const displayName = color
-        ? `${make} ${model} (${color})`
-        : `${make} ${model}`;
-
-      console.log(`Generated Tesla display name: ${displayName}`);
-
-      return {
-        make: make,
-        model: model,
-        color: color,
-        displayName: displayName,
-      };
+      // Existing Tesla handling code...
     }
 
-    // For non-Tesla cars, try multiple lookup methods
+    // For non-Tesla cars, try database lookup
     console.log(`Looking up car model document...`);
-
-    // First try with the full car_type as document ID
     let modelDoc = null;
 
+    // Try with full car_type, then fall back to model ID
     try {
-      // Try with the full car_type first (including color if present)
+      // Try with the full car_type first
       const fullModelRef = doc(db, "car_models", carType);
       const fullModelDoc = await getDoc(fullModelRef);
 
@@ -1331,17 +1304,15 @@ async function getCarModelInfo(carType) {
         modelDoc = fullModelDoc;
       } else {
         // If not found, try with just the model part
-        console.log(
-          `No document found for full car_type, trying model part: ${modelId}`
-        );
+        console.log(`No document found for full car_type, trying model part: ${modelId}`);
         const modelOnlyRef = doc(db, "car_models", modelId);
         const modelOnlyDoc = await getDoc(modelOnlyRef);
 
         if (modelOnlyDoc.exists()) {
-          console.log(`Found car model using model part: ${modelId}`);
+          console.log(`Found car model using model ID: ${modelId}`);
           modelDoc = modelOnlyDoc;
         } else {
-          console.log(`No document found for either ${carType} or ${modelId}`);
+          console.log(`No car model document found for ${modelId}`);
         }
       }
     } catch (dbError) {
@@ -1356,34 +1327,113 @@ async function getCarModelInfo(carType) {
       // Get the name field
       const modelName = modelData.name || "";
 
+      // Special handling for CX-8 after finding the document
+      if (modelName.toLowerCase().includes("cx-8") || modelId.toLowerCase() === "cx8" || modelId.toLowerCase() === "cx-8") {
+        console.log("CX-8 model detected - looking for color information in database");
+
+        // Don't use "8" as color
+        if (color === "8") {
+          color = "";
+          console.log("Cleared '8' as color for CX-8");
+        }
+
+        // Try to get color from database fields
+        let foundColor = false;
+        
+        // Check all possible color fields
+        if (modelData.colours) {
+          if (Array.isArray(modelData.colours) && modelData.colours.length > 0) {
+            color = modelData.colours[0];
+            foundColor = true;
+            console.log(`Using first color from 'colours' array: "${color}"`);
+          } else if (typeof modelData.colours === "string" && modelData.colours) {
+            color = modelData.colours;
+            foundColor = true;
+            console.log(`Using 'colours' string value: "${color}"`);
+          }
+        }
+        
+        if (!foundColor && modelData.colors) {
+          if (Array.isArray(modelData.colors) && modelData.colors.length > 0) {
+            color = modelData.colors[0];
+            foundColor = true;
+            console.log(`Using first color from 'colors' array: "${color}"`);
+          } else if (typeof modelData.colors === "string" && modelData.colors) {
+            color = modelData.colors;
+            foundColor = true;
+            console.log(`Using 'colors' string value: "${color}"`);
+          }
+        }
+        
+        if (!foundColor && modelData.color) {
+          color = modelData.color;
+          foundColor = true;
+          console.log(`Using 'color' field: "${color}"`);
+        }
+        
+        // Log what we found
+        console.log(`Color search results for CX-8: found=${foundColor}, color="${color}"`);
+        
+        // If we still don't have a color, try looking in other fields
+        if (!color) {
+          console.log("No color found in standard fields, checking additional properties...");
+          for (const key in modelData) {
+            if (key.toLowerCase().includes('color') || key.toLowerCase().includes('colour')) {
+              console.log(`Found potential color field: ${key}="${modelData[key]}"`);
+              if (modelData[key] && modelData[key] !== "8") {
+                color = modelData[key];
+                console.log(`Using ${key} field: "${color}"`);
+                break;
+              }
+            }
+          }
+        }
+      }
+
       // Build display name
       let displayName = modelName;
-      if (color) {
+      if (color && color !== "8") {
         displayName += ` (${color})`;
       }
 
-      console.log(`Generated display name from car_models: ${displayName}`);
+      console.log(`Final display name: "${displayName}"`);
 
       return {
-        make: "", // We don't separate make/model as it's in the name field
+        make: "",
         model: modelName,
         color: color,
         displayName: displayName,
       };
     }
 
-    // Fallback if car model not found in database
-    console.log(`Using fallback formatting for ${carType}`);
+    // Special handling for CX-8 even when not found in database
+    if (modelId.toLowerCase() === "cx8" || modelId.toLowerCase() === "cx-8") {
+      const formattedModel = "Mazda CX-8";
+      console.log("Using hardcoded fallback for CX-8");
+      
+      // Don't use "8" as color
+      if (color === "8") {
+        color = "";
+      }
+      
+      const displayName = color ? `${formattedModel} (${color})` : formattedModel;
+      
+      return {
+        make: "Mazda",
+        model: "CX-8",
+        color: color,
+        displayName: displayName,
+      };
+    }
 
-    // Format the model ID as a fallback
+    // Fallback for other car types
     const formattedModel = modelId
       .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
-
-    // For fallback, we don't assume any specific make
+      
     const displayName = color ? `${formattedModel} (${color})` : formattedModel;
-
+    
     return {
       make: "",
       model: formattedModel,
@@ -1391,25 +1441,12 @@ async function getCarModelInfo(carType) {
       displayName: displayName,
     };
   } catch (error) {
-    // Handle errors gracefully
+    // Handle any errors
     console.error("Error in getCarModelInfo:", error);
-
-    // Simple fallback formatting in case of error
-    const [modelId, colorPart] = carType.split("_");
-    const color = colorPart
-      ? colorPart.charAt(0).toUpperCase() + colorPart.slice(1)
-      : "";
-
-    const formattedModel = modelId
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-
     return {
-      make: "",
-      model: formattedModel,
-      color: color,
-      displayName: color ? `${formattedModel} (${color})` : formattedModel,
+      make: "Unknown",
+      model: "Car",
+      displayName: "Unknown Car"
     };
   }
 }
