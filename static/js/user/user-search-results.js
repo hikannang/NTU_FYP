@@ -94,12 +94,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const filterToggle = document.getElementById("filter-toggle");
   const filtersPanel = document.querySelector(".filters-panel");
   const applyFilterBtn = document.getElementById("apply-filter");
-  
+
   if (filterToggle && filtersPanel) {
     // Toggle filters panel when the button is clicked
-    filterToggle.addEventListener("click", function() {
+    filterToggle.addEventListener("click", function () {
       filtersPanel.classList.toggle("show-filters");
-      
+
       // Also toggle visibility of apply button
       if (applyFilterBtn) {
         if (filtersPanel.classList.contains("show-filters")) {
@@ -108,7 +108,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           applyFilterBtn.style.display = "none"; // Hide apply button when filters are hidden
         }
       }
-      
+
       // Change icon based on state
       const icon = filterToggle.querySelector("i");
       if (icon) {
@@ -119,19 +119,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
     });
-    
+
     // Close filters and hide apply button when "Apply" is clicked
     if (applyFilterBtn) {
-      applyFilterBtn.addEventListener("click", function() {
+      applyFilterBtn.addEventListener("click", function () {
         filtersPanel.classList.remove("show-filters");
         applyFilterBtn.style.display = "none"; // Hide apply button
-        
+
         // Change icon back
         const icon = filterToggle.querySelector("i");
         if (icon) {
           icon.className = "bi bi-sliders";
         }
-        
+
         // Apply filters
         filterResults();
       });
@@ -239,91 +239,128 @@ function initializeFilters() {
 // Populate car type filter checkboxes
 async function populateCarTypeFilters() {
   if (!carTypesContainer) return;
-  
+
   try {
-    carTypesContainer.innerHTML = ''; // Clear existing filters
-    
+    carTypesContainer.innerHTML = ""; // Clear existing filters
+
     // First get all model data from car_models collection
     const modelsRef = collection(db, "car_models");
     const modelsSnapshot = await getDocs(modelsRef);
-    
+
     if (modelsSnapshot.empty) {
       console.log("No car models found in database");
       return;
     }
-    
+
     // Create a map of model IDs to their proper names
     const modelNames = {};
-    modelsSnapshot.forEach(doc => {
-      // Check various possible name properties in the document
+    modelsSnapshot.forEach((doc) => {
+      // CHANGED: Focus only on the 'name' field from car_models
       const modelData = doc.data();
-      const name = modelData.name || modelData.model_name || modelData.display_name || doc.id;
-      modelNames[doc.id] = name;
-      console.log(`Model ${doc.id} name: ${name}`);
+      if (modelData.name) {
+        modelNames[doc.id.split("_")[0]] = modelData.name;
+      } else {
+        // Only if name doesn't exist, use fallbacks
+        modelNames[doc.id.spilt("_")[0]] =
+          modelData.model_name || modelData.display_name || doc.id;
+      }
     });
-    
+
     console.log("Loaded car model names:", modelNames);
-    
-    // Create a unique set of model IDs from available cars
-    const modelIds = new Set();
-    
-    // If we've already loaded cars, use those to determine available models
-    if (originalResults && originalResults.length > 0) {
-      originalResults.forEach(car => {
-        if (car.car_type) {
-          const modelId = car.car_type.split('_')[0];
-          modelIds.add(modelId);
-        }
-      });
-    } 
-    // Otherwise, query the cars collection to get model types
-    else {
-      const carsRef = collection(db, "cars");
-      const carsSnapshot = await getDocs(carsRef);
+
+    // Create a unique set of base model IDs from available cars
+const modelIds = new Set();
+const modelDisplayNames = {}; // Track display names for each base model ID
+
+// If we've already loaded cars, use those to determine available models
+if (originalResults && originalResults.length > 0) {
+  originalResults.forEach((car) => {
+    if (car.car_type) {
+      // Extract the base model ID (before the underscore)
+      const baseModelId = car.car_type.split("_")[0];
+      modelIds.add(baseModelId);
       
-      carsSnapshot.forEach(doc => {
-        const carData = doc.data();
-        if (carData.car_type) {
-          const modelId = carData.car_type.split('_')[0];
-          modelIds.add(modelId);
+      // Store the full car_type for reference
+      if (!modelDisplayNames[baseModelId]) {
+        // Look for this base model in our loaded model names
+        if (modelNames[baseModelId]) {
+          modelDisplayNames[baseModelId] = modelNames[baseModelId];
         }
-      });
+        // If exact match not found, try to find a variant
+        else {
+          for (const key in modelNames) {
+            if (key === baseModelId || key.startsWith(baseModelId + '_')) {
+              modelDisplayNames[baseModelId] = modelNames[key];
+              break;
+            }
+          }
+        }
+      }
     }
-    
-    // Create filter checkboxes for each model using proper names
-    Array.from(modelIds).sort().forEach(modelId => {
-      // Use the name from our model map, or fallback to a formatted version of the ID
-      const displayName = modelNames[modelId] || formatModelId(modelId);
+  });
+}
+// Otherwise, query the cars collection to get model types
+else {
+  const carsRef = collection(db, "cars");
+  const carsSnapshot = await getDocs(carsRef);
+
+  carsSnapshot.forEach((doc) => {
+    const carData = doc.data();
+    if (carData.car_type) {
+      // Extract the base model ID (before the underscore)
+      const baseModelId = carData.car_type.split("_")[0];
+      modelIds.add(baseModelId);
       
-      const filterItem = document.createElement("div");
-      filterItem.className = "filter-item";
-      filterItem.innerHTML = `
-        <input type="checkbox" id="type-${modelId}" class="car-type-filter" value="${modelId}">
-        <label for="type-${modelId}">${displayName}</label>
-      `;
-      carTypesContainer.appendChild(filterItem);
-    });
-    
+      // Store the full car_type for reference
+      if (!modelDisplayNames[baseModelId]) {
+        // Look for this base model in our loaded model names
+        if (modelNames[baseModelId]) {
+          modelDisplayNames[baseModelId] = modelNames[baseModelId];
+        }
+        // If exact match not found, try to find a variant
+        else {
+          for (const key in modelNames) {
+            if (key === baseModelId || key.startsWith(baseModelId + '_')) {
+              modelDisplayNames[baseModelId] = modelNames[key];
+              break;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+console.log("Combined model IDs:", Array.from(modelIds));
+console.log("Display names for models:", modelDisplayNames);
+
+
+    // Create filter checkboxes for each model using names from our map
+    Array.from(modelIds)
+      .sort()
+      .forEach((modelId) => {
+        // Simply use the name from our already loaded modelNames map
+        // This map already has the correct full names from the database
+        const model_ID= modelId;
+        const displayName = modelNames[modelId] || modelId;
+
+        console.log(
+          `Creating filter for ${modelId} with display name "${displayName} and model id ${model_ID}"`
+        );
+
+        const filterItem = document.createElement("div");
+        filterItem.className = "filter-item";
+        filterItem.innerHTML = `
+    <input type="checkbox" id="type-${modelId}" class="car-type-filter" value="${modelId}">
+    <label for="type-${modelId}">${displayName}</label>
+  `;
+        carTypesContainer.appendChild(filterItem);
+      });
+
     console.log(`Generated ${modelIds.size} car type filters`);
-    
   } catch (error) {
     console.error("Error populating car type filters:", error);
   }
-}
-
-// Helper function to format model ID if name is not found
-function formatModelId(modelId) {
-  // Format Tesla models
-  if (modelId.toLowerCase() === "modely") return "Tesla Model Y";
-  if (modelId.toLowerCase() === "model3") return "Tesla Model 3";
-  if (modelId.toLowerCase() === "models") return "Tesla Model S";
-  if (modelId.toLowerCase() === "modelx") return "Tesla Model X";
-  
-  // Format other common models
-  if (modelId.toLowerCase() === "vezel") return "Honda Vezel";
-  
-  // Generic formatting: capitalize first letter
-  return modelId.charAt(0).toUpperCase() + modelId.slice(1);
 }
 
 // Add this function to populate fuel type filters
@@ -446,9 +483,13 @@ async function loadSearchResults() {
           carData.current_location.latitude,
           carData.current_location.longitude
         );
-        console.log(`Car ${carDoc.id} is ${distance.toFixed(2)}km away from user`);
+        console.log(
+          `Car ${carDoc.id} is ${distance.toFixed(2)}km away from user`
+        );
       } else {
-        console.log(`Car ${carDoc.id}: Cannot calculate distance (no user position)`);
+        console.log(
+          `Car ${carDoc.id}: Cannot calculate distance (no user position)`
+        );
       }
 
       // Add default price if not available
@@ -547,8 +588,8 @@ async function isCarAvailableForBooking(carId, requestedStart, requestedEnd) {
   }
 }
 
-// Display search results
-function displayResults() {
+// Display search results with async card creation
+async function displayResults() {
   if (!carListContainer) return;
 
   if (carResults.length === 0) {
@@ -564,23 +605,152 @@ function displayResults() {
     noResultsMessage.style.display = "none";
   }
 
-  // Create and append car cards
-  carResults.forEach((car) => {
-    const carCard = createCarCard(car);
-    carListContainer.appendChild(carCard);
-  });
+  // Create loading placeholders
+  const placeholderHtml = `
+    <div class="car-card loading-placeholder">
+      <div class="placeholder-image"></div>
+      <div class="placeholder-content">
+        <div class="placeholder-text"></div>
+        <div class="placeholder-text small"></div>
+        <div class="placeholder-text small"></div>
+        <div class="placeholder-button"></div>
+      </div>
+    </div>
+  `.repeat(Math.min(5, carResults.length));
+
+  carListContainer.innerHTML = placeholderHtml;
+
+  // Process each car with a small delay between each to prevent UI freezing
+  for (let i = 0; i < carResults.length; i++) {
+    const car = carResults[i];
+    try {
+      const carCard = await createCarCard(car);
+
+      // Replace placeholder or append to container
+      if (i < 5) {
+        const placeholder = carListContainer.children[i];
+        if (placeholder) {
+          carListContainer.replaceChild(carCard, placeholder);
+        } else {
+          carListContainer.appendChild(carCard);
+        }
+      } else {
+        carListContainer.appendChild(carCard);
+      }
+    } catch (error) {
+      console.error(`Error creating card for car ${car.id}:`, error);
+
+      // Create a basic fallback card if there's an error
+      const fallbackCard = document.createElement("div");
+      fallbackCard.className = "car-card";
+      fallbackCard.innerHTML = `
+        <div class="car-image">
+          <img src="../static/images/assets/car-placeholder.jpg" alt="Car">
+        </div>
+        <div class="card-content">
+          <div class="car-header">
+            <h3>${car.car_type || "Car"}</h3>
+          </div>
+          <a href="user-car-details.html?id=${car.id}" class="view-details-btn">
+            View Details
+          </a>
+        </div>
+      `;
+      carListContainer.appendChild(fallbackCard);
+    }
+
+    // Small delay to keep UI responsive
+    if (i % 3 === 2 && i < carResults.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
 
   // Update result count
   updateResultCount();
 }
 
-// Create car card element
-function createCarCard(car) {
+async function getCarModelName(carType) {
+  console.group(`Getting model name for full car_type: "${carType}"`);
+
+  try {
+    if (!carType) {
+      console.log("No car_type provided");
+      console.groupEnd();
+      return "Unknown Car";
+    }
+
+    // USE THE FULL CAR_TYPE as the document ID
+    console.log(`Looking up document using FULL car_type: "${carType}"`);
+    const modelDocRef = doc(db, "car_models", carType);
+    const modelDoc = await getDoc(modelDocRef);
+
+    if (modelDoc.exists()) {
+      console.log(`✅ Document exists for full car_type: "${carType}"`);
+      const modelData = modelDoc.data();
+      console.log(`Document data:`, modelData);
+
+      // Get the exact name value from the document
+      if (modelData.name) {
+        console.log(`✅ Found name field: "${modelData.name}"`);
+        console.groupEnd();
+        return modelData.name;
+      } else {
+        console.log(`❌ Document exists but has no 'name' field`);
+      }
+    } else {
+      console.log(`❌ No document found for full car_type: "${carType}"`);
+
+      // Try with just the base model as a fallback
+      const baseModelName = carType.split("_")[0];
+      console.log(`Trying fallback with base model name: "${baseModelName}"`);
+
+      const baseModelDocRef = doc(db, "car_models", baseModelName);
+      const baseModelDoc = await getDoc(baseModelDocRef);
+
+      if (baseModelDoc.exists()) {
+        console.log(`✅ Found document for base model: "${baseModelName}"`);
+        const baseModelData = baseModelDoc.data();
+
+        if (baseModelData.name) {
+          console.log(
+            `✅ Found name in base model document: "${baseModelData.name}"`
+          );
+          console.groupEnd();
+          return baseModelData.name;
+        }
+      } else {
+        console.log(`❌ No document found for base model: "${baseModelName}"`);
+      }
+    }
+
+    // If we get here, we couldn't find a name in the database
+    console.log(`Using fallback: displaying car_type`);
+    console.groupEnd();
+    return carType;
+  } catch (error) {
+    console.error(`Error getting car model name:`, error);
+    console.groupEnd();
+    return carType || "Unknown Car";
+  }
+}
+
+// Create car card element with database model name
+async function createCarCard(car) {
   const card = document.createElement("div");
   card.className = "car-card";
   card.dataset.type = car.car_type
     ? car.car_type.split("_")[0].toLowerCase()
     : "unknown";
+
+  // Get the model name from database
+  let carName = "Unknown Car";
+  try {
+    carName = await getCarModelName(car.car_type || "");
+  } catch (error) {
+    console.error(`Error getting model name for ${car.id}:`, error);
+    carName =
+      `${car.make || ""} ${car.modelName || ""}`.trim() || "Unknown Car";
+  }
 
   // Format price display
   const hourlyPrice = car.price_per_hour
@@ -618,16 +788,16 @@ function createCarCard(car) {
         </div>
     `;
 
-  // Create card content with enhanced design - removed car badge
+  // Create card content with enhanced design
   card.innerHTML = `
         <div class="car-image">
-            <img src="${car.image}" alt="${car.make} ${car.modelName}" 
+            <img src="${car.image}" alt="${carName}" 
                  onerror="this.src='../static/images/assets/car-placeholder.jpg'">
         </div>
         <div class="card-content">
             <div class="car-info">
                 <div class="car-header">
-                    <h3>${car.make} ${car.modelName}</h3>
+                    <h3>${carName}</h3>
                 </div>
                 ${features}
                 ${distanceDisplay}
@@ -643,15 +813,14 @@ function createCarCard(car) {
                 <a href="user-car-details.html?id=${
                   car.id
                 }" class="view-details-btn">
-            View Details
-        </a>
+                    View Details
+                </a>
             </div>
         </div>
     `;
 
   return card;
 }
-
 // Initialize Google Map
 function initializeMap() {
   const mapElement = document.getElementById("map");
@@ -752,8 +921,8 @@ function addMapMarkers() {
     }
   }
 
-  // Add car markers with custom icons based on car type
-  carResults.forEach((car) => {
+  // Add car markers
+  carResults.forEach(async (car) => {
     if (car.current_location) {
       const position = {
         lat: car.current_location.latitude,
@@ -761,6 +930,17 @@ function addMapMarkers() {
       };
 
       try {
+        // Get just the model name from database
+        let carName = "Unknown Car";
+        try {
+          carName = await getCarModelName(car.car_type || "");
+          console.log(`Got car name for marker: ${carName}`);
+        } catch (error) {
+          console.error(`Error getting car name for ${car.id}:`, error);
+          carName =
+            `${car.make || ""} ${car.modelName || ""}`.trim() || "Unknown Car";
+        }
+
         // Create custom icon based on car type
         const iconUrl = car.car_type?.toLowerCase().includes("tesla")
           ? "../static/images/assets/electric-car-marker.png"
@@ -769,7 +949,7 @@ function addMapMarkers() {
         const marker = new google.maps.Marker({
           position: position,
           map: map,
-          title: `${car.make} ${car.modelName}`,
+          title: carName, // Just use the database model name
           icon: {
             url: iconUrl,
             scaledSize: new google.maps.Size(32, 32),
@@ -780,36 +960,32 @@ function addMapMarkers() {
         // Enhanced info window with more details and styling
         const infoWindow = new google.maps.InfoWindow({
           content: `
-                        <div class="map-info-window">
-                            <div class="info-header">
-                                <h4>${car.make} ${car.modelName}</h4>
-                                <span class="info-type">${
-                                  car.car_type?.split("_")[0] || "Car"
-                                }</span>
-                            </div>
-                            <div class="info-details">
-                                <p>${
-                                  car.address || "Location not available"
-                                }</p>
-                                <div class="info-features">
-                                    <span><i class="bi bi-people"></i> ${
-                                      car.seating_capacity || "5"
-                                    }</span>
-                                    <span><i class="bi bi-fuel-pump"></i> ${
-                                      car.fuel_type || "Petrol"
-                                    }</span>
-                                </div>
-                                <p class="info-price">$${
-                                  car.price_per_hour
-                                    ? car.price_per_hour.toFixed(2)
-                                    : "0.00"
-                                }/hour</p>
-                            </div>
-                            <a href="user-car-details.html?id=${
-                              car.id
-                            }" class="info-window-btn">View Details</a>
-                        </div>
-                    `,
+            <div class="map-info-window">
+              <div class="info-header">
+                <h4>${carName}</h4> <!-- Just use the database model name -->
+                <span class="info-type">${
+                  car.car_type?.split("_")[0] || "Car"
+                }</span>
+              </div>
+              <div class="info-details">
+                <p>${car.address || "Location not available"}</p>
+                <div class="info-features">
+                  <span><i class="bi bi-people"></i> ${
+                    car.seating_capacity || "5"
+                  }</span>
+                  <span><i class="bi bi-fuel-pump"></i> ${
+                    car.fuel_type || "Petrol"
+                  }</span>
+                </div>
+                <p class="info-price">$${
+                  car.price_per_hour ? car.price_per_hour.toFixed(2) : "0.00"
+                }/hour</p>
+              </div>
+              <a href="user-car-details.html?id=${
+                car.id
+              }" class="info-window-btn">View Details</a>
+            </div>
+          `,
           maxWidth: 300,
         });
 
@@ -859,8 +1035,8 @@ function setupEventListeners() {
   // Sort dropdown
   if (sortSelect) {
     // Set default sort to distance
-    sortSelect.value = "distance"; 
-    
+    sortSelect.value = "distance";
+
     sortSelect.addEventListener("change", () => {
       console.log("Sort changed to:", sortSelect.value);
       sortResults();
@@ -959,17 +1135,20 @@ function sortResults() {
         // If either car has no distance, place it at the end
         if (a.distance === null || a.distance === undefined) return 1;
         if (b.distance === null || b.distance === undefined) return -1;
-        
+
         // Otherwise sort by distance (closest first)
         return parseFloat(a.distance) - parseFloat(b.distance);
       });
-      
+
       // Debug log to verify sorting
-      console.log("Sorted by distance:", carResults.map(car => ({
-        id: car.id,
-        car_type: car.car_type,
-        distance: car.distance ? car.distance.toFixed(2) + ' km' : 'unknown'
-      })));
+      console.log(
+        "Sorted by distance:",
+        carResults.map((car) => ({
+          id: car.id,
+          car_type: car.car_type,
+          distance: car.distance ? car.distance.toFixed(2) + " km" : "unknown",
+        }))
+      );
       break;
     case "name-asc":
       carResults.sort((a, b) =>
