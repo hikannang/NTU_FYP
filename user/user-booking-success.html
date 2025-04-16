@@ -1,186 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Booking Successful | BaoCarLiao</title>
-    <link rel="stylesheet" href="../static/css/users/user.css">
-    <link rel="stylesheet" href="../static/css/users/user-booking-success.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
-</head>
-<body>
+    <link rel="stylesheet" href="../static/css/users/user.css" />
+    <link
+      rel="stylesheet"
+      href="../static/css/users/user-booking-success.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+    />
+  </head>
+  <body>
     <div id="header"></div>
-    
-    <main>
-        <div class="container">
-            <!-- Success Message -->
-            <div class="success-card">
-                <div class="success-icon">
-                    <i class="bi bi-check-circle-fill"></i>
-                </div>
-                
-                <h1>Booking Successful!</h1>
-                
-                <p class="success-message">
-                    Your car has been successfully booked. You can find all the details below.
-                </p>
-                
-                <div class="booking-reference">
-                    <span>Booking Reference:</span>
-                    <strong id="booking-id">Loading...</strong>
-                    <button id="copy-btn" class="icon-btn" aria-label="Copy booking reference">
-                        <i class="bi bi-clipboard"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Booking Summary (Revised) -->
-            <div class="summary-card">
-                <h2 class="card-title">Booking Summary</h2>
-                
-                <!-- Car Image - Full width -->
-                <div class="car-image-full">
-                    <img id="car-image" src="../static/images/assets/car-placeholder.jpg" alt="Car image">
-                </div>
-                
-                <!-- Car Details Below Image -->
-                <div class="car-details">
-                    <!-- License Plate -->
-                    <div class="car-plate" id="car-plate">PLATE NA</div>
-                    <h3 id="car-model">Car Model</h3>
-                    
-                    <!-- Car Specs -->
-                    <div class="car-specs">
-                        <div class="spec-item">
-                            <i class="bi bi-people-fill"></i>
-                            <span id="car-seats">5 seats</span>
-                        </div>
-                        <div class="spec-item">
-                            <i class="bi bi-briefcase-fill"></i>
-                            <span>Small Luggage: <span id="small-luggage">0</span></span>
-                        </div>
-                        <div class="spec-item">
-                            <i class="bi bi-suitcase-fill"></i>
-                            <span>Big Luggage: <span id="big-luggage">0</span></span>
-                        </div>
-                    </div>
-                </div>
-                
-                <hr class="divider">
-                
-                <!-- Booking Details -->
-                <div class="details-grid">
-                    <div class="detail-item">
-                        <div class="detail-icon">
-                            <i class="bi bi-geo-alt-fill"></i>
-                        </div>
-                        <div class="detail-content">
-                            <div class="detail-label">Pickup Location</div>
-                            <div class="detail-value" id="pickup-location">Loading...</div>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-icon">
-                            <i class="bi bi-calendar-event"></i>
-                        </div>
-                        <div class="detail-content">
-                            <div class="detail-label">Pickup</div>
-                            <div class="detail-value" id="pickup-datetime">Loading...</div>
-                        </div>
-                    </div>
 
-                    <div class="detail-item">
-                        <div class="detail-icon">
-                            <i class="bi bi-hourglass-split"></i>
-                        </div>
-                        <div class="detail-content">
-                            <div class="detail-label">Duration</div>
-                            <div class="detail-value" id="booking-duration">Loading...</div>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-icon">
-                            <i class="bi bi-calendar-check"></i>
-                        </div>
-                        <div class="detail-content">
-                            <div class="detail-label">Return</div>
-                            <div class="detail-value" id="return-datetime">Loading...</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <hr class="divider">
-                
-                <!-- Price Summary -->
-                <div class="price-summary">
-                    <div class="price-row">
-                        <span>Rate</span>
-                        <span>$<span id="hourly-rate">0.00</span>/hour</span>
-                    </div>
-                    <div class="price-row total">
-                        <span>Total</span>
-                        <span>$<span id="total-price">0.00</span></span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Next Steps (Revised) -->
-            <div class="steps-card">
-                <h2 class="card-title">Next Steps</h2>
-                
-                <div class="steps-list">
-                    <div class="step-item">
-                        <div class="step-number">1</div>
-                        <div class="step-content">
-                            <h3>Arrive at the Pickup Location</h3>
-                            <p>Be at the car's location 5-10 minutes before your booking starts.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="step-item">
-                        <div class="step-number">2</div>
-                        <div class="step-content">
-                            <h3>Find Your Car</h3>
-                            <p>Use the license plate number to locate your specific vehicle.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="step-item">
-                        <div class="step-number">3</div>
-                        <div class="step-content">
-                            <h3>Return the Car</h3>
-                            <p>Return the car to the same location by the end of your booking period.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <a href="user-bookings.html" class="secondary-btn">
-                    <i class="bi bi-list"></i> View All Bookings
-                </a>
-                <a href="user-dashboard.html" class="primary-btn">
-                    <i class="bi bi-house"></i> Back to Dashboard
-                </a>
-            </div>
-            
-            <!-- Calendar Add Button -->
-            <div class="calendar-button">
-                <button id="add-to-calendar" class="outline-btn">
-                    <i class="bi bi-calendar-plus"></i> Add to Calendar
-                </button>
-            </div>
+    <main>
+      <div class="container">
+        <!-- Success Message -->
+        <div class="success-card">
+          <div class="success-icon">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+
+          <h1>Booking Successful!</h1>
+
+          <p class="success-message">
+            Your car has been successfully booked. You can find all the details
+            below.
+          </p>
+
+          <div class="booking-reference">
+            <span>Booking Reference:</span>
+            <strong id="booking-id">Loading...</strong>
+            <button
+              id="copy-btn"
+              class="icon-btn"
+              aria-label="Copy booking reference"
+            >
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
         </div>
+
+        <!-- Booking Summary (Revised) -->
+        <div class="summary-card">
+          <h2 class="card-title">Booking Summary</h2>
+
+          <!-- Car Image - Full width -->
+          <div class="car-image-full">
+            <img
+              id="car-image"
+              src="../static/images/assets/car-placeholder.jpg"
+              alt="Car image"
+            />
+          </div>
+
+          <!-- Car Details Below Image -->
+          <div class="car-details">
+            <!-- License Plate -->
+            <div class="car-plate" id="car-plate">PLATE NA</div>
+            <h3 id="car-model">Car Model</h3>
+
+            <!-- Car Specs -->
+            <div class="car-specs">
+              <div class="spec-item">
+                <i class="bi bi-people-fill"></i>
+                <span id="car-seats">5 seats</span>
+              </div>
+              <div class="spec-item">
+                <i class="bi bi-briefcase-fill"></i>
+                <span>Small Luggage: <span id="small-luggage">0</span></span>
+              </div>
+              <div class="spec-item">
+                <i class="bi bi-suitcase-fill"></i>
+                <span>Large Luggage: <span id="large-luggage">0</span></span>
+              </div>
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- Booking Details -->
+          <div class="details-grid">
+            <div class="detail-item">
+              <div class="detail-icon">
+                <i class="bi bi-geo-alt-fill"></i>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Pickup Location</div>
+                <div class="detail-value" id="pickup-location">Loading...</div>
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <div class="detail-icon">
+                <i class="bi bi-calendar-event"></i>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Pickup</div>
+                <div class="detail-value" id="pickup-datetime">Loading...</div>
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <div class="detail-icon">
+                <i class="bi bi-hourglass-split"></i>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Duration</div>
+                <div class="detail-value" id="booking-duration">Loading...</div>
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <div class="detail-icon">
+                <i class="bi bi-calendar-check"></i>
+              </div>
+              <div class="detail-content">
+                <div class="detail-label">Return</div>
+                <div class="detail-value" id="return-datetime">Loading...</div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- Price Summary -->
+          <div class="price-summary">
+            <div class="price-row">
+              <span>Rate</span>
+              <span>$<span id="hourly-rate">0.00</span>/hour</span>
+            </div>
+            <div class="price-row total">
+              <span>Total</span>
+              <span>$<span id="total-price">0.00</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next Steps (Revised) -->
+        <div class="steps-card">
+          <h2 class="card-title">Next Steps</h2>
+
+          <div class="steps-list">
+            <div class="step-item">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h3>Arrive at the Pickup Location</h3>
+                <p>
+                  Be at the car's location 5-10 minutes before your booking
+                  starts.
+                </p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h3>Find Your Car</h3>
+                <p>
+                  Use the license plate number to locate your specific vehicle.
+                </p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h3>Return the Car</h3>
+                <p>
+                  Return the car to the same location by the end of your booking
+                  period.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <a href="user-bookings.html" class="secondary-btn">
+            <i class="bi bi-list"></i> View All Bookings
+          </a>
+          <a href="user-dashboard.html" class="primary-btn">
+            <i class="bi bi-house"></i> Back to Dashboard
+          </a>
+        </div>
+
+        <!-- Calendar Add Button -->
+        <div class="calendar-button">
+          <button id="add-to-calendar" class="outline-btn">
+            <i class="bi bi-calendar-plus"></i> Add to Calendar
+          </button>
+        </div>
+      </div>
     </main>
-    
+
     <div id="footer"></div>
 
     <!-- Scripts -->
     <script src="../static/js/common/firebase-config.js" type="module"></script>
     <script src="../static/js/common/auth.js" type="module"></script>
-    <script src="../static/js/user/user-booking-success.js" type="module"></script>
-</body>
+    <script
+      src="../static/js/user/user-booking-success.js"
+      type="module"
+    ></script>
+  </body>
 </html>

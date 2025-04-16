@@ -183,11 +183,87 @@ async function loadCarDetails() {
     carData.id = carId;
     console.log("Car data loaded:", carData);
 
-    // Parse car type for better display
-    const carInfo = parseCarType(carData.car_type || "");
-    carData.make = carInfo.make;
-    carData.model = carInfo.model;
-    carData.color = carInfo.color;
+    // Extract full car_type
+    const fullCarType = carData.car_type || "";
+    console.log(`Full car_type for database lookup: "${fullCarType}"`);
+
+    // Extract color part from car_type as a fallback
+    let colorFromType = "";
+    if (fullCarType.includes("_")) {
+      colorFromType = fullCarType.split("_")[1] || "";
+      if (colorFromType) {
+        colorFromType =
+          colorFromType.charAt(0).toUpperCase() + colorFromType.slice(1);
+      }
+    }
+
+    // Set default values
+    carData.make = "Unknown";
+    carData.model = "Car";
+    carData.color = colorFromType || carData.color || "Not specified";
+
+    // Look up car model info using the FULL car_type in car_models collection
+    try {
+      // First try with the FULL car_type (including color)
+      console.log(`Looking up car model with FULL car_type: "${fullCarType}"`);
+      let modelDoc = await getDoc(doc(db, "car_models", fullCarType));
+
+      // If not found with full car_type, try with base model as fallback
+      const baseModelId = fullCarType.split("_")[0];
+      if (!modelDoc.exists() && fullCarType.includes("_")) {
+        console.log(
+          `Full car_type not found, trying base model: "${baseModelId}"`
+        );
+        modelDoc = await getDoc(doc(db, "car_models", baseModelId));
+      }
+
+      if (modelDoc.exists()) {
+        const modelData = modelDoc.data();
+        console.log("Found car model data:", modelData);
+
+        // Get the exact name from the document
+        if (modelData.name) {
+          console.log(`Using car name from database: "${modelData.name}"`);
+          carData.displayName = modelData.name;
+
+          // Extract make and model for other purposes if needed
+          const nameParts = modelData.name.split(" ");
+          if (nameParts.length > 1) {
+            carData.make = nameParts[0];
+            carData.model = nameParts.slice(1).join(" ");
+          } else {
+            carData.make = modelData.name;
+            carData.model = "";
+          }
+        } else {
+          console.log(
+            "Model document has no name field, using fallback parsing"
+          );
+          const parsed = parseCarType(fullCarType);
+          carData.make = parsed.make;
+          carData.model = parsed.model;
+          carData.displayName = `${parsed.make} ${parsed.model}`.trim();
+        }
+
+        // Get color information from car_models document
+        if (modelData.color) {
+          console.log(`Using color from database: "${modelData.color}"`);
+          carData.color = modelData.color;
+        }
+      } else {
+        console.log(`No model document found, using fallback parsing`);
+        const parsed = parseCarType(fullCarType);
+        carData.make = parsed.make;
+        carData.model = parsed.model;
+        carData.displayName = `${parsed.make} ${parsed.model}`.trim();
+      }
+    } catch (modelError) {
+      console.error("Error fetching car model data:", modelError);
+      const parsed = parseCarType(fullCarType);
+      carData.make = parsed.make;
+      carData.model = parsed.model;
+      carData.displayName = `${parsed.make} ${parsed.model}`.trim();
+    }
 
     // Update price if available in car data
     if (carData.price_per_hour) {
@@ -215,27 +291,10 @@ function parseCarType(carType) {
   let make = "Unknown";
   let model = "Car";
   let color = "";
+  let fuel_type = "Not specified";
 
   // Parse car_type (e.g., "modely_white" -> "Tesla", "Model Y", "White")
   if (carType) {
-    // Handle known car types
-    if (carType.toLowerCase().includes("model")) {
-      make = "Tesla";
-
-      if (carType.toLowerCase().includes("modely")) {
-        model = "Model Y";
-      } else if (carType.toLowerCase().includes("model3")) {
-        model = "Model 3";
-      } else if (carType.toLowerCase().includes("models")) {
-        model = "Model S";
-      } else if (carType.toLowerCase().includes("modelx")) {
-        model = "Model X";
-      }
-    } else if (carType.toLowerCase().includes("vezel")) {
-      make = "Honda";
-      model = "Vezel";
-    }
-
     // Extract color if present
     if (carType.toLowerCase().includes("white")) {
       color = "White";
@@ -246,9 +305,16 @@ function parseCarType(carType) {
     } else if (carType.toLowerCase().includes("blue")) {
       color = "Blue";
     }
+
+    // Extract fuel type if present
+    if (carType.toLowerCase().includes("petrol")) {
+      fuel_type = "Petrol";
+    } else if (carType.toLowerCase().includes("electric")) {
+      fuel_type = "Electric";
+    }
   }
 
-  return { make, model, color };
+  return { make, model, color, fuel_type };
 }
 
 // Update UI with car details
@@ -260,43 +326,47 @@ function updateCarDetailsUI() {
     carPlateElement.textContent = carData.license_plate || "PLATE NA";
   }
 
-  // Get car name element
+  // Get car name element - use the displayName from database
   const carNameElement = document.getElementById("car-name");
   if (carNameElement) {
-    carNameElement.textContent = `${carData.make} ${carData.model}`;
+    // Use the name we got from the database
+    carNameElement.textContent =
+      carData.displayName || `${carData.make} ${carData.model}`;
   }
 
-  // Get car type badge element
-  const carTypeBadge = document.getElementById("car-type");
-  if (carTypeBadge) {
-    carTypeBadge.textContent = carData.car_type?.split("_")[0] || "Car";
-  }
-
-// Set car image based on type with correct relative path from browser perspective
+  // Set car image based on type with correct relative path from browser perspective
   const carImageElement = document.getElementById("car-image");
   if (carImageElement) {
     // Debug - log the car type we're dealing with
     console.log("Car type for image:", carData.car_type);
-    
-    const imagePath = `../static/images/car_images/${carData.car_type || "car"}.png`;
+
+    const imagePath = `../static/images/car_images/${
+      carData.car_type || "car"
+    }.png`;
     console.log("Attempting to load car image from:", imagePath);
-    
+
     carImageElement.src = imagePath;
     carImageElement.onerror = () => {
-      console.warn(`Failed to load image from ${imagePath}, trying fallback...`);
-      
+      console.warn(
+        `Failed to load image from ${imagePath}, trying fallback...`
+      );
+
       // Try without the color suffix (vezel_white -> vezel)
       const baseType = carData.car_type?.split("_")[0] || "car";
       const fallbackPath = `../static/images/car_images/${baseType}.png`;
-      
+
       carImageElement.src = fallbackPath;
       carImageElement.onerror = () => {
-        console.warn(`Failed to load fallback image from ${fallbackPath}, using placeholder...`);
+        console.warn(
+          `Failed to load fallback image from ${fallbackPath}, using placeholder...`
+        );
         carImageElement.src = "../static/images/assets/car-placeholder.png";
       };
     };
   } else {
-    console.error("Car image element not found - check your HTML for element with id='car-image'");
+    console.error(
+      "Car image element not found - check your HTML for element with id='car-image'"
+    );
   }
 
   // Set car location information - using the address field from car data
@@ -305,9 +375,9 @@ function updateCarDetailsUI() {
     // Debug - log the location data we have
     console.log("Car location data:", {
       address: carData.address,
-      currentLocation: carData.current_location
+      currentLocation: carData.current_location,
     });
-    
+
     if (carData.address) {
       // We have an address string - use it directly
       carLocationElement.textContent = carData.address;
@@ -315,10 +385,11 @@ function updateCarDetailsUI() {
       // We have coordinates but no address - format the coordinates
       const lat = parseFloat(carData.current_location.latitude);
       const lng = parseFloat(carData.current_location.longitude);
-      
+
       if (!isNaN(lat) && !isNaN(lng)) {
-        carLocationElement.textContent = `Location: (${lat.toFixed(6)}, ${lng.toFixed(6)})`;
-        
+        carLocationElement.textContent = `Location: (${lat.toFixed(
+          6
+        )}, ${lng.toFixed(6)})`;
       } else {
         carLocationElement.textContent = "Location coordinates invalid";
       }
@@ -326,12 +397,18 @@ function updateCarDetailsUI() {
       carLocationElement.textContent = "Location not available";
     }
   } else {
-    console.error("Car location element not found - check your HTML for element with id='car-location'");
+    console.error(
+      "Car location element not found - check your HTML for element with id='car-location'"
+    );
   }
-  // Set car color
+
+  // Set car color - use the color from database
   const carColorElement = document.getElementById("car-color");
   if (carColorElement) {
     carColorElement.textContent = carData.color || "Not specified";
+    console.log(
+      `Setting car color display to: "${carData.color || "Not specified"}"`
+    );
   }
 
   // Set car seats
@@ -340,10 +417,21 @@ function updateCarDetailsUI() {
     carSeatsElement.textContent = carData.seating_capacity || "5";
   }
 
-  // Set car fuel type
+  // Set car fuel type with capitalized first letter
   const carFuelElement = document.getElementById("car-fuel");
   if (carFuelElement) {
-    carFuelElement.textContent = carData.fuel_type || "Not specified";
+    // Ensure fuel type is properly capitalized
+    let displayFuelType = carData.fuel_type || "Not specified";
+
+    // Capitalize the first letter if it's not already
+    if (displayFuelType && displayFuelType.length > 0) {
+      displayFuelType =
+        displayFuelType.charAt(0).toUpperCase() +
+        displayFuelType.slice(1).toLowerCase();
+    }
+
+    console.log(`Setting fuel type display to: "${displayFuelType}"`);
+    carFuelElement.textContent = displayFuelType;
   }
 
   // Set small luggage capacity

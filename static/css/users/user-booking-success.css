@@ -173,17 +173,74 @@ main {
     text-align: left;
 }
 
-/* Car Image - Full Width */
+/* Enhanced car image styling */
 .car-image-full {
-    width: 100%;
-    height: 250px;
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: var(--gray-50);
+    background-color: #f8f8f8;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .car-image-full img {
+    max-height: 95%;
+    max-width: 95%;
+    object-fit: contain;
+  }
+/* Car overview for desktop - 50-50 split with center line */
+@media (min-width: 768px) {
+    .summary-card {
+      overflow: hidden; /* To contain the floated elements */
+    }
+  
+    .car-image-full {
+      position: relative;
+      float: left;
+      width: 50%;
+      height: 300px;
+      margin-bottom: 0;
+      padding-right: 20px;
+      box-sizing: border-box;
+    }
+  
+    .car-details {
+      position: relative;
+      float: left;
+      width: 50%;
+      padding-left: 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 300px;
+    }
+  
+    .car-details h3, 
+    .car-details .car-plate, 
+    .car-details .car-specs {
+      width: 100%;
+      text-align: center;
+    }
+  
+    /* Add the center line */
+    .car-details:before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 10%;
+      height: 80%;
+      width: 1px;
+      background-color: #e0e0e0;
+    }
+  
+    /* Clear the float after the car info section */
+    .summary-card .divider:first-of-type {
+      clear: both;
+      margin-top: 320px; /* Adjust based on the height of your car section */
+    }
 }
 
 .car-image-full img {

@@ -183,10 +183,71 @@ async function loadCarData() {
     carData.id = carId;
     console.log("Car data loaded:", carData);
 
-    // Parse car type for better display
-    const carInfo = parseCarType(carData.car_type || "");
-    carData.make = carInfo.make;
-    carData.model = carInfo.model;
+    // Extract full car_type for database lookup
+    const fullCarType = carData.car_type || "";
+    console.log(`Full car_type for database lookup: "${fullCarType}"`);
+
+    // Look up car model info in car_models collection
+    try {
+      // First try with the FULL car_type (including color)
+      console.log(`Looking up car model with FULL car_type: "${fullCarType}"`);
+      let modelDoc = await getDoc(doc(db, "car_models", fullCarType));
+
+      // If not found with full car_type, try with base model as fallback
+      if (!modelDoc.exists() && fullCarType.includes("_")) {
+        const baseModelId = fullCarType.split("_")[0];
+        console.log(
+          `Full car_type not found, trying base model: "${baseModelId}"`
+        );
+        modelDoc = await getDoc(doc(db, "car_models", baseModelId));
+      }
+
+      if (modelDoc.exists()) {
+        const modelData = modelDoc.data();
+        console.log("Found car model data:", modelData);
+
+        // If the model has a name field, use it for display
+        if (modelData.name) {
+          console.log(`Using car name from database: "${modelData.name}"`);
+
+          // Store the exact name from the database
+          carData.displayName = modelData.name;
+
+          // Also store make/model for compatibility with existing code
+          const nameParts = modelData.name.split(" ");
+          if (nameParts.length > 1) {
+            carData.make = nameParts[0];
+            carData.model = nameParts.slice(1).join(" ");
+          } else {
+            carData.make = modelData.name;
+            carData.model = "";
+          }
+        } else {
+          console.log(
+            "Model document has no name field, using fallback parsing"
+          );
+          // Fall back to parsing if no name field
+          const parsed = parseCarType(fullCarType);
+          carData.make = parsed.make;
+          carData.model = parsed.model;
+          carData.displayName = `${parsed.make} ${parsed.model}`.trim();
+        }
+      } else {
+        console.log(`No model document found, using fallback parsing`);
+        // Fall back to parsing if no document found
+        const parsed = parseCarType(fullCarType);
+        carData.make = parsed.make;
+        carData.model = parsed.model;
+        carData.displayName = `${parsed.make} ${parsed.model}`.trim();
+      }
+    } catch (modelError) {
+      console.error("Error fetching car model data:", modelError);
+      // Fall back to parsing if lookup fails
+      const parsed = parseCarType(fullCarType);
+      carData.make = parsed.make;
+      carData.model = parsed.model;
+      carData.displayName = `${parsed.make} ${parsed.model}`.trim();
+    }
 
     return carData;
   } catch (error) {
@@ -269,17 +330,15 @@ function displayBookingSummary() {
       carSeatsElement.textContent = `${carData.seating_capacity} seats`;
     }
 
-    // Luggage capacity
+    // Simplified luggage capacity code
     const smallLuggageElement = document.getElementById("small-luggage");
     if (smallLuggageElement && carData) {
-      smallLuggageElement.textContent =
-        "small_luggage" in carData ? carData.small_luggage.toString() : "0";
+      smallLuggageElement.textContent = carData.small_luggage || "0";
     }
 
-    const bigLuggageElement = document.getElementById("large-luggage");
-    if (bigLuggageElement && carData) {
-      bigLuggageElement.textContent =
-        "large_luggage" in carData ? carData.large_luggage.toString() : "0";
+    const largeLuggageElement = document.getElementById("large-luggage");
+    if (largeLuggageElement && carData) {
+      largeLuggageElement.textContent = carData.large_luggage || "0";
     }
 
     // Location

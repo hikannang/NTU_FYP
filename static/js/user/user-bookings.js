@@ -417,13 +417,13 @@ function updateBookingsUI() {
 // Create a booking card element with improved car name display
 function createBookingCard(booking, bookingType) {
   console.log("Creating booking card for:", booking.id, "Type:", bookingType);
-  
+
   const bookingCard = document.createElement("div");
   bookingCard.className = "booking-card";
-  
+
   // Ensure we have valid date objects
   let startTime, endTime;
-  
+
   if (booking.startTimeDate) {
     startTime = booking.startTimeDate;
   } else if (booking.start_time) {
@@ -438,7 +438,7 @@ function createBookingCard(booking, bookingType) {
     startTime = new Date(); // Fallback
     console.warn("Missing start time for booking:", booking.id);
   }
-  
+
   if (booking.endTimeDate) {
     endTime = booking.endTimeDate;
   } else if (booking.end_time) {
@@ -453,24 +453,24 @@ function createBookingCard(booking, bookingType) {
     endTime = new Date(); // Fallback
     console.warn("Missing end time for booking:", booking.id);
   }
-  
+
   // Format dates and times
   const dateOptions = { weekday: "short", month: "short", day: "numeric" };
   const timeOptions = { hour: "2-digit", minute: "2-digit" };
-  
+
   const formattedDate = startTime.toLocaleDateString("en-US", dateOptions);
   const formattedStartTime = startTime.toLocaleTimeString("en-US", timeOptions);
   const formattedEndTime = endTime.toLocaleTimeString("en-US", timeOptions);
-  
+
   // Calculate time remaining or time until booking (for active and upcoming)
   let timeText = "";
   const now = new Date();
-  
+
   if (bookingType === "active") {
     const minutesRemaining = Math.floor((endTime - now) / 60000);
     const hoursRemaining = Math.floor(minutesRemaining / 60);
     const mins = minutesRemaining % 60;
-    
+
     if (hoursRemaining > 0) {
       timeText = `${hoursRemaining}h ${mins}m remaining`;
     } else {
@@ -480,7 +480,7 @@ function createBookingCard(booking, bookingType) {
     const minutesUntil = Math.floor((startTime - now) / 60000);
     const hoursUntil = Math.floor(minutesUntil / 60);
     const daysUntil = Math.floor(hoursUntil / 24);
-    
+
     if (daysUntil > 0) {
       timeText = `Starts in ${daysUntil} day${daysUntil > 1 ? "s" : ""}`;
     } else if (hoursUntil > 0) {
@@ -490,66 +490,122 @@ function createBookingCard(booking, bookingType) {
       timeText = `Starts in ${minutesUntil} minutes`;
     }
   }
-  
+
   // Determine if AR wayfinding should be enabled
   const thirtyMinutesBeforeStart = new Date(startTime);
-  thirtyMinutesBeforeStart.setMinutes(thirtyMinutesBeforeStart.getMinutes() - 30);
-  
+  thirtyMinutesBeforeStart.setMinutes(
+    thirtyMinutesBeforeStart.getMinutes() - 30
+  );
+
   const isAREnabled =
     bookingType === "active" ||
     (bookingType === "upcoming" && now >= thirtyMinutesBeforeStart);
-  
+
   // Get car info with proper model name from car_models collection
   let displayName = "Unknown Car";
   let carColor = "";
-  
+
   // Extract model name and color from car data
-  if (booking.car && booking.car.car_type) {
-    const carType = booking.car.car_type;
-    const modelId = carType.split('_')[0];
-    
-    // If we have model data from car_models collection, use it
-    if (booking.car.model_data && booking.car.model_data.name) {
-      displayName = booking.car.model_data.name;
-      carColor = booking.car.model_data.color || carType.split('_')[1] || "";
-    }
-    // Otherwise fall back to mapping
-    else {
-      if (modelId === "modely") displayName = "Tesla Model Y";
-      else if (modelId === "model3") displayName = "Tesla Model 3";
-      else if (modelId === "models") displayName = "Tesla Model S";
-      else if (modelId === "modelx") displayName = "Tesla Model X";
-      else if (modelId === "vezel") displayName = "Honda Vezel";
-      else displayName = modelId.charAt(0).toUpperCase() + modelId.slice(1);
-      
-      carColor = carType.split('_')[1] || "";
-    }
-  } else if (booking.car_type) {
-    // No car object but we have car_type in the booking
-    const modelId = booking.car_type.split('_')[0];
-    
-    if (modelId === "modely") displayName = "Tesla Model Y";
-    else if (modelId === "model3") displayName = "Tesla Model 3";
-    else if (modelId === "models") displayName = "Tesla Model S";
-    else if (modelId === "modelx") displayName = "Tesla Model X";
-    else if (modelId === "vezel") displayName = "Honda Vezel";
-    else displayName = modelId.charAt(0).toUpperCase() + modelId.slice(1);
-    
-    carColor = booking.car_type.split('_')[1] || "";
-  }
+if (booking.car && booking.car.car_type) {
+  const carType = booking.car.car_type;
+  const modelId = carType.split('_')[0];
   
-  // Capitalize color and add to display name if available
-  if (carColor) {
-    carColor = carColor.charAt(0).toUpperCase() + carColor.slice(1);
-    displayName = `${displayName} (${carColor})`;
-  }
+  // Default color from car_type (as fallback)
+  carColor = carType.split('_')[1] || "";
   
+  // Fetch the name and color from car_models collection
+  getCarNameFromDatabase(carType).then(result => {
+    // Once we have the name from the database, update the card
+    if (result.name) {
+      const carNameElement = bookingCard.querySelector('h3');
+      if (carNameElement) {
+        // Use color from the database if available, otherwise use from car_type
+        const displayColor = result.color || carColor;
+        
+        // Update just the name, with color from database if present
+        if (displayColor) {
+          const formattedColor = displayColor.charAt(0).toUpperCase() + displayColor.slice(1);
+          carNameElement.textContent = `${result.name} (${formattedColor})`;
+        } else {
+          carNameElement.textContent = result.name;
+        }
+      }
+    }
+  }).catch(error => {
+    console.error("Error fetching car name:", error);
+  });
+  
+  // Use fallback values initially until database lookup completes
+  if (modelId === "modely") displayName = "Tesla Model Y";
+  else if (modelId === "model3") displayName = "Tesla Model 3";
+  else if (modelId === "models") displayName = "Tesla Model S";
+  else if (modelId === "modelx") displayName = "Tesla Model X";
+  else if (modelId === "vezel") displayName = "Honda Vezel";
+  else displayName = modelId.charAt(0).toUpperCase() + modelId.slice(1);
+} else if (booking.car_type) {
+  // No car object but we have car_type in the booking
+  const carType = booking.car_type;
+  const modelId = carType.split('_')[0];
+  
+  // Default color from car_type (as fallback)
+  carColor = carType.split('_')[1] || "";
+  
+       // Fetch the name and color from car_models collection
+    getCarNameFromDatabase(carType).then(result => {
+      // Once we have the data from the database, update the card
+      if (result.name) {
+        const carNameElement = bookingCard.querySelector('h3');
+        if (carNameElement) {
+          // For CX-8 models, NEVER use "8" as color
+          if (result.name.toLowerCase().includes('cx-8') || carType.toLowerCase().includes('cx8')) {
+            console.log("CX-8 detected in display logic - using only database color");
+            
+            // Use color from database or nothing
+            if (result.color && result.color !== '8') {
+              carNameElement.textContent = `${result.name} (${result.color.charAt(0).toUpperCase() + result.color.slice(1)})`;
+            } else {
+              carNameElement.textContent = result.name;
+            }
+          } else {
+            // For other models, proceed normally
+            let displayColor = result.color || carColor;
+            
+            if (displayColor) {
+              const formattedColor = displayColor.charAt(0).toUpperCase() + displayColor.slice(1);
+              carNameElement.textContent = `${result.name} (${formattedColor})`;
+            } else {
+              carNameElement.textContent = result.name;
+            }
+          }
+        }
+      }
+    }).catch(error => {
+      console.error("Error fetching car name:", error);
+    });
+  
+  // Use fallback values initially until database lookup completes
+  if (modelId === "modely") displayName = "Tesla Model Y";
+  else if (modelId === "model3") displayName = "Tesla Model 3";
+  else if (modelId === "models") displayName = "Tesla Model S";
+  else if (modelId === "modelx") displayName = "Tesla Model X";
+  else if (modelId === "vezel") displayName = "Honda Vezel";
+  else displayName = modelId.charAt(0).toUpperCase() + modelId.slice(1);
+}
+
   // Get car image source
-  const carImageSrc = `../static/images/car_images/${(booking.car?.car_type || booking.car_type || 'car').toLowerCase()}.png`;
-  
+  const carImageSrc = `../static/images/car_images/${(
+    booking.car?.car_type ||
+    booking.car_type ||
+    "car"
+  ).toLowerCase()}.png`;
+
   // Get address
-  const address = booking.car?.address || booking.pickup_location || booking.address || "Address not available";
-  
+  const address =
+    booking.car?.address ||
+    booking.pickup_location ||
+    booking.address ||
+    "Address not available";
+
   // Set card HTML content - removed the carId parameter from the URL
   bookingCard.innerHTML = `
     <div class="booking-status ${bookingType}">
@@ -620,7 +676,9 @@ function createBookingCard(booking, bookingType) {
     const arButton = bookingCard.querySelector(".ar-btn");
     if (arButton) {
       // Pass both booking.id and booking.car_id to the function
-      arButton.addEventListener("click", () => launchARWayfinding(booking.id, booking.car?.id || booking.car_id));
+      arButton.addEventListener("click", () =>
+        launchARWayfinding(booking.id, booking.car?.id || booking.car_id)
+      );
     }
   }
 
@@ -736,18 +794,91 @@ async function cancelBooking(bookingId, carId) {
   }
 }
 
+// Function to get car name and color from database
+async function getCarNameFromDatabase(carType) {
+  if (!carType) return { name: null, color: null };
+  
+  try {
+    console.log(`Looking up car model with car_type: "${carType}"`);
+    
+    // First try with the full car_type
+    let modelDoc = await getDoc(doc(db, "car_models", carType));
+    
+    // If not found, try with base model name
+    let baseModelId = carType;
+    if (!modelDoc.exists() && carType.includes('_')) {
+      baseModelId = carType.split('_')[0];
+      console.log(`Full car_type not found, trying base model: "${baseModelId}"`);
+      modelDoc = await getDoc(doc(db, "car_models", baseModelId));
+    }
+    
+    if (modelDoc.exists()) {
+      const modelData = modelDoc.data();
+      console.log("Full model data from database:", modelData);
+      
+      // Get the name field
+      const name = modelData.name;
+      
+      // Special debugging for CX-8 detection
+      const isCX8 = (name && name.toLowerCase().includes('cx-8')) || 
+                    baseModelId.toLowerCase().includes('cx8') || 
+                    baseModelId.toLowerCase().includes('cx-8');
+      
+      console.log(`Is this a CX-8 model? ${isCX8}`);
+      console.log(`Car type parts: ${carType.split('_')}`);
+      
+      // Get color from the database, not from the car_type for CX-8
+      let color;
+      
+      if (isCX8) {
+        // For CX-8, ONLY use the color from the database field
+        console.log("CX-8 detected! Using ONLY the database color field");
+        color = modelData.colors[0] || ""; // Assuming colors is an array
+        console.log(`Color from database: "${color}"`);
+      } else {
+        // For other models, use color from database or car_type
+        color = modelData.color;
+        
+        // If no color in database, try from car_type as fallback
+        if (!color && carType.includes('_')) {
+          color = carType.split('_')[1];
+          console.log(`No color in database, using from car_type: "${color}"`);
+        }
+      }
+      
+      console.log(`Final values: name="${name}", color="${color}"`);
+      
+      return { 
+        name: name || null,
+        color: color || null
+      };
+    } else {
+      console.log("No model document found in database");
+    }
+    
+    return { name: null, color: null }; // Return null for both if not found
+  } catch (error) {
+    console.error(`Error fetching car model data:`, error);
+    return { name: null, color: null };
+  }
+}
+
 // Launch AR wayfinding
 async function launchARWayfinding(bookingId, carId) {
   try {
-    console.log(`Starting AR wayfinding for booking ${bookingId}, car ${carId}`);
-    
+    console.log(
+      `Starting AR wayfinding for booking ${bookingId}, car ${carId}`
+    );
+
     // If no carId provided, get it from the booking
     if (!carId) {
-      console.log(`No carId provided, attempting to retrieve from booking ${bookingId}`);
+      console.log(
+        `No carId provided, attempting to retrieve from booking ${bookingId}`
+      );
       try {
         const bookingRef = doc(db, "bookings", bookingId);
         const bookingDoc = await getDoc(bookingRef);
-        
+
         if (bookingDoc.exists()) {
           const bookingData = bookingDoc.data();
           carId = bookingData.car_id; // or whatever field stores the car ID
@@ -757,39 +888,39 @@ async function launchARWayfinding(bookingId, carId) {
         console.error("Error retrieving booking data:", err);
       }
     }
-    
+
     if (!carId) {
       console.error("No carId provided for AR navigation");
       alert("Car information unavailable for AR navigation");
       return;
     }
-    
+
     // Get car data with location information
     console.log(`Fetching car data for ID: ${carId}`);
     const carRef = doc(db, "cars", carId);
     const carDoc = await getDoc(carRef);
-    
+
     if (!carDoc.exists()) {
       console.error(`Car not found in database: ${carId}`);
       alert("Car information unavailable for AR navigation");
       return;
     }
-    
+
     const carData = carDoc.data();
-    
+
     if (!carData.current_location) {
       alert("Car location not available for AR navigation");
       return;
     }
-    
+
     // Construct AR URL with location parameters
     const lat = carData.current_location.latitude;
     const lng = carData.current_location.longitude;
-    const arUrl = `../AR/user-ar-wayfinding.html?lat=${lat}&lng=${lng}&id=${bookingId}`;    
+    const arUrl = `../AR/user-ar-wayfinding.html?lat=${lat}&lng=${lng}&id=${bookingId}`;
     console.log(`Opening AR navigation at: ${arUrl}`);
-    
+
     // Open AR in new window
-    window.open(arUrl, '_blank');
+    window.open(arUrl, "_blank");
   } catch (error) {
     console.error("Error launching AR wayfinding:", error);
     alert("Failed to launch AR navigation. Please try again.");
@@ -798,14 +929,14 @@ async function launchARWayfinding(bookingId, carId) {
 
 // Check where this function is being called from:
 // It might look something like this:
-document.getElementById("ar-button").addEventListener("click", function() {
+document.getElementById("ar-button").addEventListener("click", function () {
   // Make sure bookingId and carId are properly defined here
   if (!booking.carId) {
     console.error("Missing carId for booking:", booking.id);
     alert("Cannot launch AR: missing car information");
     return;
   }
-  
+
   // Call with both parameters
   launchARWayfinding(booking.id, booking.carId);
 });
