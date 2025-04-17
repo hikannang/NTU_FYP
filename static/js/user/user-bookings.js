@@ -506,91 +506,104 @@ function createBookingCard(booking, bookingType) {
   let carColor = "";
 
   // Extract model name and color from car data
-if (booking.car && booking.car.car_type) {
-  const carType = booking.car.car_type;
-  const modelId = carType.split('_')[0];
-  
-  // Default color from car_type (as fallback)
-  carColor = carType.split('_')[1] || "";
-  
-  // Fetch the name and color from car_models collection
-  getCarNameFromDatabase(carType).then(result => {
-    // Once we have the name from the database, update the card
-    if (result.name) {
-      const carNameElement = bookingCard.querySelector('h3');
-      if (carNameElement) {
-        // Use color from the database if available, otherwise use from car_type
-        const displayColor = result.color || carColor;
-        
-        // Update just the name, with color from database if present
-        if (displayColor) {
-          const formattedColor = displayColor.charAt(0).toUpperCase() + displayColor.slice(1);
-          carNameElement.textContent = `${result.name} (${formattedColor})`;
-        } else {
-          carNameElement.textContent = result.name;
-        }
-      }
-    }
-  }).catch(error => {
-    console.error("Error fetching car name:", error);
-  });
-  
-  // Use fallback values initially until database lookup completes
-  if (modelId === "modely") displayName = "Tesla Model Y";
-  else if (modelId === "model3") displayName = "Tesla Model 3";
-  else if (modelId === "models") displayName = "Tesla Model S";
-  else if (modelId === "modelx") displayName = "Tesla Model X";
-  else if (modelId === "vezel") displayName = "Honda Vezel";
-  else displayName = modelId.charAt(0).toUpperCase() + modelId.slice(1);
-} else if (booking.car_type) {
-  // No car object but we have car_type in the booking
-  const carType = booking.car_type;
-  const modelId = carType.split('_')[0];
-  
-  // Default color from car_type (as fallback)
-  carColor = carType.split('_')[1] || "";
-  
-       // Fetch the name and color from car_models collection
-    getCarNameFromDatabase(carType).then(result => {
-      // Once we have the data from the database, update the card
-      if (result.name) {
-        const carNameElement = bookingCard.querySelector('h3');
-        if (carNameElement) {
-          // For CX-8 models, NEVER use "8" as color
-          if (result.name.toLowerCase().includes('cx-8') || carType.toLowerCase().includes('cx8')) {
-            console.log("CX-8 detected in display logic - using only database color");
-            
-            // Use color from database or nothing
-            if (result.color && result.color !== '8') {
-              carNameElement.textContent = `${result.name} (${result.color.charAt(0).toUpperCase() + result.color.slice(1)})`;
-            } else {
-              carNameElement.textContent = result.name;
-            }
-          } else {
-            // For other models, proceed normally
-            let displayColor = result.color || carColor;
-            
+  if (booking.car && booking.car.car_type) {
+    const carType = booking.car.car_type;
+    const modelId = carType.split("_")[0];
+
+    // Default color from car_type (as fallback)
+    carColor = carType.split("_")[1] || "";
+
+    // Fetch the name and color from car_models collection
+    getCarNameFromDatabase(carType)
+      .then((result) => {
+        // Once we have the name from the database, update the card
+        if (result.name) {
+          const carNameElement = bookingCard.querySelector("h3");
+          if (carNameElement) {
+            // Use color from the database if available, otherwise use from car_type
+            const displayColor = result.color || carColor;
+
+            // Update just the name, with color from database if present
             if (displayColor) {
-              const formattedColor = displayColor.charAt(0).toUpperCase() + displayColor.slice(1);
+              const formattedColor =
+                displayColor.charAt(0).toUpperCase() + displayColor.slice(1);
               carNameElement.textContent = `${result.name} (${formattedColor})`;
             } else {
               carNameElement.textContent = result.name;
             }
           }
         }
-      }
-    }).catch(error => {
-      console.error("Error fetching car name:", error);
-    });
-  
-  // Use fallback values initially until database lookup completes
-  if (modelId === "modely") displayName = "Tesla Model Y";
-  else if (modelId === "model3") displayName = "Tesla Model 3";
-  else if (modelId === "models") displayName = "Tesla Model S";
-  else if (modelId === "modelx") displayName = "Tesla Model X";
-  else if (modelId === "vezel") displayName = "Honda Vezel";
-  else displayName = modelId.charAt(0).toUpperCase() + modelId.slice(1);
-}
+      })
+      .catch((error) => {
+        console.error("Error fetching car name:", error);
+      });
+
+    // Use fallback values initially until database lookup completes
+    if (modelId === "modely") displayName = "Tesla Model Y";
+    else if (modelId === "model3") displayName = "Tesla Model 3";
+    else if (modelId === "models") displayName = "Tesla Model S";
+    else if (modelId === "modelx") displayName = "Tesla Model X";
+    else if (modelId === "vezel") displayName = "Honda Vezel";
+    else displayName = modelId.charAt(0).toUpperCase() + modelId.slice(1);
+  } else if (booking.car_type) {
+    // No car object but we have car_type in the booking
+    const carType = booking.car_type;
+    const modelId = carType.split("_")[0];
+
+    // Default color from car_type (as fallback)
+    carColor = carType.split("_")[1] || "";
+
+    // Fetch the name and color from car_models collection
+    getCarNameFromDatabase(carType)
+      .then((result) => {
+        // Once we have the data from the database, update the card
+        if (result.name) {
+          const carNameElement = bookingCard.querySelector("h3");
+          if (carNameElement) {
+            // For CX-8 models, NEVER use "8" as color
+            if (
+              result.name.toLowerCase().includes("cx-8") ||
+              carType.toLowerCase().includes("cx8")
+            ) {
+              console.log(
+                "CX-8 detected in display logic - using only database color"
+              );
+
+              // Use color from database or nothing
+              if (result.color && result.color !== "8") {
+                carNameElement.textContent = `${result.name} (${
+                  result.color.charAt(0).toUpperCase() + result.color.slice(1)
+                })`;
+              } else {
+                carNameElement.textContent = result.name;
+              }
+            } else {
+              // For other models, proceed normally
+              let displayColor = result.color || carColor;
+
+              if (displayColor) {
+                const formattedColor =
+                  displayColor.charAt(0).toUpperCase() + displayColor.slice(1);
+                carNameElement.textContent = `${result.name} (${formattedColor})`;
+              } else {
+                carNameElement.textContent = result.name;
+              }
+            }
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching car name:", error);
+      });
+
+    // Use fallback values initially until database lookup completes
+    if (modelId === "modely") displayName = "Tesla Model Y";
+    else if (modelId === "model3") displayName = "Tesla Model 3";
+    else if (modelId === "models") displayName = "Tesla Model S";
+    else if (modelId === "modelx") displayName = "Tesla Model X";
+    else if (modelId === "vezel") displayName = "Honda Vezel";
+    else displayName = modelId.charAt(0).toUpperCase() + modelId.slice(1);
+  }
 
   // Get car image source
   const carImageSrc = `../static/images/car_images/${(
@@ -635,7 +648,7 @@ if (booking.car && booking.car.car_type) {
       </div>
       <div class="detail-item">
         <i class="bi bi-tag"></i>
-        <span>Booking #${booking.id.slice(-6)}</span>
+        <span>Reference Code: ${booking.id.replace("booking_", "")}</span>      
       </div>
     </div>
     
@@ -797,39 +810,42 @@ async function cancelBooking(bookingId, carId) {
 // Function to get car name and color from database
 async function getCarNameFromDatabase(carType) {
   if (!carType) return { name: null, color: null };
-  
+
   try {
     console.log(`Looking up car model with car_type: "${carType}"`);
-    
+
     // First try with the full car_type
     let modelDoc = await getDoc(doc(db, "car_models", carType));
-    
+
     // If not found, try with base model name
     let baseModelId = carType;
-    if (!modelDoc.exists() && carType.includes('_')) {
-      baseModelId = carType.split('_')[0];
-      console.log(`Full car_type not found, trying base model: "${baseModelId}"`);
+    if (!modelDoc.exists() && carType.includes("_")) {
+      baseModelId = carType.split("_")[0];
+      console.log(
+        `Full car_type not found, trying base model: "${baseModelId}"`
+      );
       modelDoc = await getDoc(doc(db, "car_models", baseModelId));
     }
-    
+
     if (modelDoc.exists()) {
       const modelData = modelDoc.data();
       console.log("Full model data from database:", modelData);
-      
+
       // Get the name field
       const name = modelData.name;
-      
+
       // Special debugging for CX-8 detection
-      const isCX8 = (name && name.toLowerCase().includes('cx-8')) || 
-                    baseModelId.toLowerCase().includes('cx8') || 
-                    baseModelId.toLowerCase().includes('cx-8');
-      
+      const isCX8 =
+        (name && name.toLowerCase().includes("cx-8")) ||
+        baseModelId.toLowerCase().includes("cx8") ||
+        baseModelId.toLowerCase().includes("cx-8");
+
       console.log(`Is this a CX-8 model? ${isCX8}`);
-      console.log(`Car type parts: ${carType.split('_')}`);
-      
+      console.log(`Car type parts: ${carType.split("_")}`);
+
       // Get color from the database, not from the car_type for CX-8
       let color;
-      
+
       if (isCX8) {
         // For CX-8, ONLY use the color from the database field
         console.log("CX-8 detected! Using ONLY the database color field");
@@ -838,24 +854,24 @@ async function getCarNameFromDatabase(carType) {
       } else {
         // For other models, use color from database or car_type
         color = modelData.color;
-        
+
         // If no color in database, try from car_type as fallback
-        if (!color && carType.includes('_')) {
-          color = carType.split('_')[1];
+        if (!color && carType.includes("_")) {
+          color = carType.split("_")[1];
           console.log(`No color in database, using from car_type: "${color}"`);
         }
       }
-      
+
       console.log(`Final values: name="${name}", color="${color}"`);
-      
-      return { 
+
+      return {
         name: name || null,
-        color: color || null
+        color: color || null,
       };
     } else {
       console.log("No model document found in database");
     }
-    
+
     return { name: null, color: null }; // Return null for both if not found
   } catch (error) {
     console.error(`Error fetching car model data:`, error);
